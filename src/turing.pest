@@ -6,9 +6,10 @@ value = { "0" | "1" }
 movement = { "R" | "L" | "H" | "N" }
 comment = { ("//" ~ (LETTER | NUMBER | SPACE_SEPARATOR | PUNCTUATION | SYMBOL)* ~ NEWLINE)}
 empty = { (comment | NEWLINE)* }
+description = { ("///" ~ (LETTER | NUMBER | SPACE_SEPARATOR | PUNCTUATION | SYMBOL)* ~ NEWLINE) }
 
 tape = { "{" ~ value* ~ initial_state ~ value* ~ "}" ~ ";" }
 final_state = { "F" ~ "=" ~ "{" ~ state ~ ("," ~ state)* ~ "}" ~ ";" }
 instruction = { ( "(" ~ state ~ "," ~ value ~ "," ~ value ~ "," ~ movement ~ "," ~ state ~");" )}
 
-file = { SOI ~ ( empty ~ tape ~ empty ~ final_state ~ (comment | NEWLINE | instruction)+) ~ EOI }
+file = { SOI ~ (NEWLINE* ~ description)* ~ ( empty ~ tape ~ empty ~ final_state ~ (comment | NEWLINE | instruction)+) ~ EOI }
