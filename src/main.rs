@@ -9,12 +9,23 @@ fn main() {
     let unparsed_file = fs::read_to_string("Examples/Example1.tm").expect("cannot read file");
     let mut tm = TuringMachine::new(&unparsed_file);
 
+    println!("{}", tm.to_string());
+    let mut input = String::new();
+        
+    io::stdin()
+    .read_line(&mut input)
+    .expect("error: unable to read user input");
+
     loop {
+        tm.step();
         println!("{}", tm.to_string());
-        let mut input = String::new();
+        
         io::stdin()
             .read_line(&mut input)
             .expect("error: unable to read user input");
-        tm.step();
+
+        if tm.finished() {
+            break;
+        }
     }
 }

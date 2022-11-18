@@ -139,6 +139,10 @@ impl TuringMachine {
         self.current_state = instruction.to_state.clone();
     }
 
+    pub fn finished(&self) -> bool {
+        return self.final_states.contains(&self.current_state);
+    }
+
     pub fn to_string(&self) -> String {
         let mut tmp1 = String::new();
         let mut tmp2 = String::new();
