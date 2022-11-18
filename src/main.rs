@@ -1,7 +1,8 @@
+use clap::Parser as clap_parser;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
-use clap::Parser as clap_parser;
+use turing_machine::MyApp;
 use turing_machine::TuringMachine;
 
 #[derive(clap_parser, Debug)]
@@ -16,13 +17,30 @@ pub struct Cli {
     #[clap(long, short, help = "Specify a file with instructions.")]
     file: Option<PathBuf>,
 
-    /// Option: -c --csv: Output in csv format.
-    #[clap(long, short, default_value = "true", help = "Output in csv format.")]
-    gui: bool,
+    /// Option: -c --cli: Output in the command-line instead of the GUI.
+    #[clap(
+        long,
+        short,
+        default_value = "false",
+        help = "Output in the command-line."
+    )]
+    cli: bool,
 }
 
 fn main() {
     let args = Cli::parse();
+
+    if !args.cli {
+        let options = eframe::NativeOptions {
+            drag_and_drop_support: true,
+            ..Default::default()
+        };
+        eframe::run_native(
+            "Native file dialogs and drag-and-drop files",
+            options,
+            Box::new(|_cc| Box::new(MyApp::default())),
+        );
+    }
 
     if let Some(file) = args.file {
         let unparsed_file = fs::read_to_string(file).expect("cannot read file");
@@ -32,7 +50,6 @@ fn main() {
         panic!("No program was provided");
     }
 }
-
 
 fn run_machine(mut tm: TuringMachine) {
     println!("{}", tm.to_string());

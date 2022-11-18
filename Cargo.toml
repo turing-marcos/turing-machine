@@ -9,3 +9,5 @@ edition = "2021"
 clap = { version = "4.0.26", features = ["derive"] }
 pest = "2.4.1"
 pest_derive = "2.4.1"
+eframe = "^0.19"
+rfd = "0.10.0"

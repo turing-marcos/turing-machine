@@ -1,8 +1,10 @@
 mod instruction;
 mod turing;
+mod window;
 
 pub use instruction::TuringInstruction;
 pub use turing::{Rule, TuringMachine, TuringParser};
+pub use window::MyApp;
 
 #[cfg(test)]
 mod tests {

@@ -161,6 +161,6 @@ impl TuringMachine {
     }
 
     pub fn tape_value(&self) -> u32 {
-        self.tape.iter().map(|v| if *v {1} else {0}).sum()
+        self.tape.iter().map(|v| if *v { 1 } else { 0 }).sum()
     }
 }
