@@ -30,22 +30,27 @@ pub struct Cli {
 fn main() {
     let args = Cli::parse();
 
-    if !args.cli {
-        let options = eframe::NativeOptions {
-            drag_and_drop_support: true,
-            ..Default::default()
-        };
-        eframe::run_native(
-            "Native file dialogs and drag-and-drop files",
-            options,
-            Box::new(|_cc| Box::new(MyApp::default())),
-        );
-    }
-
     if let Some(file) = args.file {
-        let unparsed_file = fs::read_to_string(file).expect("cannot read file");
+        let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
         let tm = TuringMachine::new(&unparsed_file);
-        run_machine(tm);
+
+        if !args.cli {
+            let options = eframe::NativeOptions {
+                drag_and_drop_support: true,
+                ..Default::default()
+            };
+            eframe::run_native(
+                &format!(
+                    "Turing Machine: {:?}",
+                    file.file_name()
+                        .unwrap_or(std::ffi::OsStr::new("User input"))
+                ),
+                options,
+                Box::new(|_cc| Box::new(MyApp::new(tm))),
+            );
+        } else {
+            run_machine(tm);
+        }
     } else {
         panic!("No program was provided");
     }
