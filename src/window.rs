@@ -2,7 +2,7 @@
 
 use crate::TuringMachine;
 use eframe;
-use eframe::egui;
+use eframe::egui::{self, Id};
 use eframe::emath::Align2;
 use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, Vec2};
 // use rfd;
@@ -13,7 +13,10 @@ pub struct MyApp {
     dropped_files: Vec<egui::DroppedFile>,
     // picked_path: Option<String>,
     offset: f32,
+    tape_rect_size: f32,
+    tape_anim_speed: f32,
     font_id: FontId,
+    paused: bool,
     tm: TuringMachine,
 }
 
@@ -27,7 +30,10 @@ impl MyApp {
             dropped_files: Vec::<egui::DroppedFile>::new(),
             // picked_path: None,
             offset: 0.0,
+            tape_rect_size: 100.0,
+            tape_anim_speed: 0.5,
             font_id: FontId::new(30f32, FontFamily::Monospace),
+            paused: true,
             tm,
         }
     }
@@ -35,24 +41,41 @@ impl MyApp {
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
+            ui.add(egui::Slider::new(&mut self.tape_rect_size, 20.0..=300.0).text("Tape rectangle size"));
+            ui.add(egui::Slider::new(&mut self.tape_anim_speed, 0.1..=2.0).text("Tape animation speed (in seconds)"));
+
             ui.label(format!("Current output: {}", self.tm.tape_value()));
+
+            if self.paused {
+                ui.label("The application is paused. To unpause it, press the spacebar or this button:");
+                if ui.button("Resume").clicked() || ui.input().key_pressed(egui::Key::Space) {
+                    self.paused = false;
+                }
+            }else{
+                ui.label("The application is unpaused. To pause it, press the spacebar or this button:");
+                if ui.button("Pause").clicked() || ui.input().key_pressed(egui::Key::Space) {
+                    self.paused = true;
+                }
+            }
 
             if self.offset != 0.0 {
                 if self.offset.abs() < 0.01 {
                     self.offset = 0.0;
                 } else {
-                    self.offset /= 1.2;
+                    self.offset = ctx.animate_value_with_time(Id::new("offset"), 0.0, self.tape_anim_speed);
                 }
                 ctx.request_repaint();
-            } else if ui.button("Step").clicked() || ui.input().key_pressed(egui::Key::ArrowRight) {
+            } else if ui.button("Step").clicked() || ui.input().key_pressed(egui::Key::ArrowRight) || !self.paused {
                 let prev = self.tm.tape_position;
                 self.tm.step();
                 self.offset = self.tm.tape_position as f32 - prev as f32;
+                ctx.clear_animations();
+                ctx.animate_value_with_time(Id::new("offset"), self.offset, self.tape_anim_speed);
             }
 
             let stroke = Stroke::new(STROKE_WIDTH, Color32::BLACK);
             let rounding = Rounding::same(10f32);
-            let size = Vec2::new(150f32, 150f32);
+            let size = Vec2::new(self.tape_rect_size, self.tape_rect_size);
             let center = ui.clip_rect().center();
             let pos = center + Vec2::new((self.offset as f32) * size.x, 0.0);
             let len = self.tm.tape_position;
@@ -78,7 +101,7 @@ impl eframe::App for MyApp {
             let tri_size: f32 = 100.0;
             let c1: Pos2 = center + Vec2::new(tri_size / 1.5, tri_size);
             let c2: Pos2 = center + Vec2::new(-tri_size / 1.5, tri_size);
-            let c3: Pos2 = center + Vec2::new(0.0, 40.0);
+            let c3: Pos2 = center + Vec2::new(0.0, self.tape_rect_size/3.0);
 
             ui.painter().line_segment([c2, c3], tri_stroke);
             ui.painter().line_segment([c3, c1], tri_stroke);
