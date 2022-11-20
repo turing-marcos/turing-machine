@@ -1,9 +1,11 @@
 mod instruction;
 mod turing;
+mod turing_widget;
 mod window;
 
 pub use instruction::TuringInstruction;
 pub use turing::{Rule, TuringMachine, TuringParser};
+pub use turing_widget::TuringWidget;
 pub use window::MyApp;
 
 #[cfg(test)]

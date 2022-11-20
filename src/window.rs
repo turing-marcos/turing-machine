@@ -1,27 +1,17 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use crate::TuringMachine;
+use crate::{TuringMachine, TuringWidget};
 use eframe;
-use eframe::egui::{self, Id, Sense};
-use eframe::emath::Align2;
-use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, Vec2};
+use eframe::egui::{self, Id, Ui};
 // use rfd;
 
-const STROKE_WIDTH: f32 = 3f32;
-
 pub struct MyApp {
-    dropped_files: Vec<egui::DroppedFile>,
-    // picked_path: Option<String>,
-    offset: f32,
-    tape_rect_size: f32,
-    tape_anim_speed: f32,
-    font_id: FontId,
-    paused: bool,
-    tm: TuringMachine,
+    code: String,
+    tm: TuringWidget,
 }
 
 impl MyApp {
-    pub fn new(tm: TuringMachine, cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(tm: TuringMachine, _cc: &eframe::CreationContext<'_>) -> Self {
         // Customize egui here with cc.egui_ctx.set_fonts and cc.egui_ctx.set_visuals.
         // Restore app state using cc.storage (requires the "persistence" feature).
         // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
@@ -36,132 +26,105 @@ impl MyApp {
         // cc.egui_ctx.set_fonts(fonts);
 
         Self {
-            dropped_files: Vec::<egui::DroppedFile>::new(),
-            // picked_path: None,
-            offset: 0.0,
-            tape_rect_size: 100.0,
-            tape_anim_speed: 1.0,
-            font_id: FontId::new(30f32, FontFamily::Monospace),
-            paused: true,
-            tm,
+            code: String::from(&tm.code),
+            tm: TuringWidget::new(tm),
         }
     }
+
+    fn process_turing_controls(
+        &mut self,
+        ui: &mut Ui,
+        ctx: &egui::Context,
+        editor_focused: bool,
+    ) -> bool {
+        ui.add_enabled_ui(!editor_focused, |ui| {
+            if self.tm.offset != 0.0 {
+                ui.add_enabled(false, |ui: &mut Ui| ui.button("Step"));
+
+                if self.tm.offset.abs() < 0.01 {
+                    self.tm.offset = 0.0;
+                    return false;
+                } else {
+                    self.tm.offset = ctx.animate_value_with_time(
+                        Id::new("offset"),
+                        0.0,
+                        self.tm.tape_anim_speed,
+                    );
+                    return true;
+                }
+            } else if (ui.add_enabled(self.tm.paused, |ui: &mut Ui| ui.button("Step")).clicked()
+                || ui.input().key_pressed(egui::Key::ArrowRight)
+                || !self.tm.paused) && !editor_focused
+            {
+                ctx.clear_animations();
+
+                let target = self.tm.step();
+
+                ctx.animate_value_with_time(Id::new("offset"), target, self.tm.tape_anim_speed);
+                return true;
+            } else {
+                return false;
+            }
+        }).inner
+    }
 }
+
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |main_panel| {
+            let mut editor_focused = false;
             main_panel.horizontal_top(|horiz| {
-                horiz.vertical(|ui| {
+                horiz.vertical(|my_ui| {
+                    my_ui.allocate_at_least(
+                        egui::Vec2::new(300.0, 0.0), //ui.available_height()),
+                        egui::Sense::click_and_drag(),
+                    );
+
+                    editor_focused = my_ui.code_editor(&mut self.code).has_focus(); //egui::Vec2::new(500.0, my_ui.available_height()), editor);
+                    if my_ui.button("Compile and run code").clicked() {
+                        self.tm = TuringWidget::new(TuringMachine::new(&self.code));
+                    }
+                });
+
+                horiz.vertical_centered(|ui| {
                     ui.add(
-                        egui::Slider::new(&mut self.tape_rect_size, 20.0..=300.0)
+                        egui::Slider::new(&mut self.tm.tape_rect_size, 20.0..=300.0)
                             .text("Tape rectangle size"),
                     );
                     ui.add(
-                        egui::Slider::new(&mut self.tape_anim_speed, 0.1..=2.0)
+                        egui::Slider::new(&mut self.tm.tape_anim_speed, 0.1..=2.0)
                             .text("Tape animation speed (in seconds)"),
                     );
 
+                    ui.separator();
+
                     ui.label(format!("Current output: {}", self.tm.tape_value()));
 
-                    if self.paused {
+                    if self.tm.paused {
                         ui.label(
                     "The application is paused. To unpause it, press the spacebar or this button:",
                 );
-                        if ui.button("Resume").clicked() || ui.input().key_pressed(egui::Key::Space)
+                        if (ui.button("Resume").clicked() || ui.input().key_pressed(egui::Key::Space)) && !editor_focused
                         {
-                            self.paused = false;
+                            self.tm.paused = false;
                         }
                     } else {
                         ui.label(
                     "The application is unpaused. To pause it, press the spacebar or this button:",
                 );
-                        if ui.button("Pause").clicked() || ui.input().key_pressed(egui::Key::Space)
+                        if (ui.button("Pause").clicked() || ui.input().key_pressed(egui::Key::Space)) && !editor_focused
                         {
-                            self.paused = true;
+                            self.tm.paused = true;
                         }
                     }
 
-                    if self.offset != 0.0 {
-                        if self.offset.abs() < 0.01 {
-                            self.offset = 0.0;
-                        } else {
-                            self.offset = ctx.animate_value_with_time(
-                                Id::new("offset"),
-                                0.0,
-                                self.tape_anim_speed,
-                            );
-                        }
+                    if self.process_turing_controls(ui, &ctx, editor_focused) {
                         ctx.request_repaint();
-                    } else if ui.button("Step").clicked()
-                        || ui.input().key_pressed(egui::Key::ArrowRight)
-                        || !self.paused
-                    {
-                        let prev = self.tm.tape_position;
-                        self.tm.step();
-                        self.offset = self.tm.tape_position as f32 - prev as f32;
-                        ctx.clear_animations();
-                        ctx.animate_value_with_time(
-                            Id::new("offset"),
-                            self.offset,
-                            self.tape_anim_speed,
-                        );
                     }
-
-                    let stroke = Stroke::new(STROKE_WIDTH, Color32::BLACK);
-                    let rounding = Rounding::same(10f32);
-                    let size = Vec2::new(self.tape_rect_size, self.tape_rect_size);
-                    let center = ui.clip_rect().center();
-                    let pos = center + Vec2::new((self.offset as f32) * size.x, 0.0);
-                    let len = self.tm.tape_position;
-
-                    for i in 0..(self.tm.tape.len()) {
-                        let position = Pos2::new(pos.x + (i as f32 - len as f32) * size.x, pos.y);
-                        let rect = Rect::from_center_size(position, size);
-                        ui.painter()
-                            .rect_filled(rect, rounding, Color32::LIGHT_BLUE);
-                        ui.painter().rect_stroke(rect, rounding, stroke);
-                        ui.painter().text(
-                            position,
-                            Align2::CENTER_CENTER,
-                            if self.tm.tape[i] { "1" } else { "0" },
-                            self.font_id.clone(),
-                            Color32::BLACK,
-                        );
-                    }
-
-                    let tri_color = Color32::from_rgb(148, 73, 141);
-                    let tri_stroke_wid: f32 = 10.0;
-                    let tri_stroke = Stroke::new(tri_stroke_wid, tri_color);
-                    let tri_size: f32 = 100.0;
-                    let c1: Pos2 = center + Vec2::new(tri_size / 1.5, tri_size);
-                    let c2: Pos2 = center + Vec2::new(-tri_size / 1.5, tri_size);
-                    let c3: Pos2 = center + Vec2::new(0.0, self.tape_rect_size / 3.0);
-
-                    ui.painter().line_segment([c2, c3], tri_stroke);
-                    ui.painter().line_segment([c3, c1], tri_stroke);
-                    ui.painter()
-                        .circle_filled(c3, tri_stroke_wid / 2.0, tri_color);
-
-                    let r1: Pos2 = c1 + Vec2::new(tri_stroke_wid / 3.64, -tri_stroke_wid / 1.25);
-                    let r2: Pos2 = c2 + Vec2::new(-tri_stroke_wid / 3.64, -tri_stroke_wid / 1.25);
-                    let r3: Pos2 = r1 + Vec2::new(0.0, 75.0);
-                    let r4: Pos2 = r2 + Vec2::new(0.0, 75.0);
-
-                    ui.painter().rect_filled(
-                        Rect::from_points(&[r1, r2, r3, r4]),
-                        Rounding::none(),
-                        tri_color,
-                    );
-                    ui.painter().text(
-                        center + Vec2::new(0.0, tri_size + 25.0),
-                        Align2::CENTER_CENTER,
-                        &self.tm.current_state,
-                        self.font_id.clone(),
-                        Color32::BLACK,
-                    );
+                    ui.horizontal_centered(|ui| {
+                        ui.add(self.tm.clone());
+                    });
                 });
-
-                //horiz.code_editor(&mut self.tm.code);
             });
         });
 
