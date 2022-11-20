@@ -46,7 +46,7 @@ fn main() {
                         .unwrap_or(std::ffi::OsStr::new("User input"))
                 ),
                 options,
-                Box::new(|_cc| Box::new(MyApp::new(tm))),
+                Box::new(|cc| Box::new(MyApp::new(tm, cc))),
             );
         } else {
             run_machine(tm);

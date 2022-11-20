@@ -15,6 +15,7 @@ pub struct TuringMachine {
     pub current_state: String,
     pub tape_position: usize,
     pub tape: Vec<bool>,
+    pub code: String,
 }
 
 impl TuringMachine {
@@ -96,6 +97,7 @@ impl TuringMachine {
             current_state,
             tape_position,
             tape,
+            code: String::from(code),
         }
     }
 
