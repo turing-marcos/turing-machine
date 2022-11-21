@@ -91,15 +91,14 @@ impl eframe::App for MyApp {
                             Some(file) => {
                                 let unparsed_file =
                                     std::fs::read_to_string(&file[0]).expect("cannot read file");
-                                let tm = TuringMachine::new(&unparsed_file);
-                                self.tm = TuringWidget::new(tm);
+                                self.tm = self.tm.restart(&unparsed_file);
                                 self.code = unparsed_file;
                             }
                             None => {}
                         }
                     }
                     if ui.button("Compile and run code").clicked() {
-                        self.tm = TuringWidget::new(TuringMachine::new(&self.code));
+                        self.tm = self.tm.restart(&self.code);
                     }
 
                     egui::ScrollArea::vertical().show(ui, |my_ui: &mut Ui| {

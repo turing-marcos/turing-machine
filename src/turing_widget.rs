@@ -32,6 +32,19 @@ impl TuringWidget {
         }
     }
 
+    pub fn restart(&self, code: &str) -> Self {
+        Self {
+            stroke_width: STROKE_WIDTH,
+            offset: 0.0,
+            tape_rect_size: self.tape_rect_size,
+            tape_anim_speed: self.tape_anim_speed,
+            font_id: self.font_id.clone(),
+            paused: self.paused,
+            left: self.left,
+            tm: TuringMachine::new(code),
+        }
+    }
+
     pub fn step(&mut self) -> f32 {
         let prev = self.tm.tape_position;
         self.tm.step();
@@ -60,7 +73,7 @@ impl Widget for TuringWidget {
             let size = Vec2::new(self.tape_rect_size, self.tape_rect_size);
             let center = Pos2::new(
                 self.left + ui.available_width() / 2.0,
-                ui.available_height() / 2.0,
+                ui.available_height() / 2.0 + self.tape_rect_size/2.0 - 50.0,
             );
 
             let pos = center + Vec2::new((self.offset as f32) * size.x, 0.0);
