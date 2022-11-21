@@ -52,9 +52,12 @@ impl MyApp {
                     );
                     return true;
                 }
-            } else if (ui.add_enabled(self.tm.paused, |ui: &mut Ui| ui.button("Step")).clicked()
+            } else if (ui
+                .add_enabled(self.tm.paused, |ui: &mut Ui| ui.button("Step"))
+                .clicked()
                 || ui.input().key_pressed(egui::Key::ArrowRight)
-                || !self.tm.paused) && !editor_focused
+                || !self.tm.paused)
+                && !editor_focused
             {
                 ctx.clear_animations();
 
@@ -65,25 +68,25 @@ impl MyApp {
             } else {
                 return false;
             }
-        }).inner
+        })
+        .inner
     }
 }
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |main_panel| {
+            ctx.set_debug_on_hover(true);
             let mut editor_focused = false;
             main_panel.horizontal_top(|horiz| {
                 horiz.vertical(|my_ui| {
-                    my_ui.allocate_at_least(
-                        egui::Vec2::new(300.0, 0.0), //ui.available_height()),
-                        egui::Sense::click_and_drag(),
-                    );
-
-                    editor_focused = my_ui.code_editor(&mut self.code).has_focus(); //egui::Vec2::new(500.0, my_ui.available_height()), editor);
-                    if my_ui.button("Compile and run code").clicked() {
-                        self.tm = TuringWidget::new(TuringMachine::new(&self.code));
-                    }
+                    egui::ScrollArea::vertical().show(my_ui, |my_ui: &mut Ui| {
+                        let editor = my_ui.code_editor(&mut self.code);
+                        editor_focused = editor.has_focus(); //egui::Vec2::new(500.0, my_ui.available_height()), editor);
+                        if my_ui.button("Compile and run code").clicked() {
+                            self.tm = TuringWidget::new(TuringMachine::new(&self.code));
+                        }
+                    });
                 });
 
                 horiz.vertical_centered(|ui| {
@@ -104,7 +107,9 @@ impl eframe::App for MyApp {
                         ui.label(
                     "The application is paused. To unpause it, press the spacebar or this button:",
                 );
-                        if (ui.button("Resume").clicked() || ui.input().key_pressed(egui::Key::Space)) && !editor_focused
+                        if (ui.button("Resume").clicked()
+                            || ui.input().key_pressed(egui::Key::Space))
+                            && !editor_focused
                         {
                             self.tm.paused = false;
                         }
@@ -112,7 +117,9 @@ impl eframe::App for MyApp {
                         ui.label(
                     "The application is unpaused. To pause it, press the spacebar or this button:",
                 );
-                        if (ui.button("Pause").clicked() || ui.input().key_pressed(egui::Key::Space)) && !editor_focused
+                        if (ui.button("Pause").clicked()
+                            || ui.input().key_pressed(egui::Key::Space))
+                            && !editor_focused
                         {
                             self.tm.paused = true;
                         }
@@ -121,9 +128,12 @@ impl eframe::App for MyApp {
                     if self.process_turing_controls(ui, &ctx, editor_focused) {
                         ctx.request_repaint();
                     }
-                    ui.horizontal_centered(|ui| {
-                        ui.add(self.tm.clone());
-                    });
+
+                    self.tm.center = ui.available_width() / 2.0;
+
+                    //ui.horizontal(|ui| {
+                    ui.add(self.tm.clone());
+                    //});
                 });
             });
         });
