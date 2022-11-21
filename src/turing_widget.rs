@@ -15,11 +15,20 @@ pub struct TuringWidget {
     pub paused: bool,
     pub tape_anim_speed: f32,
     pub left: f32,
+    tri_color: Color32,
+    tri_stroke_wid: f32,
+    tri_stroke: Stroke,
+    tri_size: f32,
     tm: TuringMachine,
 }
 
 impl TuringWidget {
     pub fn new(tm: TuringMachine) -> Self {
+        let tri_color = Color32::from_rgb(148, 73, 141);
+        let tri_stroke_wid: f32 = 10.0;
+        let tri_stroke = Stroke::new(tri_stroke_wid, tri_color);
+        let tri_size: f32 = 100.0;
+
         Self {
             stroke_width: STROKE_WIDTH,
             offset: 0.0,
@@ -28,6 +37,10 @@ impl TuringWidget {
             font_id: FontId::new(30f32, FontFamily::Monospace),
             paused: true,
             left: 300.0,
+            tri_color,
+            tri_stroke_wid,
+            tri_stroke,
+            tri_size,
             tm,
         }
     }
@@ -41,6 +54,10 @@ impl TuringWidget {
             font_id: self.font_id.clone(),
             paused: self.paused,
             left: self.left,
+            tri_color: self.tri_color,
+            tri_stroke_wid: self.tri_stroke_wid,
+            tri_stroke: self.tri_stroke,
+            tri_size: self.tri_size,
             tm: TuringMachine::new(code),
         }
     }
@@ -63,17 +80,13 @@ impl TuringWidget {
 
 impl Widget for TuringWidget {
     fn ui(mut self, ui: &mut eframe::egui::Ui) -> eframe::egui::Response {
-        ui.painter().ctx().move_to_top(egui::LayerId::new(
-            egui::Order::Background,
-            egui::Id::new("main"),
-        ));
         if ui.is_rect_visible(ui.cursor()) {
             let stroke = Stroke::new(self.stroke_width, Color32::BLACK);
             let rounding = Rounding::same(10f32);
             let size = Vec2::new(self.tape_rect_size, self.tape_rect_size);
             let center = Pos2::new(
                 self.left + ui.available_width() / 2.0,
-                ui.available_height() / 2.0 + self.tape_rect_size/2.0 - 50.0,
+                ui.available_height() / 2.0 + self.tape_rect_size / 2.0 - 50.0,
             );
 
             let pos = center + Vec2::new((self.offset as f32) * size.x, 0.0);
@@ -104,25 +117,28 @@ impl Widget for TuringWidget {
                 }
             }
 
-            let tri_color = Color32::from_rgb(148, 73, 141);
-            let tri_stroke_wid: f32 = 10.0;
-            let tri_stroke = Stroke::new(tri_stroke_wid, tri_color);
-            let tri_size: f32 = 100.0;
-
-            let c1: Pos2 = center + Vec2::new(tri_size / 1.75 - tri_stroke_wid * 2.0, tri_size);
-            let c2: Pos2 = center + Vec2::new(-tri_size / 1.75 + tri_stroke_wid * 2.0, tri_size);
+            let c1: Pos2 = center
+                + Vec2::new(
+                    self.tri_size / 1.75 - self.tri_stroke_wid * 2.0,
+                    self.tri_size,
+                );
+            let c2: Pos2 = center
+                + Vec2::new(
+                    -self.tri_size / 1.75 + self.tri_stroke_wid * 2.0,
+                    self.tri_size,
+                );
             let c3: Pos2 = center + Vec2::new(0.0, self.tape_rect_size / 3.0);
 
-            let circle_rad = tri_size / 2.0;
-            let circle_center = center + Vec2::new(0.0, tri_size + 25.0);
+            let circle_rad = self.tri_size / 2.0;
+            let circle_center = center + Vec2::new(0.0, self.tri_size + 25.0);
 
-            ui.painter().line_segment([c2, c3], tri_stroke);
-            ui.painter().line_segment([c3, c1], tri_stroke);
+            ui.painter().line_segment([c2, c3], self.tri_stroke);
+            ui.painter().line_segment([c3, c1], self.tri_stroke);
             ui.painter()
-                .circle_filled(c3, tri_stroke_wid / 2.0, tri_color);
+                .circle_filled(c3, self.tri_stroke_wid / 2.0, self.tri_color);
 
             ui.painter()
-                .circle_filled(circle_center, circle_rad, tri_color);
+                .circle_filled(circle_center, circle_rad, self.tri_color);
             ui.painter().text(
                 circle_center,
                 Align2::CENTER_CENTER,
@@ -137,7 +153,7 @@ impl Widget for TuringWidget {
             };
 
             ui.painter().text(
-                center + Vec2::new(0.0, tri_size + 100.0),
+                center + Vec2::new(0.0, self.tri_size + 100.0),
                 Align2::CENTER_CENTER,
                 &ins,
                 self.font_id.clone(),
@@ -146,7 +162,7 @@ impl Widget for TuringWidget {
 
             if self.tm.finished() {
                 ui.painter().text(
-                    center + Vec2::new(0.0, tri_size + 150.0),
+                    center + Vec2::new(0.0, self.tri_size + 150.0),
                     Align2::CENTER_CENTER,
                     "The machine is in a final state",
                     self.font_id.clone(),
