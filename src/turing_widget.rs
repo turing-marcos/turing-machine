@@ -49,7 +49,7 @@ impl TuringWidget {
 }
 
 impl Widget for TuringWidget {
-    fn ui(self, ui: &mut eframe::egui::Ui) -> eframe::egui::Response {
+    fn ui(mut self, ui: &mut eframe::egui::Ui) -> eframe::egui::Response {
         ui.painter().ctx().move_to_top(egui::LayerId::new(
             egui::Order::Background,
             egui::Id::new("main"),
@@ -130,6 +130,17 @@ impl Widget for TuringWidget {
                 self.font_id.clone(),
                 Color32::GRAY,
             );
+
+            if self.tm.finished() {
+                ui.painter().text(
+                    center + Vec2::new(0.0, tri_size + 150.0),
+                    Align2::CENTER_CENTER,
+                    "The machine is in a final state",
+                    self.font_id.clone(),
+                    Color32::LIGHT_GREEN,
+                );
+                self.paused = true;
+            }
         }
         ui.interact(
             ui.cursor(),
