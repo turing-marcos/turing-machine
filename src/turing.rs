@@ -15,6 +15,7 @@ pub struct TuringMachine {
     pub current_state: String,
     pub tape_position: usize,
     pub tape: Vec<bool>,
+    pub code: String,
 }
 
 impl TuringMachine {
@@ -96,6 +97,7 @@ impl TuringMachine {
             current_state,
             tape_position,
             tape,
+            code: String::from(code),
         }
     }
 
@@ -139,6 +141,11 @@ impl TuringMachine {
         self.current_state = instruction.to_state.clone();
     }
 
+    pub fn current_instruction(&self) -> Option<&TuringInstruction> {
+        self.instructions
+            .get(&(self.current_state.clone(), self.tape[self.tape_position]))
+    }
+
     pub fn finished(&self) -> bool {
         return self.final_states.contains(&self.current_state);
     }
@@ -158,5 +165,9 @@ impl TuringMachine {
         }
 
         format!("{}\n{}", tmp1, tmp2)
+    }
+
+    pub fn tape_value(&self) -> u32 {
+        self.tape.iter().map(|v| if *v { 1 } else { 0 }).sum()
     }
 }

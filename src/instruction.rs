@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 use crate::Rule;
 use pest::iterators::Pairs;
@@ -22,6 +22,16 @@ impl std::str::FromStr for Movement {
     }
 }
 
+impl Display for Movement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Movement::RIGHT => write!(f, "R"),
+            Movement::LEFT => write!(f, "L"),
+            Movement::HALT => write!(f, "H"),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct TuringInstruction {
     pub from_state: String,
@@ -29,6 +39,20 @@ pub struct TuringInstruction {
     pub to_value: bool,
     pub movement: Movement,
     pub to_state: String,
+}
+
+impl Display for TuringInstruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "({}, {}, {}, {}, {})",
+            self.from_state,
+            if self.from_value { "1" } else { "0" },
+            if self.to_value { "1" } else { "0" },
+            self.movement,
+            self.to_state
+        )
+    }
 }
 
 impl TuringInstruction {
