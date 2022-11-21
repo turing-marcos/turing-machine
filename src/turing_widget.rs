@@ -1,5 +1,4 @@
-use eframe::egui::widgets::Widget;
-use eframe::egui::{self, Response, Sense, Ui, WidgetInfo, WidgetType};
+use eframe::egui::{widgets::Widget, self};
 use eframe::emath::Align2;
 use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, Vec2};
 
@@ -15,7 +14,6 @@ pub struct TuringWidget {
     pub offset: f32,
     pub paused: bool,
     pub tape_anim_speed: f32,
-    pub center: f32,
     tm: TuringMachine,
 }
 
@@ -28,31 +26,8 @@ impl TuringWidget {
             tape_anim_speed: 1.0,
             font_id: FontId::new(30f32, FontFamily::Monospace),
             paused: true,
-            center: 500.0,
             tm,
         }
-    }
-
-    fn layout_in_ui(&self, ui: &mut Ui) -> Response {
-        ui.allocate_rect(
-            Rect::from_center_size(
-                Pos2::new(ui.available_width() / 2.0, ui.available_height() / 2.0),
-                Vec2::new(ui.available_width(), self.tape_rect_size * 2.0 + 100.0),
-            ),
-            Sense::focusable_noninteractive(),
-        )
-    }
-
-    fn layout_center(&self, ui: &mut Ui) -> Pos2 {
-        let big_size = Vec2::new(
-            self.tape_rect_size * self.tm.tape.len() as f32,
-            self.tape_rect_size * 2.0 + 200.0,
-        );
-        let (rect, _response) = ui.allocate_at_least(big_size, Sense::focusable_noninteractive());
-        ui.layout()
-            .align_size_within_rect(big_size, rect.shrink2(ui.spacing().button_padding))
-            .center()
-            - Vec2::new(rect.width() * 2.0, 0.0)
     }
 
     pub fn step(&mut self) -> f32 {
@@ -73,46 +48,41 @@ impl TuringWidget {
 
 impl Widget for TuringWidget {
     fn ui(self, ui: &mut eframe::egui::Ui) -> eframe::egui::Response {
-        // let response = self.layout_in_ui(ui);
-        // response.widget_info(|| WidgetInfo::labeled(WidgetType::Label, "Turing Machine"));
-
+        ui.painter().ctx().move_to_top(egui::LayerId::new(
+            egui::Order::Background,
+            egui::Id::new("main"),
+        ));
         if ui.is_rect_visible(ui.cursor()) {
             let stroke = Stroke::new(self.stroke_width, Color32::BLACK);
             let rounding = Rounding::same(10f32);
             let size = Vec2::new(self.tape_rect_size, self.tape_rect_size);
-            //let center = self.layout_center(ui) + Vec2::new(250.0, 0.0);
-            let center = Pos2::new(300.0 + ui.available_width()/2.0, ui.available_height()/2.0);//self.center, ui.available_height() / 2.0 + self.tape_rect_size * 2.0 + 200.0,
+            let center = Pos2::new(
+                300.0 + ui.available_width() / 2.0,
+                ui.available_height() / 2.0,
+            );
 
             let pos = center + Vec2::new((self.offset as f32) * size.x, 0.0);
 
-            ui.painter().rect_stroke(
-                Rect::from_center_size(
-                    center,
-                    Vec2::new(
-                        self.tape_rect_size * self.tm.tape.len() as f32,
-                        self.tape_rect_size + 200.0,
-                    ),
-                ),
-                rounding,
-                stroke,
-            );
-
-            let len = self.tm.tape_position;
-
             for i in 0..(self.tm.tape.len()) {
-                let position = Pos2::new(pos.x + (i as f32 - len as f32) * size.x, pos.y);
-                let rect = Rect::from_center_size(position, size);
-                if ui.is_rect_visible(rect) && rect.left() > 250.0 + self.tape_rect_size / 2.0 {
+                let position = Pos2::new(pos.x + (i as f32 - self.tm.tape_position as f32) * size.x, pos.y);
+                let mut rect = Rect::from_center_size(position, size);
+                if ui.is_rect_visible(rect) {
+                    if rect.min.x < 300.0 {
+                        rect.set_left(300.0);
+                    }
                     ui.painter()
                         .rect_filled(rect, rounding, Color32::LIGHT_BLUE);
                     ui.painter().rect_stroke(rect, rounding, stroke);
-                    ui.painter().text(
-                        position,
-                        Align2::CENTER_CENTER,
-                        if self.tm.tape[i] { "1" } else { "0" },
-                        self.font_id.clone(),
-                        Color32::BLACK,
-                    );
+
+                    if position.x > 300.0 {
+                        ui.painter().text(
+                            position,
+                            Align2::CENTER_CENTER,
+                            if self.tm.tape[i] { "1" } else { "0" },
+                            self.font_id.clone(),
+                            Color32::BLACK,
+                        );
+                    }
                 }
             }
 

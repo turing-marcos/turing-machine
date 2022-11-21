@@ -76,13 +76,12 @@ impl MyApp {
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |main_panel| {
-            ctx.set_debug_on_hover(true);
             let mut editor_focused = false;
             main_panel.horizontal_top(|horiz| {
                 horiz.vertical(|my_ui| {
                     egui::ScrollArea::vertical().show(my_ui, |my_ui: &mut Ui| {
                         let editor = my_ui.code_editor(&mut self.code);
-                        editor_focused = editor.has_focus(); //egui::Vec2::new(500.0, my_ui.available_height()), editor);
+                        editor_focused = editor.has_focus(); 
                         if my_ui.button("Compile and run code").clicked() {
                             self.tm = TuringWidget::new(TuringMachine::new(&self.code));
                         }
@@ -129,18 +128,9 @@ impl eframe::App for MyApp {
                         ctx.request_repaint();
                     }
 
-                    self.tm.center = ui.available_width() / 2.0;
-
-                    //ui.horizontal(|ui| {
                     ui.add(self.tm.clone());
-                    //});
                 });
             });
         });
-
-        // Collect dropped files:
-        // if !ctx.input().raw.dropped_files.is_empty() {
-        //     self.dropped_files = ctx.input().raw.dropped_files.clone();
-        // }
     }
 }
