@@ -31,32 +31,49 @@ fn main() {
     let args = Cli::parse();
 
     if let Some(file) = args.file {
-        let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
-        let tm = TuringMachine::new(&unparsed_file);
-
         if !args.cli {
-            let options = eframe::NativeOptions {
-                drag_and_drop_support: true,
-                ..Default::default()
-            };
-            eframe::run_native(
-                &format!(
-                    "Turing Machine: {:?}",
-                    file.file_name()
-                        .unwrap_or(std::ffi::OsStr::new("User input"))
-                ),
-                options,
-                Box::new(|cc| Box::new(MyApp::new(tm, cc))),
-            );
+            run_machine_gui(file);
         } else {
-            run_machine(tm);
+            run_machine_cli(file);
         }
     } else {
-        todo!()
+        let path = std::env::current_dir().unwrap();
+
+        let res = rfd::FileDialog::new()
+            .add_filter("TuringMachine", &["tm"])
+            .set_directory(&path)
+            .pick_files();
+
+        match res {
+            Some(file) => run_machine_gui(file[0].clone()),
+            None => panic!("No file was chosen"),
+        };
     }
 }
 
-fn run_machine(mut tm: TuringMachine) {
+fn run_machine_gui(file: PathBuf) {
+    let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
+    let tm = TuringMachine::new(&unparsed_file);
+
+    let options = eframe::NativeOptions {
+        drag_and_drop_support: true,
+        ..Default::default()
+    };
+    eframe::run_native(
+        &format!(
+            "Turing Machine: {:?}",
+            file.file_name()
+                .unwrap_or(std::ffi::OsStr::new("User input"))
+        ),
+        options,
+        Box::new(|cc| Box::new(MyApp::new(tm, cc))),
+    );
+}
+
+fn run_machine_cli(file: PathBuf) {
+    let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
+    let mut tm = TuringMachine::new(&unparsed_file);
+
     println!("{}", tm.to_string());
     let mut input = String::new();
 

@@ -78,13 +78,33 @@ impl eframe::App for MyApp {
         let mut editor_focused = false;
         self.tm.left = egui::SidePanel::left("left")
             .show(ctx, |ui| {
+                if ui.button("Open file").clicked() {
+                    let path = std::env::current_dir().unwrap();
+
+                    let res = rfd::FileDialog::new()
+                        .add_filter("TuringMachine", &["tm"])
+                        .set_directory(&path)
+                        .pick_files();
+
+                    match res {
+                        Some(file) => {
+                            let unparsed_file =
+                                std::fs::read_to_string(&file[0]).expect("cannot read file");
+                            let tm = TuringMachine::new(&unparsed_file);
+                            self.tm = TuringWidget::new(tm);
+                            self.code = unparsed_file;
+                        }
+                        None => {}
+                    }
+                }
+
                 egui::ScrollArea::vertical().show(ui, |my_ui: &mut Ui| {
                     let editor = my_ui.code_editor(&mut self.code);
                     editor_focused = editor.has_focus();
-                    if my_ui.button("Compile and run code").clicked() {
-                        self.tm = TuringWidget::new(TuringMachine::new(&self.code));
-                    }
                 });
+                if ui.button("Compile and run code").clicked() {
+                    self.tm = TuringWidget::new(TuringMachine::new(&self.code));
+                }
             })
             .response
             .rect
