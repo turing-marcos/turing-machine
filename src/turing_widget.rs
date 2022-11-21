@@ -1,4 +1,4 @@
-use eframe::egui::{widgets::Widget, self};
+use eframe::egui::{self, widgets::Widget};
 use eframe::emath::Align2;
 use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, Vec2};
 
@@ -64,7 +64,10 @@ impl Widget for TuringWidget {
             let pos = center + Vec2::new((self.offset as f32) * size.x, 0.0);
 
             for i in 0..(self.tm.tape.len()) {
-                let position = Pos2::new(pos.x + (i as f32 - self.tm.tape_position as f32) * size.x, pos.y);
+                let position = Pos2::new(
+                    pos.x + (i as f32 - self.tm.tape_position as f32) * size.x,
+                    pos.y,
+                );
                 let mut rect = Rect::from_center_size(position, size);
                 if ui.is_rect_visible(rect) {
                     if rect.min.x < 300.0 {
@@ -115,6 +118,19 @@ impl Widget for TuringWidget {
                 &self.tm.current_state,
                 self.font_id.clone(),
                 Color32::BLACK,
+            );
+
+            let ins = match self.tm.current_instruction() {
+                Some(txt) => format!("{}", txt),
+                None => String::from("ERROR: No instruction matches this situation!"),
+            };
+
+            ui.painter().text(
+                center + Vec2::new(0.0, tri_size + 100.0),
+                Align2::CENTER_CENTER,
+                &ins,
+                self.font_id.clone(),
+                Color32::GRAY,
             );
         }
         ui.interact(

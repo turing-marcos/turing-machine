@@ -81,7 +81,7 @@ impl eframe::App for MyApp {
                 horiz.vertical(|my_ui| {
                     egui::ScrollArea::vertical().show(my_ui, |my_ui: &mut Ui| {
                         let editor = my_ui.code_editor(&mut self.code);
-                        editor_focused = editor.has_focus(); 
+                        editor_focused = editor.has_focus();
                         if my_ui.button("Compile and run code").clicked() {
                             self.tm = TuringWidget::new(TuringMachine::new(&self.code));
                         }

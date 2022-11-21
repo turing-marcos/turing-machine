@@ -141,6 +141,11 @@ impl TuringMachine {
         self.current_state = instruction.to_state.clone();
     }
 
+    pub fn current_instruction(&self) -> Option<&TuringInstruction> {
+        self.instructions
+            .get(&(self.current_state.clone(), self.tape[self.tape_position]))
+    }
+
     pub fn finished(&self) -> bool {
         return self.final_states.contains(&self.current_state);
     }
