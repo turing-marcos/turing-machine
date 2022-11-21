@@ -65,4 +65,13 @@ impl TuringInstruction {
             to_state: String::from(code.next().unwrap().as_span().as_str()),
         }
     }
+    pub fn halt(index: (String, bool)) -> Self {
+        Self {
+            from_state: index.0.clone(),
+            from_value: index.1,
+            to_value: index.1,
+            movement: Movement::HALT,
+            to_state: index.0,
+        }
+    }
 }
