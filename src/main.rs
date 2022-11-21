@@ -52,7 +52,7 @@ fn main() {
             run_machine(tm);
         }
     } else {
-        panic!("No program was provided");
+        todo!()
     }
 }
 

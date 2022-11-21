@@ -14,6 +14,7 @@ pub struct TuringWidget {
     pub offset: f32,
     pub paused: bool,
     pub tape_anim_speed: f32,
+    pub left: f32,
     tm: TuringMachine,
 }
 
@@ -26,6 +27,7 @@ impl TuringWidget {
             tape_anim_speed: 1.0,
             font_id: FontId::new(30f32, FontFamily::Monospace),
             paused: true,
+            left: 300.0,
             tm,
         }
     }
@@ -57,7 +59,7 @@ impl Widget for TuringWidget {
             let rounding = Rounding::same(10f32);
             let size = Vec2::new(self.tape_rect_size, self.tape_rect_size);
             let center = Pos2::new(
-                300.0 + ui.available_width() / 2.0,
+                self.left + ui.available_width() / 2.0,
                 ui.available_height() / 2.0,
             );
 
@@ -70,14 +72,14 @@ impl Widget for TuringWidget {
                 );
                 let mut rect = Rect::from_center_size(position, size);
                 if ui.is_rect_visible(rect) {
-                    if rect.min.x < 300.0 {
-                        rect.set_left(300.0);
+                    if rect.min.x < self.left {
+                        rect.set_left(self.left);
                     }
                     ui.painter()
                         .rect_filled(rect, rounding, Color32::LIGHT_BLUE);
                     ui.painter().rect_stroke(rect, rounding, stroke);
 
-                    if position.x > 300.0 {
+                    if position.x > self.left {
                         ui.painter().text(
                             position,
                             Align2::CENTER_CENTER,
@@ -94,11 +96,11 @@ impl Widget for TuringWidget {
             let tri_stroke = Stroke::new(tri_stroke_wid, tri_color);
             let tri_size: f32 = 100.0;
 
-            let c1: Pos2 = center + Vec2::new(tri_size / 1.75 - tri_stroke_wid*2.0 , tri_size);
-            let c2: Pos2 = center + Vec2::new(-tri_size / 1.75 + tri_stroke_wid*2.0 , tri_size);
+            let c1: Pos2 = center + Vec2::new(tri_size / 1.75 - tri_stroke_wid * 2.0, tri_size);
+            let c2: Pos2 = center + Vec2::new(-tri_size / 1.75 + tri_stroke_wid * 2.0, tri_size);
             let c3: Pos2 = center + Vec2::new(0.0, self.tape_rect_size / 3.0);
 
-            let circle_rad = tri_size/2.0;
+            let circle_rad = tri_size / 2.0;
             let circle_center = center + Vec2::new(0.0, tri_size + 25.0);
 
             ui.painter().line_segment([c2, c3], tri_stroke);
@@ -106,11 +108,8 @@ impl Widget for TuringWidget {
             ui.painter()
                 .circle_filled(c3, tri_stroke_wid / 2.0, tri_color);
 
-            ui.painter().circle_filled(
-                circle_center,
-                circle_rad,
-                tri_color,
-            );
+            ui.painter()
+                .circle_filled(circle_center, circle_rad, tri_color);
             ui.painter().text(
                 circle_center,
                 Align2::CENTER_CENTER,
