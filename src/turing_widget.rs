@@ -93,27 +93,26 @@ impl Widget for TuringWidget {
             let tri_stroke_wid: f32 = 10.0;
             let tri_stroke = Stroke::new(tri_stroke_wid, tri_color);
             let tri_size: f32 = 100.0;
-            let c1: Pos2 = center + Vec2::new(tri_size / 1.5, tri_size);
-            let c2: Pos2 = center + Vec2::new(-tri_size / 1.5, tri_size);
+
+            let c1: Pos2 = center + Vec2::new(tri_size / 1.75 - tri_stroke_wid*2.0 , tri_size);
+            let c2: Pos2 = center + Vec2::new(-tri_size / 1.75 + tri_stroke_wid*2.0 , tri_size);
             let c3: Pos2 = center + Vec2::new(0.0, self.tape_rect_size / 3.0);
+
+            let circle_rad = tri_size/2.0;
+            let circle_center = center + Vec2::new(0.0, tri_size + 25.0);
 
             ui.painter().line_segment([c2, c3], tri_stroke);
             ui.painter().line_segment([c3, c1], tri_stroke);
             ui.painter()
                 .circle_filled(c3, tri_stroke_wid / 2.0, tri_color);
 
-            let r1: Pos2 = c1 + Vec2::new(tri_stroke_wid / 3.64, -tri_stroke_wid / 1.25);
-            let r2: Pos2 = c2 + Vec2::new(-tri_stroke_wid / 3.64, -tri_stroke_wid / 1.25);
-            let r3: Pos2 = r1 + Vec2::new(0.0, 75.0);
-            let r4: Pos2 = r2 + Vec2::new(0.0, 75.0);
-
-            ui.painter().rect_filled(
-                Rect::from_points(&[r1, r2, r3, r4]),
-                Rounding::none(),
+            ui.painter().circle_filled(
+                circle_center,
+                circle_rad,
                 tri_color,
             );
             ui.painter().text(
-                center + Vec2::new(0.0, tri_size + 25.0),
+                circle_center,
                 Align2::CENTER_CENTER,
                 &self.tm.current_state,
                 self.font_id.clone(),
