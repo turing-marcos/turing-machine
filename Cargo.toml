@@ -11,3 +11,15 @@ pest = "2.4.1"
 pest_derive = "2.4.1"
 eframe = "^0.19"
 rfd = "0.10.0"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tracing-subscriber = "0.3"
+
+# web:
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1.6"
+tracing-wasm = "0.2"
+
+
+[profile.release]
+opt-level = 2 # fast and small wasm
