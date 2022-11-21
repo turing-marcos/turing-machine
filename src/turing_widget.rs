@@ -118,7 +118,7 @@ impl Widget for TuringWidget {
                 Color32::BLACK,
             );
 
-            let ins = match self.tm.current_instruction() {
+            let ins = match self.tm.get_current_instruction() {
                 Some(txt) => format!("{}", txt),
                 None => String::from("ERROR: No instruction matches this situation!"),
             };

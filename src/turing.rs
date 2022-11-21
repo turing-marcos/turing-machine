@@ -101,14 +101,37 @@ impl TuringMachine {
         }
     }
 
+    fn get_instruction(&self, index: (String, bool)) -> Option<TuringInstruction> {
+        match self.instructions.get(&index) {
+            Some(i) => Some(i.to_owned()),
+            None => {
+                if !self.final_states.contains(&self.current_state) {
+                    return None;
+                }
+
+                Some(TuringInstruction::halt(index))
+            }
+        }
+    }
+
+    pub fn get_current_instruction(&self) -> Option<TuringInstruction> {
+        let current_val: bool = self.tape[self.tape_position];
+        let index = (self.current_state.clone(), current_val);
+
+        self.get_instruction(index)
+    }
+
     pub fn step(&mut self) {
         let current_val: bool = self.tape[self.tape_position];
         let index = (self.current_state.clone(), current_val);
 
-        let Some(instruction) = self.instructions.get(&index) else {
-            panic!("No instruction given for state ({}, {})", self.current_state.clone(), current_val);
+        let Some(instruction) = self.get_instruction(index) else {
+            panic!(
+                "No instruction given for state ({}, {})",
+                self.current_state.clone(),
+                if current_val {"1"} else {"0"}
+            );
         };
-
         self.tape[self.tape_position] = instruction.to_value;
 
         match instruction.movement {
@@ -139,11 +162,6 @@ impl TuringMachine {
         }
 
         self.current_state = instruction.to_state.clone();
-    }
-
-    pub fn current_instruction(&self) -> Option<&TuringInstruction> {
-        self.instructions
-            .get(&(self.current_state.clone(), self.tape[self.tape_position]))
     }
 
     pub fn finished(&self) -> bool {
