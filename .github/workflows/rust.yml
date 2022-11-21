@@ -30,7 +30,11 @@ jobs:
 
   stable-build:
     runs-on: ubuntu-latest
+
     steps:
+      - name: Install dependencies
+        run: sudo apt-get install -y libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev
+        
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -62,6 +66,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: ['stable-build']
     steps:
+      - name: Install dependencies
+        run: sudo apt-get install -y libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev
+        
       - name: Restore cache
         uses: actions/cache@v2
         id: stable-cargo-build
@@ -93,6 +100,9 @@ jobs:
   nightly-build:
     runs-on: ubuntu-latest
     steps:
+      - name: Install dependencies
+        run: sudo apt-get install -y libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev
+        
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -124,6 +134,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: ['nightly-build']
     steps:
+      - name: Install dependencies
+        run: sudo apt-get install -y libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev
+        
       - name: Restore cache
         uses: actions/cache@v2
         id: nightly-cargo-build
