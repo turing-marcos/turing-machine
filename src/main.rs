@@ -51,12 +51,30 @@ fn main() {
     }
 }
 
+fn load_icon(path: &str) -> Option<eframe::IconData> {
+    let data = match std::fs::read(path) {
+        Ok(d) => d,
+        Err(e) => {
+            println!("{}", e);
+            return None;
+        }
+    };
+
+    Some(eframe::IconData {
+        rgba: data,
+        width: 32,
+        height: 32,
+    })
+}
+
 fn run_machine_gui(file: PathBuf) {
     let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
     let tm = TuringMachine::new(&unparsed_file);
 
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
+        hardware_acceleration: eframe::HardwareAcceleration::Preferred,
+        icon_data: load_icon("assets/icon.png"),
         ..Default::default()
     };
     eframe::run_native(

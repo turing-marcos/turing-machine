@@ -3,7 +3,6 @@
 use crate::{TuringMachine, TuringWidget};
 use eframe;
 use eframe::egui::{self, Id, Ui};
-// use rfd;
 
 pub struct MyApp {
     code: String,
@@ -11,7 +10,7 @@ pub struct MyApp {
 }
 
 impl MyApp {
-    pub fn new(tm: TuringMachine, _cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(tm: TuringMachine, cc: &eframe::CreationContext<'_>) -> Self {
         // Customize egui here with cc.egui_ctx.set_fonts and cc.egui_ctx.set_visuals.
         // Restore app state using cc.storage (requires the "persistence" feature).
         // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
@@ -24,6 +23,12 @@ impl MyApp {
         //     .or_default()
         //     .insert(0, String::from("Consolas"));
         // cc.egui_ctx.set_fonts(fonts);
+        let mut st = (*egui::Context::default().style()).clone();
+        st.override_font_id = Some(egui::FontId::monospace(14.0));
+        st.spacing.slider_width = 250.0;
+        st.spacing.button_padding = egui::Vec2::new(10.0, 5.0);
+        st.spacing.item_spacing = egui::Vec2::new(10.0, 10.0);
+        cc.egui_ctx.set_style(st);
 
         Self {
             code: String::from(&tm.code),
@@ -40,7 +45,6 @@ impl MyApp {
         ui.add_enabled_ui(!editor_focused, |ui| {
             if self.tm.offset != 0.0 {
                 ui.add_enabled(false, |ui: &mut Ui| ui.button("Step"));
-
                 if self.tm.offset.abs() < 0.01 {
                     self.tm.offset = 0.0;
                     return false;
@@ -113,45 +117,54 @@ impl eframe::App for MyApp {
         egui::CentralPanel::default().show(ctx, |main_panel| {
             main_panel.horizontal_top(|horiz| {
                 horiz.vertical_centered(|ui| {
-                    ui.add(
-                        egui::Slider::new(&mut self.tm.tape_rect_size, 20.0..=300.0)
-                            .text("Tape rectangle size"),
-                    );
-                    ui.add(
-                        egui::Slider::new(&mut self.tm.tape_anim_speed, 0.1..=2.0)
-                            .text("Tape animation speed (in seconds)"),
-                    );
+                    ui.vertical_centered_justified(|ui| {
+                        ui.add(
+                            egui::Slider::new(&mut self.tm.tape_rect_size, 20.0..=300.0)
+                                .suffix(" px")
+                                .text("Tape rectangle size"),
+                        );
+                        ui.add(
+                            egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
+                                .suffix(" seconds")
+                                .text("Tape animation speed"),
+                        );
+                    });
 
                     ui.separator();
 
+                    ui.spacing();
+                    ui.spacing();
+
                     ui.label(format!("Current output: {}", self.tm.tape_value()));
 
+                    ui.spacing();
+                    ui.spacing();
+
+                    ui.vertical_centered(|ui| {
+                    let mut text = "Pause";
                     if self.tm.paused {
                         ui.label(
-                    "The application is paused. To unpause it, press the spacebar or this button:",
-                );
-                        if (ui.button("Resume").clicked()
-                            || ui.input().key_pressed(egui::Key::Space))
-                            && !editor_focused
-                        {
-                            self.tm.paused = false;
-                        }
-                    } else {
+                    "The application is paused.\nTo unpause it, press the spacebar or this button:",
+                        );
+                        text = "Resume";
+                    }else{
                         ui.label(
-                    "The application is unpaused. To pause it, press the spacebar or this button:",
-                );
-                        if (ui.button("Pause").clicked()
+                            "The application is unpaused.\nTo pause it, press the spacebar or this button:",
+                        );
+                    }
+                        let b = ui.button(text);
+                        //b.ctx.set_style(style);
+                        if (b.clicked()
                             || ui.input().key_pressed(egui::Key::Space))
                             && !editor_focused
                         {
-                            self.tm.paused = true;
+                            self.tm.paused = !self.tm.paused;
                         }
-                    }
 
-                    if self.process_turing_controls(ui, &ctx, editor_focused) {
-                        ctx.request_repaint();
-                    }
-
+                        if self.process_turing_controls(ui, &ctx, editor_focused) {
+                            ctx.request_repaint();
+                        }
+                    });
                     ui.add(self.tm.clone());
                 });
             });

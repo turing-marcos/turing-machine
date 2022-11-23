@@ -72,6 +72,9 @@ impl TuringWidget {
     pub fn tape_value(&self) -> u32 {
         self.tm.tape_value()
     }
+    pub fn len(&self) -> usize {
+        self.tm.tape.len()
+    }
 
     pub fn code(&self) -> &str {
         &self.tm.code
@@ -86,7 +89,7 @@ impl Widget for TuringWidget {
             let size = Vec2::new(self.tape_rect_size, self.tape_rect_size);
             let center = Pos2::new(
                 self.left + ui.available_width() / 2.0,
-                ui.available_height() / 2.0 + self.tape_rect_size / 2.0 - 50.0,
+                ui.available_height() / 2.0 + self.tape_rect_size / 2.0 + 50.0,
             );
 
             let pos = center + Vec2::new((self.offset as f32) * size.x, 0.0);
@@ -171,6 +174,7 @@ impl Widget for TuringWidget {
                 self.paused = true;
             }
         }
+
         ui.interact(
             ui.cursor(),
             egui::Id::new("turingwidget"),
