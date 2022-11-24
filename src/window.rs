@@ -118,6 +118,11 @@ impl eframe::App for MyApp {
             main_panel.horizontal_top(|horiz| {
                 horiz.vertical_centered(|ui| {
                     ui.vertical_centered_justified(|ui| {
+                        if let Some(desc) = self.tm.description() {
+                            ui.label(egui::RichText::new(desc).color(egui::Color32::GOLD).size(20.0).underline());
+                            ui.separator();
+                        }
+
                         ui.add(
                             egui::Slider::new(&mut self.tm.tape_rect_size, 20.0..=300.0)
                                 .suffix(" px")

@@ -34,7 +34,7 @@ mod tests {
     #[test]
     fn parse_tape() {
         let test = "{[q0]111011};";
-        
+
         parses_to! {
             parser: TuringParser,
             input: test,
@@ -59,7 +59,6 @@ mod tests {
     fn parse_final_state() {
         let test = "F = {q2};";
 
-        
         parses_to! {
             parser: TuringParser,
             input: test,
@@ -75,7 +74,7 @@ mod tests {
     #[test]
     fn parse_instruction() {
         let test = "(q0, 1, 0, R, q1);";
-        
+
         parses_to! {
             parser: TuringParser,
             input: test,

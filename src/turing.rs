@@ -15,6 +15,7 @@ pub struct TuringMachine {
     pub current_state: String,
     pub tape_position: usize,
     pub tape: Vec<bool>,
+    pub description: Option<String>,
     pub code: String,
 }
 
@@ -25,38 +26,53 @@ impl TuringMachine {
         let mut current_state: String = String::new();
         let mut tape: Vec<bool> = Vec::new();
         let mut tape_position = 0;
+        let mut description: Option<String> = None;
 
         let file = TuringParser::parse(Rule::file, code)
-            .expect("unsuccessful parse") // unwrap the parse result
+            .expect("Could not parse the file") // unwrap the parse result
             .next()
             .unwrap(); // get and unwrap the `file` rule; never fails
 
         for record in file.into_inner() {
             match record.as_rule() {
-                Rule::description => println!("{}", record.into_inner().as_str()),
+                Rule::description => {
+                    description = Some(String::from(record.as_str().replace("///", "").trim()));
+                    println!("Found description: \"{:?}\"", description);
+                }
                 Rule::tape => {
-                    let mut tmp = record.into_inner();
-                    // FIXME: The state could not be the first item
-                    current_state = String::from(
-                        tmp.next()
-                            .unwrap()
-                            .as_str()
-                            .replace("[", "")
-                            .replace("]", ""),
+                    println!(
+                        "Entered tape rule: {}",
+                        record.clone().into_inner().as_str()
                     );
-                    tape = tmp
-                        .map(|v| v.as_span().as_str() == "1")
-                        .collect::<Vec<bool>>();
 
-                    // println!("Initial state: {}", current_state);
-                    // println!("Tape: {:?}", tape);
+                    for r in record.into_inner() {
+                        match r.as_rule() {
+                            Rule::value => {
+                                tape.push(r.as_str() == "1");
+                            }
+                            Rule::initial_state => {
+                                current_state =
+                                    r.into_inner().as_str().replace("[", "").replace("]", "");
+
+                                tape_position = tape.len();
+                            }
+                            _ => println!(
+                                "Unhandled: ({:?}, {})",
+                                r.as_rule(),
+                                r.into_inner().as_str()
+                            ),
+                        }
+                    }
+
+                    println!("Initial state: {}", current_state);
+                    println!("Tape: {:?}", tape);
                 }
                 Rule::final_state => {
                     final_states = record
                         .into_inner()
                         .map(|v| String::from(v.as_span().as_str()))
                         .collect();
-                    // println!("The final tape state is {:?}", final_states);
+                    println!("The final tape state is {:?}", final_states);
                 }
                 Rule::instruction => {
                     let tmp = TuringInstruction::from(record.into_inner());
@@ -65,16 +81,10 @@ impl TuringMachine {
                         tmp.clone(),
                     );
 
-                    // println!("Found instruction {:?}", tmp);
-                }
-                Rule::comment => {
-                    // println!("Found comment: {}", record.into_inner().as_str());
-                }
-                Rule::empty => {
-                    // println!("Empty stuff");
+                    println!("Found instruction {:?}", tmp);
                 }
                 Rule::EOI => {
-                    // println!("End of file");
+                    println!("End of file");
                 }
                 _ => {
                     println!("Unhandled: {}", record.into_inner().as_str());
@@ -97,6 +107,7 @@ impl TuringMachine {
             current_state,
             tape_position,
             tape,
+            description,
             code: String::from(code),
         }
     }

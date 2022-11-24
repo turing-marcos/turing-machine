@@ -37,7 +37,7 @@ fn main() {
             run_machine_cli(file);
         }
     } else {
-        let path = std::env::current_dir().unwrap();
+        let path = std::env::current_dir().unwrap_or_default();
 
         let res = rfd::FileDialog::new()
             .add_filter("TuringMachine", &["tm"])

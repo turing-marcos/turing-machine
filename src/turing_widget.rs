@@ -76,6 +76,10 @@ impl TuringWidget {
         self.tm.tape.len()
     }
 
+    pub fn description(&self) -> Option<String> {
+        self.tm.description.clone()
+    }
+
     pub fn code(&self) -> &str {
         &self.tm.code
     }
@@ -87,10 +91,7 @@ impl Widget for TuringWidget {
             let stroke = Stroke::new(self.stroke_width, Color32::BLACK);
             let rounding = Rounding::same(10f32);
             let size = Vec2::new(self.tape_rect_size, self.tape_rect_size);
-            let center = Pos2::new(
-                self.left + ui.available_width() / 2.0,
-                ui.available_height() / 2.0 + self.tape_rect_size / 2.0 + 50.0,
-            );
+            let center = ui.cursor().center_top() + Vec2::new(0.0, 100.0);
 
             let pos = center + Vec2::new((self.offset as f32) * size.x, 0.0);
 
