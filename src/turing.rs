@@ -28,10 +28,14 @@ impl TuringMachine {
         let mut tape_position = 0;
         let mut description: Option<String> = None;
 
-        let file = TuringParser::parse(Rule::file, code)
-            .expect("Could not parse the file") // unwrap the parse result
-            .next()
-            .unwrap(); // get and unwrap the `file` rule; never fails
+        let file = match TuringParser::parse(Rule::file, code) {
+            Ok(mut f) => f.next().unwrap(),
+            Err(e) => {
+                Self::handle_error(e);
+
+                std::process::exit(1);
+            }
+        };
 
         for record in file.into_inner() {
             match record.as_rule() {
@@ -110,6 +114,43 @@ impl TuringMachine {
             description,
             code: String::from(code),
         }
+    }
+
+    fn handle_error(e: pest::error::Error<Rule>) {
+        println!("I found an error while parsing the file!");
+
+        match e.clone().variant {
+            pest::error::ErrorVariant::ParsingError {
+                positives,
+                negatives,
+            } => println!("Expected {:?}, found {:?}", positives, negatives),
+            pest::error::ErrorVariant::CustomError { message } => println!("\t{}", message),
+        };
+
+        let mut cols = (0, 0);
+        match e.line_col {
+            pest::error::LineColLocation::Pos((line, col)) => {
+                println!("Line {}, column {}: ", line, col);
+                cols.0 = col;
+                cols.1 = col + 1;
+            }
+            pest::error::LineColLocation::Span((line1, col1), (line2, col2)) => {
+                println!("From line {}:{} to {}:{}. Found:", line1, col1, line2, col2);
+            }
+        };
+
+        println!("\t\"{}\"", e.line());
+        println!(
+            "\t {symb: >width0$: <width0$}{err:>width1$}{symb:>width2$}",
+            symb = "^",
+            err = "·",
+            width0 = cols.0 - 1,
+            width1 = cols.1 - cols.0,
+            width2 = e.line().len() - cols.1
+        );
+
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).unwrap_or_default();
     }
 
     fn get_instruction(&self, index: (String, bool)) -> Option<TuringInstruction> {
