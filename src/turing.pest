@@ -1,14 +1,14 @@
 WHITESPACE = _{ " " | "\t" | NEWLINE}
-COMMENT = _{ WHITESPACE? ~ "/"{2} ~ (LETTER | NUMBER | SPACE_SEPARATOR | PUNCTUATION | SYMBOL | WHITESPACE )+ ~ NEWLINE }
+COMMENT = _{ "/"{2} ~ (LETTER | NUMBER | SPACE_SEPARATOR | PUNCTUATION | SYMBOL | " " | "\t" )+ ~ NEWLINE }
 
 state = @{ASCII_ALPHA+ ~ ASCII_DIGIT*}
-initial_state = { "[" ~ state ~ "]"}
 value = { "0" | "1" }
 movement = { "R" | "L" | "H" | "N" }
-description = ${ "/"{3} ~ (LETTER | NUMBER | SPACE_SEPARATOR | PUNCTUATION | SYMBOL)+ ~ NEWLINE }
+description = @{ "/"{3} ~ (LETTER | NUMBER | SPACE_SEPARATOR | PUNCTUATION | SYMBOL | " " | "\t" )+ ~ NEWLINE }
 
-tape = ${ "{" ~ initial_state ~ value* ~ "}" ~ ";" }
+tape = { "{" ~ value* ~ "}" ~ ";" }
 final_state = { "F" ~ "=" ~ "{" ~ state ~ ("," ~ state)* ~ "}" ~ ";" }
+initial_state = { "I" ~ "=" ~ "{" ~ state ~ "}" ~ ";" }
 instruction = { ( "(" ~ state ~ "," ~ value ~ "," ~ value ~ "," ~ movement ~ "," ~ state ~ ")" ~ ";" )}
 
-file = { (SOI ~ description | SOI) ~ ( tape ~ final_state ~ instruction+) ~ EOI }
+file = { SOI ~ description? ~ tape ~ initial_state ~ final_state ~ instruction+ ~ EOI }

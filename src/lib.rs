@@ -33,24 +33,37 @@ mod tests {
 
     #[test]
     fn parse_tape() {
-        let test = "{[q0]111011};";
+        let test = "{111011};";
 
         parses_to! {
             parser: TuringParser,
             input: test,
             rule: Rule::tape,
             tokens: [
-                tape(0, 13, [
-                    initial_state(1, 5, [
-                        state(2, 4)
-                    ]),
+                tape(0, 9, [
+                    value(1, 2),
+                    value(2, 3),
+                    value(3, 4),
+                    value(4, 5),
                     value(5, 6),
                     value(6, 7),
-                    value(7, 8),
-                    value(8, 9),
-                    value(9, 10),
-                    value(10, 11),
                 ]),
+            ]
+        }
+    }
+
+    #[test]
+    fn parse_initial_state() {
+        let test = "I = {q0};";
+
+        parses_to! {
+            parser: TuringParser,
+            input: test,
+            rule: Rule::initial_state,
+            tokens: [
+                initial_state(0, 9, [
+                    state(5, 7)
+                ])
             ]
         }
     }
@@ -94,7 +107,13 @@ mod tests {
     #[test]
     fn parse_file() {
         let unparsed_file = fs::read_to_string("Examples/Example1.tm").expect("cannot read file");
-        let tm = TuringMachine::new(&unparsed_file);
+        let tm = match TuringMachine::new(&unparsed_file) {
+            Ok(t) => t,
+            Err(e) => {
+                TuringMachine::handle_error(e);
+                std::process::exit(1);
+            }
+        };
 
         assert_eq!(
             tm.to_string(),

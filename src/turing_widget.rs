@@ -45,8 +45,13 @@ impl TuringWidget {
         }
     }
 
-    pub fn restart(&self, code: &str) -> Self {
-        Self {
+    pub fn restart(&self, code: &str) -> Result<Self, pest::error::Error<crate::turing::Rule>> {
+        let tm = match TuringMachine::new(code) {
+            Ok(t) => t,
+            Err(e) => return Err(e),
+        };
+
+        Ok(Self {
             stroke_width: STROKE_WIDTH,
             offset: 0.0,
             tape_rect_size: self.tape_rect_size,
@@ -58,8 +63,8 @@ impl TuringWidget {
             tri_stroke_wid: self.tri_stroke_wid,
             tri_stroke: self.tri_stroke,
             tri_size: self.tri_size,
-            tm: TuringMachine::new(code),
-        }
+            tm,
+        })
     }
 
     pub fn step(&mut self) -> f32 {

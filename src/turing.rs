@@ -20,21 +20,16 @@ pub struct TuringMachine {
 }
 
 impl TuringMachine {
-    pub fn new(code: &str) -> Self {
+    pub fn new(code: &str) -> Result<Self, pest::error::Error<Rule>> {
         let mut instructions: HashMap<(String, bool), TuringInstruction> = HashMap::new();
         let mut final_states: Vec<String> = Vec::new();
         let mut current_state: String = String::new();
         let mut tape: Vec<bool> = Vec::new();
-        let mut tape_position = 0;
         let mut description: Option<String> = None;
 
         let file = match TuringParser::parse(Rule::file, code) {
             Ok(mut f) => f.next().unwrap(),
-            Err(e) => {
-                Self::handle_error(e);
-
-                std::process::exit(1);
-            }
+            Err(e) => return Err(e),
         };
 
         for record in file.into_inner() {
@@ -54,12 +49,6 @@ impl TuringMachine {
                             Rule::value => {
                                 tape.push(r.as_str() == "1");
                             }
-                            Rule::initial_state => {
-                                current_state =
-                                    r.into_inner().as_str().replace("[", "").replace("]", "");
-
-                                tape_position = tape.len();
-                            }
                             _ => println!(
                                 "Unhandled: ({:?}, {})",
                                 r.as_rule(),
@@ -70,6 +59,10 @@ impl TuringMachine {
 
                     println!("Initial state: {}", current_state);
                     println!("Tape: {:?}", tape);
+                }
+                Rule::initial_state => {
+                    current_state = String::from(record.into_inner().as_str());
+                    println!("The initial tape state is \"{}\"", current_state);
                 }
                 Rule::final_state => {
                     final_states = record
@@ -85,7 +78,7 @@ impl TuringMachine {
                         tmp.clone(),
                     );
 
-                    println!("Found instruction {:?}", tmp);
+                    println!("Found instruction {}", tmp);
                 }
                 Rule::EOI => {
                     println!("End of file");
@@ -96,16 +89,13 @@ impl TuringMachine {
             }
         }
 
+        let mut tape_position = 0;
         while tape_position <= 2 {
             tape.insert(0, false);
             tape_position += 1;
         }
 
-        while tape_position >= tape.len() - 3 {
-            tape.push(false);
-        }
-
-        Self {
+        Ok(Self {
             instructions,
             final_states,
             current_state,
@@ -113,10 +103,10 @@ impl TuringMachine {
             tape,
             description,
             code: String::from(code),
-        }
+        })
     }
 
-    fn handle_error(e: pest::error::Error<Rule>) {
+    pub fn handle_error(e: pest::error::Error<Rule>) {
         println!("I found an error while parsing the file!");
 
         match e.clone().variant {
@@ -140,14 +130,17 @@ impl TuringMachine {
         };
 
         println!("\t\"{}\"", e.line());
-        // println!(
-        //     "\t {symb: >width0$: <width0$}{err:>width1$}{symb:>width2$}",
-        //     symb = "^",
-        //     err = "·",
-        //     width0 = cols.0 - 1,
-        //     width1 = cols.1 - cols.0,
-        //     width2 = e.line().len() - cols.1
-        // );
+        println!(
+            "\t {: ^width1$}{:^^width2$}{: ^width3$}",
+            "^",
+            " ",
+            " ",
+            width1 = cols.0 - 1,
+            width2 = cols.1 - cols.0,
+            width3 = e.line().len() - cols.1
+        );
+
+        println!("\nPress enter to exit");
 
         let mut input = String::new();
         std::io::stdin().read_line(&mut input).unwrap_or_default();

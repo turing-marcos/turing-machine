@@ -5,10 +5,12 @@
 //			g(x,y)   if y>0
 
 // Input x=4, y=3
-{[p0]1111101111};
-// Input x=4, y=0
-//{[p0]1111101};
+{1111101111};
 
+// Input x=4, y=0
+//{1111101};
+
+I = {p0};
 F = {q2, pf};
 
 // Start with the initial state of M

@@ -69,7 +69,13 @@ fn load_icon(path: &str) -> Option<eframe::IconData> {
 
 fn run_machine_gui(file: PathBuf) {
     let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
-    let tm = TuringMachine::new(&unparsed_file);
+    let tm = match TuringMachine::new(&unparsed_file) {
+        Ok(t) => t,
+        Err(e) => {
+            TuringMachine::handle_error(e);
+            std::process::exit(1);
+        }
+    };
 
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
@@ -90,7 +96,13 @@ fn run_machine_gui(file: PathBuf) {
 
 fn run_machine_cli(file: PathBuf) {
     let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
-    let mut tm = TuringMachine::new(&unparsed_file);
+    let mut tm = match TuringMachine::new(&unparsed_file) {
+        Ok(t) => t,
+        Err(e) => {
+            TuringMachine::handle_error(e);
+            std::process::exit(1);
+        }
+    };
 
     println!("{}", tm.to_string());
     let mut input = String::new();
