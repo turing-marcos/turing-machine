@@ -2,6 +2,7 @@ use clap::Parser as clap_parser;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
+use turing_machine::ErrorWindow;
 use turing_machine::MyApp;
 use turing_machine::TuringMachine;
 
@@ -72,7 +73,7 @@ fn run_machine_gui(file: PathBuf) {
     let tm = match TuringMachine::new(&unparsed_file) {
         Ok(t) => t,
         Err(e) => {
-            TuringMachine::handle_error(e);
+            handle_error(e, file);
             std::process::exit(1);
         }
     };
@@ -91,6 +92,25 @@ fn run_machine_gui(file: PathBuf) {
         ),
         options,
         Box::new(|cc| Box::new(MyApp::new(tm, cc))),
+    );
+}
+
+fn handle_error(e: pest::error::Error<turing_machine::Rule>, file: PathBuf) {
+    let options = eframe::NativeOptions {
+        drag_and_drop_support: true,
+        hardware_acceleration: eframe::HardwareAcceleration::Preferred,
+        icon_data: load_icon("assets/icon.png"),
+        ..Default::default()
+    };
+
+    eframe::run_native(
+        &format!(
+            "Turing Machine: {:?}",
+            file.file_name()
+                .unwrap_or(std::ffi::OsStr::new("User input"))
+        ),
+        options,
+        Box::new(|cc| Box::new(ErrorWindow::new(e, cc))),
     );
 }
 
