@@ -140,14 +140,14 @@ impl TuringMachine {
         };
 
         println!("\t\"{}\"", e.line());
-        println!(
-            "\t {symb: >width0$: <width0$}{err:>width1$}{symb:>width2$}",
-            symb = "^",
-            err = "·",
-            width0 = cols.0 - 1,
-            width1 = cols.1 - cols.0,
-            width2 = e.line().len() - cols.1
-        );
+        // println!(
+        //     "\t {symb: >width0$: <width0$}{err:>width1$}{symb:>width2$}",
+        //     symb = "^",
+        //     err = "·",
+        //     width0 = cols.0 - 1,
+        //     width1 = cols.1 - cols.0,
+        //     width2 = e.line().len() - cols.1
+        // );
 
         let mut input = String::new();
         std::io::stdin().read_line(&mut input).unwrap_or_default();
