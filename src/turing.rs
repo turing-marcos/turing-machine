@@ -126,6 +126,8 @@ impl TuringMachine {
             }
             pest::error::LineColLocation::Span((line1, col1), (line2, col2)) => {
                 println!("From line {}:{} to {}:{}. Found:", line1, col1, line2, col2);
+                cols.0 = col1;
+                cols.1 = col2;
             }
         };
 

@@ -2,10 +2,12 @@
 
 use crate::{TuringMachine, TuringWidget};
 use eframe;
-use eframe::egui::{self, Id, Ui};
+use eframe::egui::{self, Id, RichText, Ui};
+use eframe::epaint::Color32;
 
 pub struct MyApp {
     code: String,
+    error: Option<pest::error::Error<crate::Rule>>,
     tm: TuringWidget,
 }
 
@@ -32,8 +34,63 @@ impl MyApp {
 
         Self {
             code: String::from(&tm.code),
+            error: None,
             tm: TuringWidget::new(tm),
         }
+    }
+
+    fn handle_error(ui: &mut Ui, ctx: &egui::Context, error: &pest::error::Error<crate::Rule>) {
+        let (error_pos, line_msg) = match error.line_col {
+            pest::error::LineColLocation::Pos((line, col)) => {
+                (col, format!("Line {}, column {}: ", line, col))
+            }
+            pest::error::LineColLocation::Span((line1, col1), (line2, col2)) => (
+                col1,
+                format!("From line {}:{} to {}:{}. Found:", line1, col1, line2, col2),
+            ),
+        };
+
+        let expected_msg = match &error.variant {
+            pest::error::ErrorVariant::ParsingError {
+                positives,
+                negatives,
+            } => format!("Expected {:?}, found {:?}", positives, negatives),
+            pest::error::ErrorVariant::CustomError { message } => message.clone(),
+        };
+
+        egui::TopBottomPanel::bottom("error").show(ctx, |ui| {
+            egui::Frame::none()
+                .fill(Color32::DARK_GRAY)
+                .inner_margin(egui::style::Margin::same(10.0))
+                .outer_margin(egui::style::Margin::same(0.0))
+                .show(ui, |ui: &mut egui::Ui| {
+                    ui.vertical_centered_justified(|ui| {
+                        ui.label(RichText::new(line_msg).size(15.0).color(Color32::YELLOW));
+
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                RichText::new(format!("{}", error.line()))
+                                    .color(Color32::WHITE)
+                                    .size(20.0),
+                            );
+                        });
+
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                RichText::new(format!("{: ^width$}", "^", width = error_pos + 1))
+                                    .color(Color32::RED)
+                                    .size(20.0),
+                            );
+
+                            ui.label(
+                                RichText::new(&expected_msg)
+                                    .color(Color32::DARK_RED)
+                                    .size(20.0),
+                            );
+                        });
+                    });
+                });
+        });
     }
 
     fn process_turing_controls(
@@ -96,9 +153,12 @@ impl eframe::App for MyApp {
                                 let unparsed_file =
                                     std::fs::read_to_string(&file[0]).expect("cannot read file");
                                 self.tm = match self.tm.restart(&unparsed_file) {
-                                    Ok(t) => t,
+                                    Ok(t) => {
+                                        self.error = None;
+                                        t
+                                    }
                                     Err(e) => {
-                                        TuringMachine::handle_error(e);
+                                        self.error = Some(e);
                                         self.tm.clone()
                                     }
                                 };
@@ -109,9 +169,12 @@ impl eframe::App for MyApp {
                     }
                     if ui.button("Compile and run code").clicked() {
                         self.tm = match self.tm.restart(&self.code) {
-                            Ok(t) => t,
+                            Ok(t) => {
+                                self.error = None;
+                                t
+                            }
                             Err(e) => {
-                                TuringMachine::handle_error(e);
+                                self.error = Some(e);
                                 self.tm.clone()
                             }
                         };
@@ -183,6 +246,10 @@ impl eframe::App for MyApp {
                         }
                     });
                     ui.add(self.tm.clone());
+
+                    if let Some(e) = &self.error {
+                        Self::handle_error(ui, ctx, e);
+                    }
                 });
             });
         });

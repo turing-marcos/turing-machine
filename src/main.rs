@@ -110,7 +110,7 @@ fn handle_error(e: pest::error::Error<turing_machine::Rule>, file: PathBuf) {
                 .unwrap_or(std::ffi::OsStr::new("User input"))
         ),
         options,
-        Box::new(|cc| Box::new(ErrorWindow::new(e, cc))),
+        Box::new(|cc| Box::new(ErrorWindow::new(e, file, cc))),
     );
 }
 
