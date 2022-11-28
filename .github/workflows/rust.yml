@@ -33,7 +33,7 @@ jobs:
 
         steps:
             - name: Install dependencies
-              run: apt-get update && apt-get --assume-yes install libfontconfig1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev librust-atk-dev libwebkit2gtk-4.0-dev libsoup2.4-dev
+              run: sudo apt-get update && sudo apt-get --assume-yes install libfontconfig1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev librust-atk-dev libwebkit2gtk-4.0-dev libsoup2.4-dev
 
             - name: Checkout repository
               uses: actions/checkout@v3
@@ -67,7 +67,7 @@ jobs:
         needs: ["stable-build"]
         steps:
             - name: Install dependencies
-              run: apt-get update && apt-get --assume-yes install libfontconfig1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev librust-atk-dev libwebkit2gtk-4.0-dev libsoup2.4-dev
+              run: sudo apt-get update && sudo apt-get --assume-yes install libfontconfig1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev librust-atk-dev libwebkit2gtk-4.0-dev libsoup2.4-dev
 
             - name: Restore cache
               uses: actions/cache@v2
