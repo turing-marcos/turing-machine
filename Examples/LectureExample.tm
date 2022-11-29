@@ -1,14 +1,16 @@
-// Based on example II from the lecture slides
+/// Based on example II from the lecture slides
 // Build a TM M that computes f(x,y), 
 // where g(x,y) = x+y, M1 computes g(x,y) M1=({0,1}, {q0,q1,q2}, T1, q0, {q2}) 
 // f(x,y) = x+1       if y=0
 //			g(x,y)   if y>0
 
 // Input x=4, y=3
-{[p0]1111101111};
-// Input x=4, y=0
-//{[p0]1111101};
+{1111101111};
 
+// Input x=4, y=0
+//{1111101};
+
+I = {p0};
 F = {q2, pf};
 
 // Start with the initial state of M

@@ -45,8 +45,13 @@ impl TuringWidget {
         }
     }
 
-    pub fn restart(&self, code: &str) -> Self {
-        Self {
+    pub fn restart(&self, code: &str) -> Result<Self, pest::error::Error<crate::turing::Rule>> {
+        let tm = match TuringMachine::new(code) {
+            Ok(t) => t,
+            Err(e) => return Err(e),
+        };
+
+        Ok(Self {
             stroke_width: STROKE_WIDTH,
             offset: 0.0,
             tape_rect_size: self.tape_rect_size,
@@ -58,8 +63,8 @@ impl TuringWidget {
             tri_stroke_wid: self.tri_stroke_wid,
             tri_stroke: self.tri_stroke,
             tri_size: self.tri_size,
-            tm: TuringMachine::new(code),
-        }
+            tm,
+        })
     }
 
     pub fn step(&mut self) -> f32 {
@@ -71,6 +76,13 @@ impl TuringWidget {
 
     pub fn tape_value(&self) -> u32 {
         self.tm.tape_value()
+    }
+    pub fn len(&self) -> usize {
+        self.tm.tape.len()
+    }
+
+    pub fn description(&self) -> Option<String> {
+        self.tm.description.clone()
     }
 
     pub fn code(&self) -> &str {
@@ -84,10 +96,7 @@ impl Widget for TuringWidget {
             let stroke = Stroke::new(self.stroke_width, Color32::BLACK);
             let rounding = Rounding::same(10f32);
             let size = Vec2::new(self.tape_rect_size, self.tape_rect_size);
-            let center = Pos2::new(
-                self.left + ui.available_width() / 2.0,
-                ui.available_height() / 2.0 + self.tape_rect_size / 2.0 - 50.0,
-            );
+            let center = ui.cursor().center_top() + Vec2::new(0.0, 100.0);
 
             let pos = center + Vec2::new((self.offset as f32) * size.x, 0.0);
 
@@ -171,6 +180,7 @@ impl Widget for TuringWidget {
                 self.paused = true;
             }
         }
+
         ui.interact(
             ui.cursor(),
             egui::Id::new("turingwidget"),

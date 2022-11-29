@@ -2,6 +2,7 @@ use clap::Parser as clap_parser;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
+use turing_machine::ErrorWindow;
 use turing_machine::MyApp;
 use turing_machine::TuringMachine;
 
@@ -57,7 +58,7 @@ fn main() {
             run_machine_cli(file);
         }
     } else {
-        let path = std::env::current_dir().unwrap();
+        let path = std::env::current_dir().unwrap_or_default();
 
         let res = rfd::FileDialog::new()
             .add_filter("TuringMachine", &["tm"])
@@ -71,12 +72,36 @@ fn main() {
     }
 }
 
+fn load_icon(path: &str) -> Option<eframe::IconData> {
+    let data = match std::fs::read(path) {
+        Ok(d) => d,
+        Err(e) => {
+            println!("{}", e);
+            return None;
+        }
+    };
+
+    Some(eframe::IconData {
+        rgba: data,
+        width: 32,
+        height: 32,
+    })
+}
+
 fn run_machine_gui(file: PathBuf) {
     let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
-    let tm = TuringMachine::new(&unparsed_file);
+    let tm = match TuringMachine::new(&unparsed_file) {
+        Ok(t) => t,
+        Err(e) => {
+            handle_error(e, file);
+            std::process::exit(1);
+        }
+    };
 
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
+        hardware_acceleration: eframe::HardwareAcceleration::Preferred,
+        icon_data: load_icon("assets/icon.png"),
         ..Default::default()
     };
     eframe::run_native(
@@ -90,9 +115,34 @@ fn run_machine_gui(file: PathBuf) {
     );
 }
 
+fn handle_error(e: pest::error::Error<turing_machine::Rule>, file: PathBuf) {
+    let options = eframe::NativeOptions {
+        drag_and_drop_support: true,
+        hardware_acceleration: eframe::HardwareAcceleration::Preferred,
+        icon_data: load_icon("assets/icon.png"),
+        ..Default::default()
+    };
+
+    eframe::run_native(
+        &format!(
+            "Turing Machine: {:?}",
+            file.file_name()
+                .unwrap_or(std::ffi::OsStr::new("User input"))
+        ),
+        options,
+        Box::new(|cc| Box::new(ErrorWindow::new(e, file, cc))),
+    );
+}
+
 fn run_machine_cli(file: PathBuf) {
     let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
-    let mut tm = TuringMachine::new(&unparsed_file);
+    let mut tm = match TuringMachine::new(&unparsed_file) {
+        Ok(t) => t,
+        Err(e) => {
+            TuringMachine::handle_error(e);
+            std::process::exit(1);
+        }
+    };
 
     println!("{}", tm.to_string());
     let mut input = String::new();

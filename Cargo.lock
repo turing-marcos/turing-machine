@@ -1910,7 +1910,7 @@ checksum = "375812fa44dab6df41c195cd2f7fecb488f6c09fbaafb62807488cefab642bff"
 
 [[package]]
 name = "turing-machine"
-version = "0.2.1"
+version = "1.0.0"
 dependencies = [
  "clap",
  "console_error_panic_hook",

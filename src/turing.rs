@@ -15,48 +15,65 @@ pub struct TuringMachine {
     pub current_state: String,
     pub tape_position: usize,
     pub tape: Vec<bool>,
+    pub description: Option<String>,
     pub code: String,
 }
 
 impl TuringMachine {
-    pub fn new(code: &str) -> Self {
+    pub fn new(code: &str) -> Result<Self, pest::error::Error<Rule>> {
         let mut instructions: HashMap<(String, bool), TuringInstruction> = HashMap::new();
         let mut final_states: Vec<String> = Vec::new();
         let mut current_state: String = String::new();
         let mut tape: Vec<bool> = Vec::new();
-        let mut tape_position = 0;
+        let mut description: Option<String> = None;
 
-        let file = TuringParser::parse(Rule::file, code)
-            .expect("unsuccessful parse") // unwrap the parse result
-            .next()
-            .unwrap(); // get and unwrap the `file` rule; never fails
+        let file = match TuringParser::parse(Rule::file, code) {
+            Ok(mut f) => f.next().unwrap(),
+            Err(e) => return Err(e),
+        };
 
         for record in file.into_inner() {
             match record.as_rule() {
-                Rule::description => println!("{}", record.into_inner().as_str()),
+                Rule::description => {
+                    let s = record.as_str();
+                    if !s.is_empty() {
+                        description = Some(String::from(s.replace("///", "").trim()));
+                        println!("Found description: \"{:?}\"", description);
+                    }
+                }
+                Rule::COMMENT => println!("Found comment: \"{:?}\"", record.as_str()),
                 Rule::tape => {
-                    let mut tmp = record.into_inner();
-                    // FIXME: The state could not be the first item
-                    current_state = String::from(
-                        tmp.next()
-                            .unwrap()
-                            .as_str()
-                            .replace("[", "")
-                            .replace("]", ""),
+                    println!(
+                        "Entered tape rule: {}",
+                        record.clone().into_inner().as_str()
                     );
-                    tape = tmp
-                        .map(|v| v.as_span().as_str() == "1")
-                        .collect::<Vec<bool>>();
 
-                    // println!("Initial state: {}", current_state);
-                    // println!("Tape: {:?}", tape);
+                    for r in record.into_inner() {
+                        match r.as_rule() {
+                            Rule::value => {
+                                tape.push(r.as_str() == "1");
+                            }
+                            _ => println!(
+                                "Unhandled: ({:?}, {})",
+                                r.as_rule(),
+                                r.into_inner().as_str()
+                            ),
+                        }
+                    }
+
+                    println!("Initial state: {}", current_state);
+                    println!("Tape: {:?}", tape);
+                }
+                Rule::initial_state => {
+                    current_state = String::from(record.into_inner().as_str());
+                    println!("The initial tape state is \"{}\"", current_state);
                 }
                 Rule::final_state => {
                     final_states = record
                         .into_inner()
                         .map(|v| String::from(v.as_span().as_str()))
                         .collect();
-                    // println!("The final tape state is {:?}", final_states);
+                    println!("The final tape state is {:?}", final_states);
                 }
                 Rule::instruction => {
                     let tmp = TuringInstruction::from(record.into_inner());
@@ -65,16 +82,10 @@ impl TuringMachine {
                         tmp.clone(),
                     );
 
-                    // println!("Found instruction {:?}", tmp);
-                }
-                Rule::comment => {
-                    // println!("Found comment: {}", record.into_inner().as_str());
-                }
-                Rule::empty => {
-                    // println!("Empty stuff");
+                    println!("Found instruction {}", tmp);
                 }
                 Rule::EOI => {
-                    // println!("End of file");
+                    println!("End of file");
                 }
                 _ => {
                     println!("Unhandled: {}", record.into_inner().as_str());
@@ -82,23 +93,63 @@ impl TuringMachine {
             }
         }
 
+        let mut tape_position = 0;
         while tape_position <= 2 {
             tape.insert(0, false);
             tape_position += 1;
         }
 
-        while tape_position >= tape.len() - 3 {
-            tape.push(false);
-        }
-
-        Self {
+        Ok(Self {
             instructions,
             final_states,
             current_state,
             tape_position,
             tape,
+            description,
             code: String::from(code),
-        }
+        })
+    }
+
+    pub fn handle_error(e: pest::error::Error<Rule>) {
+        println!("I found an error while parsing the file!");
+
+        match e.clone().variant {
+            pest::error::ErrorVariant::ParsingError {
+                positives,
+                negatives,
+            } => println!("Expected {:?}, found {:?}", positives, negatives),
+            pest::error::ErrorVariant::CustomError { message } => println!("\t{}", message),
+        };
+
+        let mut cols = (0, 0);
+        match e.line_col {
+            pest::error::LineColLocation::Pos((line, col)) => {
+                println!("Line {}, column {}: ", line, col);
+                cols.0 = col;
+                cols.1 = col + 1;
+            }
+            pest::error::LineColLocation::Span((line1, col1), (line2, col2)) => {
+                println!("From line {}:{} to {}:{}. Found:", line1, col1, line2, col2);
+                cols.0 = col1;
+                cols.1 = col2;
+            }
+        };
+
+        println!("\t\"{}\"", e.line());
+        println!(
+            "\t {: ^width1$}{:^^width2$}{: ^width3$}",
+            "^",
+            " ",
+            " ",
+            width1 = cols.0 - 1,
+            width2 = cols.1 - cols.0,
+            width3 = e.line().len() - cols.1
+        );
+
+        println!("\nPress enter to exit");
+
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).unwrap_or_default();
     }
 
     fn get_instruction(&self, index: (String, bool)) -> Option<TuringInstruction> {
