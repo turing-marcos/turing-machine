@@ -39,7 +39,7 @@ impl MyApp {
         }
     }
 
-    fn handle_error(ui: &mut Ui, ctx: &egui::Context, error: &pest::error::Error<crate::Rule>) {
+    fn handle_error(_ui: &mut Ui, ctx: &egui::Context, error: &pest::error::Error<crate::Rule>) {
         let (error_pos, line_msg) = match error.line_col {
             pest::error::LineColLocation::Pos((line, col)) => {
                 (col, format!("Line {}, column {}: ", line, col))

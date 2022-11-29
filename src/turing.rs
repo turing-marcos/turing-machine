@@ -35,9 +35,13 @@ impl TuringMachine {
         for record in file.into_inner() {
             match record.as_rule() {
                 Rule::description => {
-                    description = Some(String::from(record.as_str().replace("///", "").trim()));
-                    println!("Found description: \"{:?}\"", description);
+                    let s = record.as_str();
+                    if !s.is_empty() {
+                        description = Some(String::from(s.replace("///", "").trim()));
+                        println!("Found description: \"{:?}\"", description);
+                    }
                 }
+                Rule::COMMENT => println!("Found comment: \"{:?}\"", record.as_str()),
                 Rule::tape => {
                     println!(
                         "Entered tape rule: {}",

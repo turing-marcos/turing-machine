@@ -120,6 +120,15 @@ impl eframe::App for ErrorWindow {
                             });
                     });
                 });
+                ui.label(
+                    RichText::new(
+                        "Could not initialize the tuing machine. Please fix the syntax error and try again."
+                    )
+                    .size(20.0)
+                );
+                if ui.button("Close").clicked() {
+                    std::process::exit(2);
+                }
             });
         });
     }
