@@ -17,7 +17,7 @@ mod tests {
     use crate::Rule;
     use crate::TuringMachine;
     use crate::TuringParser;
-    use pest::{consumes_to, fails_with, parses_to};
+    use pest::{consumes_to, parses_to};
 
     #[test]
     fn parse_description() {
@@ -31,15 +31,6 @@ mod tests {
                 description(0, 11),
             ]
         }
-
-        // fails_with! {
-        //     parser: TuringParser,
-        //     input: test,
-        //     rule: Rule::COMMENT,
-        //     positives: vec![Rule::description],
-        //     negatives: vec![],
-        //     pos: 0
-        // }
     }
 
     #[test]
