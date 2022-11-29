@@ -40,7 +40,22 @@ fn main() {
     // Redirect tracing to console.log and friends:
     tracing_wasm::set_as_global_default();
 
-    let unparsed_file = fs::read_to_string("./Examples/Example1.tm").expect("cannot read file");
+    let unparsed_file = "/// a + b
+
+{11111011};
+
+I = {q0};
+F = {q2};
+
+(q0, 1, 0, R, q1);
+
+(q1, 1, 1, R, q1);
+(q1, 0, 0, R, q2);
+
+(q2, 1, 0, H, q2);
+(q2, 0, 0, H, q2);
+";
+
     let tm = match TuringMachine::new(&unparsed_file) {
         Ok(t) => t,
         Err(e) => {
