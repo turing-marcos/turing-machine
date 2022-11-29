@@ -1,9 +1,9 @@
-var cacheName = 'turing-machine';
+var cacheName = 'turing-machine-pwa';
 var filesToCache = [
   './',
   './index.html',
-  './eframe_template.js',
-  './eframe_template_bg.wasm',
+  './turing-machine.js',
+  './turing-machine_bg.wasm',
 ];
 
 /* Start the service worker and cache all of the app's content */
