@@ -1,11 +1,25 @@
+#![warn(clippy::all, rust_2018_idioms)]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+
+#[cfg(not(target_arch = "wasm32"))]
 use clap::Parser as clap_parser;
+
+#[cfg(not(target_arch = "wasm32"))]
 use std::fs;
+
+#[cfg(not(target_arch = "wasm32"))]
 use std::io;
+
+#[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
+
+#[cfg(not(target_arch = "wasm32"))]
 use turing_machine::ErrorWindow;
+
 use turing_machine::MyApp;
 use turing_machine::TuringMachine;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(clap_parser, Debug)]
 #[command(
     author,
@@ -28,6 +42,50 @@ pub struct Cli {
     cli: bool,
 }
 
+// when compiling to web using trunk.
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    // Make sure panics are logged using `console.error`.
+    console_error_panic_hook::set_once();
+
+    // Redirect tracing to console.log and friends:
+    tracing_wasm::set_as_global_default();
+
+    let unparsed_file = "/// a + b
+
+{11111011};
+
+I = {q0};
+F = {q2};
+
+(q0, 1, 0, R, q1);
+
+(q1, 1, 1, R, q1);
+(q1, 0, 0, R, q2);
+
+(q2, 1, 0, H, q2);
+(q2, 0, 0, H, q2);
+";
+
+    let tm = match TuringMachine::new(&unparsed_file) {
+        Ok(t) => t,
+        Err(_e) => {
+            //handle_error(e, file);
+            std::process::exit(1);
+        }
+    };
+
+    let web_options = eframe::WebOptions::default();
+    eframe::start_web(
+        "the_canvas_id", // hardcode it
+        web_options,
+        Box::new(|cc| Box::new(MyApp::new(tm, cc))),
+    )
+    .expect("failed to start eframe");
+}
+
+// When compiling natively:
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let args = Cli::parse();
 
@@ -52,6 +110,7 @@ fn main() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn load_icon(path: &str) -> Option<eframe::IconData> {
     let data = match std::fs::read(path) {
         Ok(d) => d,
@@ -68,6 +127,7 @@ fn load_icon(path: &str) -> Option<eframe::IconData> {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn run_machine_gui(file: PathBuf) {
     let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
     let tm = match TuringMachine::new(&unparsed_file) {
@@ -95,6 +155,7 @@ fn run_machine_gui(file: PathBuf) {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn handle_error(e: pest::error::Error<turing_machine::Rule>, file: PathBuf) {
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
@@ -114,6 +175,7 @@ fn handle_error(e: pest::error::Error<turing_machine::Rule>, file: PathBuf) {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn run_machine_cli(file: PathBuf) {
     let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
     let mut tm = match TuringMachine::new(&unparsed_file) {

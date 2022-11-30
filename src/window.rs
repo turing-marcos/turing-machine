@@ -140,7 +140,8 @@ impl eframe::App for MyApp {
         self.tm.left = egui::SidePanel::left("left")
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
-                    if ui.button("Open file").clicked() {
+                    #[cfg(not(target_family = "wasm"))]
+                    if !cfg!(wasm) && ui.button("Open file").clicked() {
                         let path = std::env::current_dir().unwrap();
 
                         let res = rfd::FileDialog::new()

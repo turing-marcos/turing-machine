@@ -110,6 +110,35 @@ impl TuringMachine {
         })
     }
 
+    pub fn none() -> Self {
+        let state = String::from("f");
+        let mut instructions: HashMap<(String, bool), TuringInstruction> = HashMap::new();
+        instructions.insert(
+            (String::from("F"), false),
+            TuringInstruction {
+                from_state: state.clone(),
+                from_value: false,
+                to_value: false,
+                movement: Movement::HALT,
+                to_state: state.clone(),
+            },
+        );
+        let final_states: Vec<String> = vec![state.clone()];
+        let current_state: String = state.clone();
+        let tape: Vec<bool> = vec![false, false, false, false, false];
+        let description: Option<String> = None;
+
+        Self {
+            instructions,
+            final_states,
+            current_state,
+            tape_position: 2,
+            tape,
+            description,
+            code: String::new(),
+        }
+    }
+
     pub fn handle_error(e: pest::error::Error<Rule>) {
         println!("I found an error while parsing the file!");
 
