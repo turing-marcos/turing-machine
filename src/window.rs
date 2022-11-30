@@ -140,32 +140,33 @@ impl eframe::App for MyApp {
         self.tm.left = egui::SidePanel::left("left")
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
-                    if ui.button("Open file").clicked() {
+                    #[cfg(not(target_family = "wasm"))]
+                    if !cfg!(wasm) && ui.button("Open file").clicked() {
                         let path = std::env::current_dir().unwrap();
 
-                        // let res = rfd::FileDialog::new()
-                        //     .add_filter("TuringMachine", &["tm"])
-                        //     .set_directory(&path)
-                        //     .pick_files();
+                        let res = rfd::FileDialog::new()
+                            .add_filter("TuringMachine", &["tm"])
+                            .set_directory(&path)
+                            .pick_files();
 
-                        // match res {
-                        //     Some(file) => {
-                        //         let unparsed_file =
-                        //             std::fs::read_to_string(&file[0]).expect("cannot read file");
-                        //         self.tm = match self.tm.restart(&unparsed_file) {
-                        //             Ok(t) => {
-                        //                 self.error = None;
-                        //                 t
-                        //             }
-                        //             Err(e) => {
-                        //                 self.error = Some(e);
-                        //                 self.tm.clone()
-                        //             }
-                        //         };
-                        //         self.code = unparsed_file;
-                        //     }
-                        //     None => {}
-                        // }
+                        match res {
+                            Some(file) => {
+                                let unparsed_file =
+                                    std::fs::read_to_string(&file[0]).expect("cannot read file");
+                                self.tm = match self.tm.restart(&unparsed_file) {
+                                    Ok(t) => {
+                                        self.error = None;
+                                        t
+                                    }
+                                    Err(e) => {
+                                        self.error = Some(e);
+                                        self.tm.clone()
+                                    }
+                                };
+                                self.code = unparsed_file;
+                            }
+                            None => {}
+                        }
                     }
                     if ui.button("Compile and run code").clicked() {
                         self.tm = match self.tm.restart(&self.code) {

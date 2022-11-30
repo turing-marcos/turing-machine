@@ -1,14 +1,25 @@
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+#[cfg(not(target_arch = "wasm32"))]
 use clap::Parser as clap_parser;
+
+#[cfg(not(target_arch = "wasm32"))]
 use std::fs;
+
+#[cfg(not(target_arch = "wasm32"))]
 use std::io;
+
+#[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
+
+#[cfg(not(target_arch = "wasm32"))]
 use turing_machine::ErrorWindow;
+
 use turing_machine::MyApp;
 use turing_machine::TuringMachine;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(clap_parser, Debug)]
 #[command(
     author,
@@ -58,7 +69,7 @@ F = {q2};
 
     let tm = match TuringMachine::new(&unparsed_file) {
         Ok(t) => t,
-        Err(e) => {
+        Err(_e) => {
             //handle_error(e, file);
             std::process::exit(1);
         }
@@ -99,6 +110,7 @@ fn main() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn load_icon(path: &str) -> Option<eframe::IconData> {
     let data = match std::fs::read(path) {
         Ok(d) => d,
