@@ -2,16 +2,17 @@
 
 use crate::{TuringMachine, TuringWidget};
 use eframe;
-use eframe::egui::{self, Id, Ui};
-// use rfd;
+use eframe::egui::{self, Id, RichText, Ui};
+use eframe::epaint::Color32;
 
 pub struct MyApp {
     code: String,
+    error: Option<pest::error::Error<crate::Rule>>,
     tm: TuringWidget,
 }
 
 impl MyApp {
-    pub fn new(tm: TuringMachine, _cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(tm: TuringMachine, cc: &eframe::CreationContext<'_>) -> Self {
         // Customize egui here with cc.egui_ctx.set_fonts and cc.egui_ctx.set_visuals.
         // Restore app state using cc.storage (requires the "persistence" feature).
         // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
@@ -24,11 +25,72 @@ impl MyApp {
         //     .or_default()
         //     .insert(0, String::from("Consolas"));
         // cc.egui_ctx.set_fonts(fonts);
+        let mut st = (*egui::Context::default().style()).clone();
+        st.override_font_id = Some(egui::FontId::monospace(14.0));
+        st.spacing.slider_width = 250.0;
+        st.spacing.button_padding = egui::Vec2::new(10.0, 5.0);
+        st.spacing.item_spacing = egui::Vec2::new(10.0, 10.0);
+        cc.egui_ctx.set_style(st);
 
         Self {
             code: String::from(&tm.code),
+            error: None,
             tm: TuringWidget::new(tm),
         }
+    }
+
+    fn handle_error(_ui: &mut Ui, ctx: &egui::Context, error: &pest::error::Error<crate::Rule>) {
+        let (error_pos, line_msg) = match error.line_col {
+            pest::error::LineColLocation::Pos((line, col)) => {
+                (col, format!("Line {}, column {}: ", line, col))
+            }
+            pest::error::LineColLocation::Span((line1, col1), (line2, col2)) => (
+                col1,
+                format!("From line {}:{} to {}:{}. Found:", line1, col1, line2, col2),
+            ),
+        };
+
+        let expected_msg = match &error.variant {
+            pest::error::ErrorVariant::ParsingError {
+                positives,
+                negatives,
+            } => format!("Expected {:?}, found {:?}", positives, negatives),
+            pest::error::ErrorVariant::CustomError { message } => message.clone(),
+        };
+
+        egui::TopBottomPanel::bottom("error").show(ctx, |ui| {
+            egui::Frame::none()
+                .fill(Color32::DARK_GRAY)
+                .inner_margin(egui::style::Margin::same(10.0))
+                .outer_margin(egui::style::Margin::same(0.0))
+                .show(ui, |ui: &mut egui::Ui| {
+                    ui.vertical_centered_justified(|ui| {
+                        ui.label(RichText::new(line_msg).size(15.0).color(Color32::YELLOW));
+
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                RichText::new(format!("{}", error.line()))
+                                    .color(Color32::WHITE)
+                                    .size(20.0),
+                            );
+                        });
+
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                RichText::new(format!("{: ^width$}", "^", width = error_pos + 1))
+                                    .color(Color32::RED)
+                                    .size(20.0),
+                            );
+
+                            ui.label(
+                                RichText::new(&expected_msg)
+                                    .color(Color32::DARK_RED)
+                                    .size(20.0),
+                            );
+                        });
+                    });
+                });
+        });
     }
 
     fn process_turing_controls(
@@ -40,7 +102,6 @@ impl MyApp {
         ui.add_enabled_ui(!editor_focused, |ui| {
             if self.tm.offset != 0.0 {
                 ui.add_enabled(false, |ui: &mut Ui| ui.button("Step"));
-
                 if self.tm.offset.abs() < 0.01 {
                     self.tm.offset = 0.0;
                     return false;
@@ -79,7 +140,8 @@ impl eframe::App for MyApp {
         self.tm.left = egui::SidePanel::left("left")
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
-                    if ui.button("Open file").clicked() {
+                    #[cfg(not(target_family = "wasm"))]
+                    if !cfg!(wasm) && ui.button("Open file").clicked() {
                         let path = std::env::current_dir().unwrap();
 
                         let res = rfd::FileDialog::new()
@@ -91,15 +153,32 @@ impl eframe::App for MyApp {
                             Some(file) => {
                                 let unparsed_file =
                                     std::fs::read_to_string(&file[0]).expect("cannot read file");
-                                let tm = TuringMachine::new(&unparsed_file);
-                                self.tm = TuringWidget::new(tm);
+                                self.tm = match self.tm.restart(&unparsed_file) {
+                                    Ok(t) => {
+                                        self.error = None;
+                                        t
+                                    }
+                                    Err(e) => {
+                                        self.error = Some(e);
+                                        self.tm.clone()
+                                    }
+                                };
                                 self.code = unparsed_file;
                             }
                             None => {}
                         }
                     }
                     if ui.button("Compile and run code").clicked() {
-                        self.tm = TuringWidget::new(TuringMachine::new(&self.code));
+                        self.tm = match self.tm.restart(&self.code) {
+                            Ok(t) => {
+                                self.error = None;
+                                t
+                            }
+                            Err(e) => {
+                                self.error = Some(e);
+                                self.tm.clone()
+                            }
+                        };
                     }
 
                     egui::ScrollArea::vertical().show(ui, |my_ui: &mut Ui| {
@@ -114,46 +193,64 @@ impl eframe::App for MyApp {
         egui::CentralPanel::default().show(ctx, |main_panel| {
             main_panel.horizontal_top(|horiz| {
                 horiz.vertical_centered(|ui| {
-                    ui.add(
-                        egui::Slider::new(&mut self.tm.tape_rect_size, 20.0..=300.0)
-                            .text("Tape rectangle size"),
-                    );
-                    ui.add(
-                        egui::Slider::new(&mut self.tm.tape_anim_speed, 0.1..=2.0)
-                            .text("Tape animation speed (in seconds)"),
-                    );
+                    ui.vertical_centered_justified(|ui| {
+                        if let Some(desc) = self.tm.description() {
+                            ui.label(egui::RichText::new(desc).color(egui::Color32::GOLD).size(20.0).underline());
+                            ui.separator();
+                        }
+
+                        ui.add(
+                            egui::Slider::new(&mut self.tm.tape_rect_size, 20.0..=300.0)
+                                .suffix(" px")
+                                .text("Tape rectangle size"),
+                        );
+                        ui.add(
+                            egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
+                                .suffix(" seconds")
+                                .text("Tape animation speed"),
+                        );
+                    });
 
                     ui.separator();
 
+                    ui.spacing();
+                    ui.spacing();
+
                     ui.label(format!("Current output: {}", self.tm.tape_value()));
 
+                    ui.spacing();
+                    ui.spacing();
+
+                    ui.vertical_centered(|ui| {
+                    let mut text = "Pause";
                     if self.tm.paused {
                         ui.label(
-                    "The application is paused. To unpause it, press the spacebar or this button:",
-                );
-                        if (ui.button("Resume").clicked()
-                            || ui.input().key_pressed(egui::Key::Space))
-                            && !editor_focused
-                        {
-                            self.tm.paused = false;
-                        }
-                    } else {
+                    "The application is paused.\nTo unpause it, press the spacebar or this button:",
+                        );
+                        text = "Resume";
+                    }else{
                         ui.label(
-                    "The application is unpaused. To pause it, press the spacebar or this button:",
-                );
-                        if (ui.button("Pause").clicked()
+                            "The application is unpaused.\nTo pause it, press the spacebar or this button:",
+                        );
+                    }
+                        let b = ui.button(text);
+                        //b.ctx.set_style(style);
+                        if (b.clicked()
                             || ui.input().key_pressed(egui::Key::Space))
                             && !editor_focused
                         {
-                            self.tm.paused = true;
+                            self.tm.paused = !self.tm.paused;
                         }
-                    }
 
-                    if self.process_turing_controls(ui, &ctx, editor_focused) {
-                        ctx.request_repaint();
-                    }
-
+                        if self.process_turing_controls(ui, &ctx, editor_focused) {
+                            ctx.request_repaint();
+                        }
+                    });
                     ui.add(self.tm.clone());
+
+                    if let Some(e) = &self.error {
+                        Self::handle_error(ui, ctx, e);
+                    }
                 });
             });
         });

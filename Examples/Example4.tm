@@ -1,7 +1,8 @@
-//SUMATORY FROM 1 TO X
+///SUMATORY FROM 1 TO X
 
-{[q0]1111};
+{1111};
 
+I = {q0};
 F = {f};
 
 //Eliminate the first one

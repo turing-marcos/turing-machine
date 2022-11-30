@@ -1,8 +1,10 @@
+mod error_window;
 mod instruction;
 mod turing;
 mod turing_widget;
 mod window;
 
+pub use error_window::ErrorWindow;
 pub use instruction::TuringInstruction;
 pub use turing::{Rule, TuringMachine, TuringParser};
 pub use turing_widget::TuringWidget;
@@ -15,54 +17,105 @@ mod tests {
     use crate::Rule;
     use crate::TuringMachine;
     use crate::TuringParser;
-    use pest::Parser;
+    use pest::{consumes_to, parses_to};
 
     #[test]
     fn parse_description() {
         let test = "/// a + b\r\n";
-        let mut res = match TuringParser::parse(Rule::description, test) {
-            Ok(v) => v,
-            Err(e) => panic!("Parsing error: {}", e),
-        };
-        assert_eq!(res.next().unwrap().as_span().as_str(), test)
+
+        parses_to! {
+            parser: TuringParser,
+            input: test,
+            rule: Rule::description,
+            tokens: [
+                description(0, 11),
+            ]
+        }
     }
 
     #[test]
     fn parse_tape() {
-        let test = "{[q0]11111011};";
-        let mut res = match TuringParser::parse(Rule::tape, test) {
-            Ok(v) => v,
-            Err(e) => panic!("Parsing error: {}", e),
-        };
-        assert_eq!(res.next().unwrap().as_span().as_str(), test)
+        let test = "{111011};";
+
+        parses_to! {
+            parser: TuringParser,
+            input: test,
+            rule: Rule::tape,
+            tokens: [
+                tape(0, 9, [
+                    value(1, 2),
+                    value(2, 3),
+                    value(3, 4),
+                    value(4, 5),
+                    value(5, 6),
+                    value(6, 7),
+                ]),
+            ]
+        }
+    }
+
+    #[test]
+    fn parse_initial_state() {
+        let test = "I = {q0};";
+
+        parses_to! {
+            parser: TuringParser,
+            input: test,
+            rule: Rule::initial_state,
+            tokens: [
+                initial_state(0, 9, [
+                    state(5, 7)
+                ])
+            ]
+        }
     }
 
     #[test]
     fn parse_final_state() {
         let test = "F = {q2};";
 
-        let mut res = match TuringParser::parse(Rule::final_state, test) {
-            Ok(v) => v,
-            Err(e) => panic!("Parsing error: {}", e),
-        };
-        assert_eq!(res.next().unwrap().as_span().as_str(), test)
+        parses_to! {
+            parser: TuringParser,
+            input: test,
+            rule: Rule::final_state,
+            tokens: [
+                final_state(0, 9, [
+                    state(5, 7)
+                ])
+            ]
+        }
     }
 
     #[test]
     fn parse_instruction() {
         let test = "(q0, 1, 0, R, q1);";
 
-        let mut res = match TuringParser::parse(Rule::instruction, test) {
-            Ok(v) => v,
-            Err(e) => panic!("Parsing error: {}", e),
-        };
-        assert_eq!(res.next().unwrap().as_span().as_str(), test)
+        parses_to! {
+            parser: TuringParser,
+            input: test,
+            rule: Rule::instruction,
+            tokens: [
+                instruction(0, 18, [
+                    state(1, 3),
+                    value(5, 6),
+                    value(8, 9),
+                    movement(11, 12),
+                    state(14, 16)
+                ]),
+            ]
+        }
     }
 
     #[test]
     fn parse_file() {
         let unparsed_file = fs::read_to_string("Examples/Example1.tm").expect("cannot read file");
-        let tm = TuringMachine::new(&unparsed_file);
+        let tm = match TuringMachine::new(&unparsed_file) {
+            Ok(t) => t,
+            Err(e) => {
+                TuringMachine::handle_error(e);
+                std::process::exit(1);
+            }
+        };
 
         assert_eq!(
             tm.to_string(),

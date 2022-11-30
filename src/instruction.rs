@@ -57,12 +57,35 @@ impl Display for TuringInstruction {
 
 impl TuringInstruction {
     pub fn from(mut code: Pairs<Rule>) -> Self {
+        let from_state = match code.next() {
+            Some(s) => String::from(s.as_span().as_str()),
+            None => panic!("The instruction lacks an initial state"),
+        };
+        let from_value = match code.next() {
+            Some(s) => s.as_span().as_str() == "1",
+            None => panic!("The instruction lacks an initial tape value"),
+        };
+        let to_value = match code.next() {
+            Some(s) => s.as_span().as_str() == "1",
+            None => panic!("The instruction lacks a target tape value"),
+        };
+
+        let movement = match code.next() {
+            Some(s) => Movement::from_str(s.as_span().as_str()).unwrap_or(Movement::HALT),
+            None => panic!("The instruction lacks an initial state"),
+        };
+
+        let to_state = match code.next() {
+            Some(s) => String::from(s.as_span().as_str()),
+            None => panic!("The instruction lacks a target state"),
+        };
+
         Self {
-            from_state: String::from(code.next().unwrap().as_span().as_str()),
-            from_value: code.next().unwrap().as_span().as_str() == "1",
-            to_value: code.next().unwrap().as_span().as_str() == "1",
-            movement: Movement::from_str(code.next().unwrap().as_span().as_str()).unwrap(),
-            to_state: String::from(code.next().unwrap().as_span().as_str()),
+            from_state,
+            from_value,
+            to_value,
+            movement,
+            to_state,
         }
     }
     pub fn halt(index: (String, bool)) -> Self {
