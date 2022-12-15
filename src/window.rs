@@ -4,6 +4,7 @@ use crate::{TuringMachine, TuringWidget};
 use eframe;
 use eframe::egui::{self, Id, RichText, Ui};
 use eframe::epaint::Color32;
+use egui_extras::{TableBuilder, Column};
 
 pub struct MyApp {
     code: String,
@@ -13,18 +14,6 @@ pub struct MyApp {
 
 impl MyApp {
     pub fn new(tm: TuringMachine, cc: &eframe::CreationContext<'_>) -> Self {
-        // Customize egui here with cc.egui_ctx.set_fonts and cc.egui_ctx.set_visuals.
-        // Restore app state using cc.storage (requires the "persistence" feature).
-        // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
-        // for e.g. egui::PaintCallback.
-
-        // let mut fonts = egui::FontDefinitions::default();
-        // fonts
-        //     .families
-        //     .entry(egui::FontFamily::Monospace)
-        //     .or_default()
-        //     .insert(0, String::from("Consolas"));
-        // cc.egui_ctx.set_fonts(fonts);
         let mut st = (*egui::Context::default().style()).clone();
         st.override_font_id = Some(egui::FontId::monospace(14.0));
         st.spacing.slider_width = 250.0;
@@ -190,14 +179,47 @@ impl eframe::App for MyApp {
             .response
             .rect
             .right();
+
         egui::CentralPanel::default().show(ctx, |main_panel| {
             main_panel.horizontal_top(|horiz| {
                 horiz.vertical_centered(|ui| {
                     ui.vertical_centered_justified(|ui| {
                         if let Some(desc) = self.tm.description() {
                             ui.label(egui::RichText::new(desc).color(egui::Color32::GOLD).size(20.0).underline());
-                            ui.separator();
                         }
+
+                        let values = self.tm.tape_values();
+                        
+                        TableBuilder::new(ui).auto_shrink([true, true])
+                        .striped(true)
+                        .cell_layout(egui::Layout::centered_and_justified(egui::Direction::LeftToRight))
+                        .columns(Column::auto(), values.len() +1)
+                        .header(10.0, |mut header| {
+                            for i in 0..values.len() {
+                                header.col(|ui| {
+                                    ui.label(RichText::new(format!("Value {}", i)).heading());
+                                });
+                            }
+
+                            header.col(|ui| {
+                                ui.label(RichText::new("Result").heading());
+                            });
+                        })
+                        .body(|mut body| {
+                            body.row(10.0, |mut row| {
+                                values.iter().for_each(|v| {
+                                    row.col(|ui| {
+                                        ui.label(format!("{}", v));
+                                    });
+                                });
+
+                                row.col(|ui| {
+                                    ui.label(format!("{}", self.tm.tape_value()));
+                                });
+                            });
+                        });
+
+                        ui.separator();
 
                         ui.add(
                             egui::Slider::new(&mut self.tm.tape_rect_size, 20.0..=300.0)

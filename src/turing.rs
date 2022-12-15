@@ -248,6 +248,24 @@ impl TuringMachine {
         return self.final_states.contains(&self.current_state);
     }
 
+    pub fn values(&self) -> Vec<u32> {
+        let tmp: String = self
+            .tape
+            .iter()
+            .map(|v| if *v { "1" } else { "0" })
+            .collect();
+
+        tmp.split("0")
+            .filter_map(|s| {
+                if s.len() > 0 {
+                    Some(s.len() as u32 - 1)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
     pub fn to_string(&self) -> String {
         let mut tmp1 = String::new();
         let mut tmp2 = String::new();

@@ -88,6 +88,14 @@ impl TuringWidget {
     pub fn code(&self) -> &str {
         &self.tm.code
     }
+
+    pub fn tape_values(&self) -> Vec<String> {
+        self.tm
+            .values()
+            .iter()
+            .map(|v| v.to_string())
+            .collect::<Vec<String>>()
+    }
 }
 
 impl Widget for TuringWidget {
