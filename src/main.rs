@@ -14,7 +14,7 @@ use std::io;
 use std::path::PathBuf;
 
 #[cfg(not(target_arch = "wasm32"))]
-use turing_machine::ErrorWindow;
+use turing_machine::windows::ErrorWindow;
 
 use turing_machine::MyApp;
 use turing_machine::TuringMachine;

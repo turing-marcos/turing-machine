@@ -1,15 +1,18 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+use crate::windows::{AboutWindow, SecondaryWindow};
 use crate::{TuringMachine, TuringWidget};
 use eframe;
 use eframe::egui::{self, Id, RichText, Ui};
 use eframe::epaint::Color32;
-use egui_extras::{TableBuilder, Column};
+use egui_extras::{Column, TableBuilder};
 
 pub struct MyApp {
     code: String,
     error: Option<pest::error::Error<crate::Rule>>,
     tm: TuringWidget,
+    about_window: Option<Box<dyn SecondaryWindow>>,
+    config_window: Option<Box<dyn SecondaryWindow>>,
 }
 
 impl MyApp {
@@ -25,6 +28,8 @@ impl MyApp {
             code: String::from(&tm.code),
             error: None,
             tm: TuringWidget::new(tm),
+            about_window: None,
+            config_window: None,
         }
     }
 
@@ -126,6 +131,35 @@ impl MyApp {
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let mut editor_focused = false;
+
+        if let Some(about) = &self.about_window {
+            if !about.show(ctx) {
+                self.about_window = None;
+            }
+        }
+        if let Some(config) = &self.config_window {
+            if !config.show(ctx) {
+                self.config_window = None;
+            }
+        }
+
+        egui::TopBottomPanel::top("header")
+            .default_height(20.0)
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.menu_button("About", |ui| {
+                        if ui.button("About").clicked() {
+                            self.about_window = Some(Box::new(AboutWindow::default()));
+                        }
+
+                        if ui.link("Repository").clicked() {
+                            webbrowser::open("https://github.com/margual56/turing-machine-2.0")
+                                .unwrap();
+                        }
+                    })
+                });
+            });
+
         self.tm.left = egui::SidePanel::left("left")
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {

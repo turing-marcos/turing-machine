@@ -1,10 +1,9 @@
-mod error_window;
 mod instruction;
 mod turing;
 mod turing_widget;
 mod window;
+pub mod windows;
 
-pub use error_window::ErrorWindow;
 pub use instruction::TuringInstruction;
 pub use turing::{Rule, TuringMachine, TuringParser};
 pub use turing_widget::TuringWidget;
