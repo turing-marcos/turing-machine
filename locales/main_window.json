@@ -1,3 +1,39 @@
 {
+    "menu.about": {
+        "en": "About",
+        "es": "Acerca de"
+    },
+    "menu.repository": {
+        "en": "Repository",
+        "es": "Repositorio"
+    },
+    "menu.language": {
+        "en": "Language",
+        "es": "Idioma"
+    },
+    "btn.open_file": {
+        "en": "Open File",
+        "es": "Abrir Archivo"
+    },
+    "btn.compile": {
+        "en": "Compile and run code",
+        "es": "Compilar y ejecutar código"
+    },
+    "lbl.tape_size": {
+        "en": "Tape rectangle size",
+        "es": "Tamaño del rectángulo de la cinta"
+    },
+    "lbl.seconds": {
+        "en": "seconds",
+        "es": "segundos"
+    },
+    "lang.en": {
+        "en": "English",
+        "es": "Inglés"
+    },
+    "lang.es": {
+        "en": "Spanish",
+        "es": "Español"
+    }
 }
   

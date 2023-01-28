@@ -18,8 +18,6 @@ use turing_machine::{turing::Rule, windows::ErrorWindow};
 
 use turing_machine::{turing::TuringMachine, MyApp};
 
-use internationalization::t;
-
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(clap_parser, Debug)]
 #[command(

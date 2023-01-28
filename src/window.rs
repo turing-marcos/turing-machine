@@ -6,7 +6,14 @@ use crate::{turing::TuringMachine, TuringWidget};
 use eframe;
 use eframe::egui::{self, Id, RichText, Ui};
 use eframe::epaint::Color32;
+use internationalization::t;
 //use egui_extras::{Column, TableBuilder};
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum Language {
+    English,
+    Spanish,
+}
 
 pub struct MyApp {
     code: String,
@@ -14,6 +21,7 @@ pub struct MyApp {
     tm: TuringWidget,
     about_window: Option<Box<dyn SecondaryWindow>>,
     config_window: Option<Box<dyn SecondaryWindow>>,
+    lang: Language,
 }
 
 impl MyApp {
@@ -31,6 +39,14 @@ impl MyApp {
             tm: TuringWidget::new(tm),
             about_window: None,
             config_window: None,
+            lang: Language::English,
+        }
+    }
+
+    pub fn get_lang(&self) -> String {
+        match self.lang {
+            Language::English => String::from("en"),
+            Language::Spanish => String::from("es"),
         }
     }
 
@@ -127,10 +143,25 @@ impl MyApp {
         })
         .inner
     }
+
+    pub fn restart(&mut self, code: &str) {
+        self.tm = match self.tm.restart(code) {
+            Ok(t) => {
+                self.error = None;
+                t
+            }
+            Err(e) => {
+                self.error = Some(e);
+                self.tm.clone()
+            }
+        };
+        self.code = String::from(code);
+    }
 }
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let lang = self.get_lang();
         let mut editor_focused = false;
 
         if let Some(about) = &self.about_window {
@@ -148,15 +179,20 @@ impl eframe::App for MyApp {
             .default_height(20.0)
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    ui.menu_button("About", |ui| {
-                        if ui.button("About").clicked() {
+                    ui.menu_button(t!("menu.about", lang), |ui| {
+                        if ui.button(t!("menu.about", lang)).clicked() {
                             self.about_window = Some(Box::new(AboutWindow::default()));
                         }
 
-                        if ui.link("Repository").clicked() {
+                        if ui.link(t!("menu.repository", lang)).clicked() {
                             webbrowser::open("https://github.com/margual56/turing-machine-2.0")
                                 .unwrap();
                         }
+                    });
+
+                    ui.menu_button(t!("menu.language", lang), |ui| {
+                        ui.radio_value(&mut self.lang, Language::English, t!("lang.en", lang));
+                        ui.radio_value(&mut self.lang, Language::Spanish, t!("lang.es", lang));
                     })
                 });
             });
@@ -164,6 +200,43 @@ impl eframe::App for MyApp {
         self.tm.left = egui::SidePanel::left("left")
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
+                    // if ui.button(t!("btn.open_file", self.lang)).clicked() {
+                    //     if cfg!(wasm) {
+                    //         // Spawn dialog on main thread
+                    //         let task = rfd::AsyncFileDialog::new().pick_file();
+
+                    //         // Await somewhere else
+                    //         wasm_bindgen_futures::spawn_local(async move {
+                    //             let file = task.await;
+
+                    //             if let Some(file) = file {
+                    //                 // If you care about wasm support you just read() the file
+                    //                 let buffer = file.read().await;
+                    //                 match String::from_utf8(buffer) {
+                    //                     Ok(s) => self.restart(&s),
+                    //                     Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+                    //                 }
+                    //             }
+                    //         });
+                    //     } else {
+                    //         let path = std::env::current_dir().unwrap();
+
+                    //         let res = rfd::FileDialog::new()
+                    //             .add_filter("TuringMachine", &["tm"])
+                    //             .set_directory(&path)
+                    //             .pick_files();
+
+                    //         match res {
+                    //             Some(file) => {
+                    //                 let unparsed_file = std::fs::read_to_string(&file[0])
+                    //                     .expect("cannot read file");
+                    //                 self.restart(&unparsed_file);
+                    //             }
+                    //             None => {}
+                    //         }
+                    //     }
+                    // }
+
                     #[cfg(not(target_family = "wasm"))]
                     if !cfg!(wasm) && ui.button("Open file").clicked() {
                         let path = std::env::current_dir().unwrap();
@@ -192,7 +265,8 @@ impl eframe::App for MyApp {
                             None => {}
                         }
                     }
-                    if ui.button("Compile and run code").clicked() {
+
+                    if ui.button(t!("btn.compile", lang)).clicked() {
                         self.tm = match self.tm.restart(&self.code) {
                             Ok(t) => {
                                 self.error = None;
@@ -264,11 +338,11 @@ impl eframe::App for MyApp {
                         ui.add(
                             egui::Slider::new(&mut self.tm.tape_rect_size, 20.0..=300.0)
                                 .suffix(" px")
-                                .text("Tape rectangle size"),
+                                .text(t!("lbl.tape_size", lang)),
                         );
                         ui.add(
                             egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
-                                .suffix(" seconds")
+                                .suffix(format!(" {}", t!("lbl.seconds", lang)))
                                 .text("Tape animation speed"),
                         );
                     });
