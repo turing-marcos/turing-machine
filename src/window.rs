@@ -218,71 +218,70 @@ impl eframe::App for MyApp {
         self.tm.left = egui::SidePanel::left("left")
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
-                    // if ui.button(t!("btn.open_file", self.lang)).clicked() {
-                    //     if cfg!(wasm) {
-                    //         // Spawn dialog on main thread
-                    //         let task = rfd::AsyncFileDialog::new().pick_file();
+                    if ui.button(t!("btn.open_file", lang)).clicked() {
+                        if cfg!(wasm) {
+                            // Spawn dialog on main thread
+                            let task = rfd::AsyncFileDialog::new().pick_file();
 
-                    //         // Await somewhere else
-                    //         wasm_bindgen_futures::spawn_local(async move {
-                    //             let file = task.await;
+                            wasm_bindgen_futures::spawn_local(async move {
+                                let file = task.await;
 
-                    //             if let Some(file) = file {
-                    //                 // If you care about wasm support you just read() the file
-                    //                 let buffer = file.read().await;
-                    //                 match String::from_utf8(buffer) {
-                    //                     Ok(s) => self.restart(&s),
-                    //                     Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-                    //                 }
-                    //             }
-                    //         });
-                    //     } else {
-                    //         let path = std::env::current_dir().unwrap();
-
-                    //         let res = rfd::FileDialog::new()
-                    //             .add_filter("TuringMachine", &["tm"])
-                    //             .set_directory(&path)
-                    //             .pick_files();
-
-                    //         match res {
-                    //             Some(file) => {
-                    //                 let unparsed_file = std::fs::read_to_string(&file[0])
-                    //                     .expect("cannot read file");
-                    //                 self.restart(&unparsed_file);
-                    //             }
-                    //             None => {}
-                    //         }
-                    //     }
-                    // }
-
-                    #[cfg(not(target_family = "wasm"))]
-                    if !cfg!(wasm) && ui.button("Open file").clicked() {
-                        let path = std::env::current_dir().unwrap();
-
-                        let res = rfd::FileDialog::new()
-                            .add_filter("TuringMachine", &["tm"])
-                            .set_directory(&path)
-                            .pick_files();
-
-                        match res {
-                            Some(file) => {
-                                let unparsed_file =
-                                    std::fs::read_to_string(&file[0]).expect("cannot read file");
-                                self.tm = match self.tm.restart(&unparsed_file) {
-                                    Ok(t) => {
-                                        self.error = None;
-                                        t
+                                if let Some(file) = file {
+                                    // If you care about wasm support you just read() the file
+                                    let buffer = file.read().await;
+                                    match String::from_utf8(buffer) {
+                                        Ok(s) => self.restart(&s), // Self is not available here
+                                        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
                                     }
-                                    Err(e) => {
-                                        self.error = Some(e);
-                                        self.tm.clone()
-                                    }
-                                };
-                                self.code = unparsed_file;
+                                }
+                            });
+                        } else {
+                            let path = std::env::current_dir().unwrap();
+
+                            let res = rfd::FileDialog::new()
+                                .add_filter("TuringMachine", &["tm"])
+                                .set_directory(&path)
+                                .pick_files();
+
+                            match res {
+                                Some(file) => {
+                                    let unparsed_file = std::fs::read_to_string(&file[0])
+                                        .expect("cannot read file");
+                                    self.restart(&unparsed_file);
+                                }
+                                None => {}
                             }
-                            None => {}
                         }
                     }
+
+                    // #[cfg(not(target_family = "wasm"))]
+                    // if !cfg!(wasm) && ui.button("Open file").clicked() {
+                    //     let path = std::env::current_dir().unwrap();
+
+                    //     let res = rfd::FileDialog::new()
+                    //         .add_filter("TuringMachine", &["tm"])
+                    //         .set_directory(&path)
+                    //         .pick_files();
+
+                    //     match res {
+                    //         Some(file) => {
+                    //             let unparsed_file =
+                    //                 std::fs::read_to_string(&file[0]).expect("cannot read file");
+                    //             self.tm = match self.tm.restart(&unparsed_file) {
+                    //                 Ok(t) => {
+                    //                     self.error = None;
+                    //                     t
+                    //                 }
+                    //                 Err(e) => {
+                    //                     self.error = Some(e);
+                    //                     self.tm.clone()
+                    //                 }
+                    //             };
+                    //             self.code = unparsed_file;
+                    //         }
+                    //         None => {}
+                    //     }
+                    // }
 
                     if ui.button(t!("btn.compile", lang)).clicked() {
                         self.tm = match self.tm.restart(&self.code) {
