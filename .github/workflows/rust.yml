@@ -50,6 +50,9 @@ jobs:
 
             - name: Build release
               run: cargo build --release --verbose
+            
+            - name: Build wasm32
+              run: cargo build --target wasm32-unknown-unknown --verbose
 
             - uses: actions/cache@v3
               id: stable-cargo-build
