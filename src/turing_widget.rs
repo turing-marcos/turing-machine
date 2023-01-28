@@ -2,7 +2,7 @@ use eframe::egui::{self, widgets::Widget};
 use eframe::emath::Align2;
 use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, Vec2};
 
-use crate::TuringMachine;
+use crate::turing::TuringMachine;
 
 const STROKE_WIDTH: f32 = 3f32;
 
@@ -87,6 +87,14 @@ impl TuringWidget {
 
     pub fn code(&self) -> &str {
         &self.tm.code
+    }
+
+    pub fn tape_values(&self) -> Vec<String> {
+        self.tm
+            .values()
+            .iter()
+            .map(|v| v.to_string())
+            .collect::<Vec<String>>()
     }
 }
 

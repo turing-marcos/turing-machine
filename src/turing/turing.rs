@@ -2,10 +2,10 @@ use pest::Parser;
 use pest_derive::Parser;
 use std::{collections::HashMap, fmt::Write};
 
-use crate::{instruction::Movement, TuringInstruction};
+use crate::turing::{instruction::Movement, TuringInstruction};
 
 #[derive(Parser)]
-#[grammar = "turing.pest"]
+#[grammar = "turing/turing.pest"]
 pub struct TuringParser;
 
 #[derive(Debug, Clone)]
@@ -246,6 +246,24 @@ impl TuringMachine {
 
     pub fn finished(&self) -> bool {
         return self.final_states.contains(&self.current_state);
+    }
+
+    pub fn values(&self) -> Vec<u32> {
+        let tmp: String = self
+            .tape
+            .iter()
+            .map(|v| if *v { "1" } else { "0" })
+            .collect();
+
+        tmp.split("0")
+            .filter_map(|s| {
+                if s.len() > 0 {
+                    Some(s.len() as u32 - 1)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub fn to_string(&self) -> String {

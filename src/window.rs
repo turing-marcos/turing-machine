@@ -1,30 +1,23 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use crate::{TuringMachine, TuringWidget};
+use crate::turing::Rule;
+use crate::windows::{AboutWindow, SecondaryWindow};
+use crate::{turing::TuringMachine, TuringWidget};
 use eframe;
 use eframe::egui::{self, Id, RichText, Ui};
 use eframe::epaint::Color32;
+//use egui_extras::{Column, TableBuilder};
 
 pub struct MyApp {
     code: String,
-    error: Option<pest::error::Error<crate::Rule>>,
+    error: Option<pest::error::Error<Rule>>,
     tm: TuringWidget,
+    about_window: Option<Box<dyn SecondaryWindow>>,
+    config_window: Option<Box<dyn SecondaryWindow>>,
 }
 
 impl MyApp {
     pub fn new(tm: TuringMachine, cc: &eframe::CreationContext<'_>) -> Self {
-        // Customize egui here with cc.egui_ctx.set_fonts and cc.egui_ctx.set_visuals.
-        // Restore app state using cc.storage (requires the "persistence" feature).
-        // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
-        // for e.g. egui::PaintCallback.
-
-        // let mut fonts = egui::FontDefinitions::default();
-        // fonts
-        //     .families
-        //     .entry(egui::FontFamily::Monospace)
-        //     .or_default()
-        //     .insert(0, String::from("Consolas"));
-        // cc.egui_ctx.set_fonts(fonts);
         let mut st = (*egui::Context::default().style()).clone();
         st.override_font_id = Some(egui::FontId::monospace(14.0));
         st.spacing.slider_width = 250.0;
@@ -36,10 +29,12 @@ impl MyApp {
             code: String::from(&tm.code),
             error: None,
             tm: TuringWidget::new(tm),
+            about_window: None,
+            config_window: None,
         }
     }
 
-    fn handle_error(_ui: &mut Ui, ctx: &egui::Context, error: &pest::error::Error<crate::Rule>) {
+    fn handle_error(_ui: &mut Ui, ctx: &egui::Context, error: &pest::error::Error<Rule>) {
         let (error_pos, line_msg) = match error.line_col {
             pest::error::LineColLocation::Pos((line, col)) => {
                 (col, format!("Line {}, column {}: ", line, col))
@@ -137,6 +132,35 @@ impl MyApp {
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let mut editor_focused = false;
+
+        if let Some(about) = &self.about_window {
+            if !about.show(ctx) {
+                self.about_window = None;
+            }
+        }
+        if let Some(config) = &self.config_window {
+            if !config.show(ctx) {
+                self.config_window = None;
+            }
+        }
+
+        egui::TopBottomPanel::top("header")
+            .default_height(20.0)
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.menu_button("About", |ui| {
+                        if ui.button("About").clicked() {
+                            self.about_window = Some(Box::new(AboutWindow::default()));
+                        }
+
+                        if ui.link("Repository").clicked() {
+                            webbrowser::open("https://github.com/margual56/turing-machine-2.0")
+                                .unwrap();
+                        }
+                    })
+                });
+            });
+
         self.tm.left = egui::SidePanel::left("left")
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
@@ -190,14 +214,52 @@ impl eframe::App for MyApp {
             .response
             .rect
             .right();
+
         egui::CentralPanel::default().show(ctx, |main_panel| {
             main_panel.horizontal_top(|horiz| {
                 horiz.vertical_centered(|ui| {
                     ui.vertical_centered_justified(|ui| {
                         if let Some(desc) = self.tm.description() {
-                            ui.label(egui::RichText::new(desc).color(egui::Color32::GOLD).size(20.0).underline());
-                            ui.separator();
+                            ui.label(
+                                egui::RichText::new(desc)
+                                .color(egui::Color32::GOLD)
+                                .size(20.0)
+                                .underline()
+                            );
                         }
+
+                        //let values = self.tm.tape_values();
+
+                        // TableBuilder::new(ui).auto_shrink([true, true])
+                        // .striped(true)
+                        // .cell_layout(egui::Layout::centered_and_justified(egui::Direction::LeftToRight))
+                        // .columns(Column::auto(), values.len() +1)
+                        // .header(10.0, |mut header| {
+                        //     for i in 0..values.len() {
+                        //         header.col(|ui| {
+                        //             ui.label(RichText::new(format!("Value {}", i)).heading());
+                        //         });
+                        //     }
+
+                        //     header.col(|ui| {
+                        //         ui.label(RichText::new("Result").heading());
+                        //     });
+                        // })
+                        // .body(|mut body| {
+                        //     body.row(10.0, |mut row| {
+                        //         values.iter().for_each(|v| {
+                        //             row.col(|ui| {
+                        //                 ui.label(format!("{}", v));
+                        //             });
+                        //         });
+
+                        //         row.col(|ui| {
+                        //             ui.label(format!("{}", self.tm.tape_value()));
+                        //         });
+                        //     });
+                        // });
+
+                        // ui.separator();
 
                         ui.add(
                             egui::Slider::new(&mut self.tm.tape_rect_size, 20.0..=300.0)

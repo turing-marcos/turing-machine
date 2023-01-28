@@ -14,10 +14,12 @@ use std::io;
 use std::path::PathBuf;
 
 #[cfg(not(target_arch = "wasm32"))]
-use turing_machine::ErrorWindow;
+use turing_machine::windows::ErrorWindow;
 
-use turing_machine::MyApp;
-use turing_machine::TuringMachine;
+use turing_machine::{
+    turing::{Rule, TuringMachine},
+    MyApp,
+};
 
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(clap_parser, Debug)]
@@ -156,7 +158,7 @@ fn run_machine_gui(file: PathBuf) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn handle_error(e: pest::error::Error<turing_machine::Rule>, file: PathBuf) {
+fn handle_error(e: pest::error::Error<Rule>, file: PathBuf) {
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
         hardware_acceleration: eframe::HardwareAcceleration::Preferred,

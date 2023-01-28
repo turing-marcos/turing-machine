@@ -1,6 +1,6 @@
 use std::{fmt::Display, str::FromStr};
 
-use crate::Rule;
+use crate::turing::Rule;
 use pest::iterators::Pairs;
 
 #[derive(Debug, Clone, Copy)]
