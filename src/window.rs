@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use crate::turing::Rule;
-use crate::windows::{AboutWindow, SecondaryWindow};
+use crate::windows::{AboutWindow, SecondaryWindow, DebugWindow};
 use crate::{turing::TuringMachine, TuringWidget};
 use eframe;
 use eframe::egui::{self, Id, RichText, Ui};
@@ -20,7 +20,7 @@ pub struct MyApp {
     error: Option<pest::error::Error<Rule>>,
     tm: TuringWidget,
     about_window: Option<Box<dyn SecondaryWindow>>,
-    config_window: Option<Box<dyn SecondaryWindow>>,
+    debug_window: Option<Box<DebugWindow>>,
     lang: Language,
 }
 
@@ -38,7 +38,7 @@ impl MyApp {
             error: None,
             tm: TuringWidget::new(tm),
             about_window: None,
-            config_window: None,
+            debug_window: None,
             lang: Language::English,
         }
     }
@@ -109,10 +109,12 @@ impl MyApp {
         ui: &mut Ui,
         ctx: &egui::Context,
         editor_focused: bool,
+        lang: &str
     ) -> bool {
         ui.add_enabled_ui(!editor_focused, |ui| {
             if self.tm.offset != 0.0 {
-                ui.add_enabled(false, |ui: &mut Ui| ui.button("Step"));
+                ui.add_enabled(false, |ui: &mut Ui| ui.button(t!("lbl.machine.step", lang)));
+
                 if self.tm.offset.abs() < 0.01 {
                     self.tm.offset = 0.0;
                     return false;
@@ -125,7 +127,7 @@ impl MyApp {
                     return true;
                 }
             } else if (ui
-                .add_enabled(self.tm.paused, |ui: &mut Ui| ui.button("Step"))
+                .add_enabled(self.tm.paused, |ui: &mut Ui| ui.button(t!("lbl.machine.step", lang)))
                 .clicked()
                 || ui.input().key_pressed(egui::Key::ArrowRight)
                 || !self.tm.paused)
@@ -169,16 +171,35 @@ impl eframe::App for MyApp {
                 self.about_window = None;
             }
         }
-        if let Some(config) = &self.config_window {
-            if !config.show(ctx) {
-                self.config_window = None;
+        if let Some(debug) = &self.debug_window {
+            if !debug.show(ctx) {
+                self.debug_window = None;
+            }else if let Some(debug) = &mut self.debug_window{
+                debug.set_values(self.tm.tape_values(), self.tm.tape_value());
             }
         }
 
         egui::TopBottomPanel::top("header")
-            .default_height(20.0)
+            .default_height(35.0)
             .show(ctx, |ui| {
-                ui.horizontal(|ui| {
+                ui.horizontal_centered(|ui| {
+                    ui.menu_button(t!("menu.debugger", lang), |ui| {
+                        let mut debug_enabled = self.debug_window.is_some();
+                        ui.checkbox(&mut debug_enabled, t!("menu.debugger", lang));
+                        if debug_enabled {
+                            if self.debug_window.is_none(){
+                                self.debug_window = Some(Box::new(DebugWindow::default()));
+                            }
+                        } else {
+                            self.debug_window = None;
+                        }
+                    });
+
+                    ui.menu_button(t!("menu.language", lang), |ui| {
+                        ui.radio_value(&mut self.lang, Language::English, t!("lang.en", lang));
+                        ui.radio_value(&mut self.lang, Language::Spanish, t!("lang.es", lang));
+                    });
+
                     ui.menu_button(t!("menu.about", lang), |ui| {
                         if ui.button(t!("menu.about", lang)).clicked() {
                             self.about_window = Some(Box::new(AboutWindow::default()));
@@ -189,11 +210,6 @@ impl eframe::App for MyApp {
                                 .unwrap();
                         }
                     });
-
-                    ui.menu_button(t!("menu.language", lang), |ui| {
-                        ui.radio_value(&mut self.lang, Language::English, t!("lang.en", lang));
-                        ui.radio_value(&mut self.lang, Language::Spanish, t!("lang.es", lang));
-                    })
                 });
             });
 
@@ -302,48 +318,15 @@ impl eframe::App for MyApp {
                             );
                         }
 
-                        //let values = self.tm.tape_values();
-
-                        // TableBuilder::new(ui).auto_shrink([true, true])
-                        // .striped(true)
-                        // .cell_layout(egui::Layout::centered_and_justified(egui::Direction::LeftToRight))
-                        // .columns(Column::auto(), values.len() +1)
-                        // .header(10.0, |mut header| {
-                        //     for i in 0..values.len() {
-                        //         header.col(|ui| {
-                        //             ui.label(RichText::new(format!("Value {}", i)).heading());
-                        //         });
-                        //     }
-
-                        //     header.col(|ui| {
-                        //         ui.label(RichText::new("Result").heading());
-                        //     });
-                        // })
-                        // .body(|mut body| {
-                        //     body.row(10.0, |mut row| {
-                        //         values.iter().for_each(|v| {
-                        //             row.col(|ui| {
-                        //                 ui.label(format!("{}", v));
-                        //             });
-                        //         });
-
-                        //         row.col(|ui| {
-                        //             ui.label(format!("{}", self.tm.tape_value()));
-                        //         });
-                        //     });
-                        // });
-
-                        // ui.separator();
-
                         ui.add(
                             egui::Slider::new(&mut self.tm.tape_rect_size, 20.0..=300.0)
                                 .suffix(" px")
-                                .text(t!("lbl.tape_size", lang)),
+                                .text(t!("lbl.tape.size", lang)),
                         );
                         ui.add(
                             egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
                                 .suffix(format!(" {}", t!("lbl.seconds", lang)))
-                                .text("Tape animation speed"),
+                                .text(t!("lbl.tape.speed", lang)),
                         );
                     });
 
@@ -352,21 +335,21 @@ impl eframe::App for MyApp {
                     ui.spacing();
                     ui.spacing();
 
-                    ui.label(format!("Current output: {}", self.tm.tape_value()));
+                    ui.label(t!("lbl.current_output", out: &self.tm.tape_value().to_string(), lang));
 
                     ui.spacing();
                     ui.spacing();
 
                     ui.vertical_centered(|ui| {
-                    let mut text = "Pause";
+                    let mut text = t!("lbl.pause", lang);
                     if self.tm.paused {
                         ui.label(
-                    "The application is paused.\nTo unpause it, press the spacebar or this button:",
+                            t!("lbl.paused", lang)
                         );
-                        text = "Resume";
+                        text = t!("lbl.resume", lang);
                     }else{
                         ui.label(
-                            "The application is unpaused.\nTo pause it, press the spacebar or this button:",
+                            t!("lbl.resumed", lang)
                         );
                     }
                         let b = ui.button(text);
@@ -378,7 +361,7 @@ impl eframe::App for MyApp {
                             self.tm.paused = !self.tm.paused;
                         }
 
-                        if self.process_turing_controls(ui, &ctx, editor_focused) {
+                        if self.process_turing_controls(ui, &ctx, editor_focused, &lang) {
                             ctx.request_repaint();
                         }
                     });
