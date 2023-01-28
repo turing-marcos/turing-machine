@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use crate::turing::Rule;
-use crate::windows::{AboutWindow, SecondaryWindow, DebugWindow};
+use crate::windows::{AboutWindow, DebugWindow, SecondaryWindow};
 use crate::{turing::TuringMachine, TuringWidget};
 use eframe;
 use eframe::egui::{self, Id, RichText, Ui};
@@ -109,7 +109,7 @@ impl MyApp {
         ui: &mut Ui,
         ctx: &egui::Context,
         editor_focused: bool,
-        lang: &str
+        lang: &str,
     ) -> bool {
         ui.add_enabled_ui(!editor_focused, |ui| {
             if self.tm.offset != 0.0 {
@@ -127,7 +127,9 @@ impl MyApp {
                     return true;
                 }
             } else if (ui
-                .add_enabled(self.tm.paused, |ui: &mut Ui| ui.button(t!("lbl.machine.step", lang)))
+                .add_enabled(self.tm.paused, |ui: &mut Ui| {
+                    ui.button(t!("lbl.machine.step", lang))
+                })
                 .clicked()
                 || ui.input().key_pressed(egui::Key::ArrowRight)
                 || !self.tm.paused)
@@ -174,7 +176,7 @@ impl eframe::App for MyApp {
         if let Some(debug) = &self.debug_window {
             if !debug.show(ctx) {
                 self.debug_window = None;
-            }else if let Some(debug) = &mut self.debug_window{
+            } else if let Some(debug) = &mut self.debug_window {
                 debug.set_values(self.tm.tape_values(), self.tm.tape_value());
             }
         }
@@ -187,7 +189,7 @@ impl eframe::App for MyApp {
                         let mut debug_enabled = self.debug_window.is_some();
                         ui.checkbox(&mut debug_enabled, t!("menu.debugger.activate", lang));
                         if debug_enabled {
-                            if self.debug_window.is_none(){
+                            if self.debug_window.is_none() {
                                 self.debug_window = Some(Box::new(DebugWindow::default()));
                             }
                         } else {
@@ -312,9 +314,9 @@ impl eframe::App for MyApp {
                         if let Some(desc) = self.tm.description() {
                             ui.label(
                                 egui::RichText::new(desc)
-                                .color(egui::Color32::GOLD)
-                                .size(20.0)
-                                .underline()
+                                    .color(egui::Color32::GOLD)
+                                    .size(20.0)
+                                    .underline(),
                             );
                         }
 
@@ -335,27 +337,24 @@ impl eframe::App for MyApp {
                     ui.spacing();
                     ui.spacing();
 
-                    ui.label(t!("lbl.current_output", out: &self.tm.tape_value().to_string(), lang));
+                    ui.label(
+                        t!("lbl.current_output", out: &self.tm.tape_value().to_string(), lang),
+                    );
 
                     ui.spacing();
                     ui.spacing();
 
                     ui.vertical_centered(|ui| {
-                    let mut text = t!("lbl.pause", lang);
-                    if self.tm.paused {
-                        ui.label(
-                            t!("lbl.paused", lang)
-                        );
-                        text = t!("lbl.resume", lang);
-                    }else{
-                        ui.label(
-                            t!("lbl.resumed", lang)
-                        );
-                    }
+                        let mut text = t!("lbl.pause", lang);
+                        if self.tm.paused {
+                            ui.label(t!("lbl.paused", lang));
+                            text = t!("lbl.resume", lang);
+                        } else {
+                            ui.label(t!("lbl.resumed", lang));
+                        }
                         let b = ui.button(text);
                         //b.ctx.set_style(style);
-                        if (b.clicked()
-                            || ui.input().key_pressed(egui::Key::Space))
+                        if (b.clicked() || ui.input().key_pressed(egui::Key::Space))
                             && !editor_focused
                         {
                             self.tm.paused = !self.tm.paused;
