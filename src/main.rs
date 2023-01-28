@@ -14,12 +14,9 @@ use std::io;
 use std::path::PathBuf;
 
 #[cfg(not(target_arch = "wasm32"))]
-use turing_machine::windows::ErrorWindow;
+use turing_machine::{turing::Rule, windows::ErrorWindow};
 
-use turing_machine::{
-    turing::{Rule, TuringMachine},
-    MyApp,
-};
+use turing_machine::{turing::TuringMachine, MyApp};
 
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(clap_parser, Debug)]
@@ -78,12 +75,15 @@ F = {q2};
     };
 
     let web_options = eframe::WebOptions::default();
-    eframe::start_web(
-        "the_canvas_id", // hardcode it
-        web_options,
-        Box::new(|cc| Box::new(MyApp::new(tm, cc))),
-    )
-    .expect("failed to start eframe");
+    wasm_bindgen_futures::spawn_local(async {
+        eframe::start_web(
+            "the_canvas_id", // hardcode it
+            web_options,
+            Box::new(|cc| Box::new(MyApp::new(tm, cc))),
+        )
+        .await
+        .expect("failed to start eframe");
+    });
 }
 
 // When compiling natively:
