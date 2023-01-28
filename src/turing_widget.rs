@@ -2,7 +2,7 @@ use eframe::egui::{self, widgets::Widget};
 use eframe::emath::Align2;
 use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, Vec2};
 
-use crate::TuringMachine;
+use crate::turing::TuringMachine;
 
 const STROKE_WIDTH: f32 = 3f32;
 

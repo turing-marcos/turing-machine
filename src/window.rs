@@ -1,15 +1,16 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+use crate::turing::Rule;
 use crate::windows::{AboutWindow, SecondaryWindow};
-use crate::{TuringMachine, TuringWidget};
+use crate::{turing::TuringMachine, TuringWidget};
 use eframe;
 use eframe::egui::{self, Id, RichText, Ui};
 use eframe::epaint::Color32;
-use egui_extras::{Column, TableBuilder};
+//use egui_extras::{Column, TableBuilder};
 
 pub struct MyApp {
     code: String,
-    error: Option<pest::error::Error<crate::Rule>>,
+    error: Option<pest::error::Error<Rule>>,
     tm: TuringWidget,
     about_window: Option<Box<dyn SecondaryWindow>>,
     config_window: Option<Box<dyn SecondaryWindow>>,
@@ -33,7 +34,7 @@ impl MyApp {
         }
     }
 
-    fn handle_error(_ui: &mut Ui, ctx: &egui::Context, error: &pest::error::Error<crate::Rule>) {
+    fn handle_error(_ui: &mut Ui, ctx: &egui::Context, error: &pest::error::Error<Rule>) {
         let (error_pos, line_msg) = match error.line_col {
             pest::error::LineColLocation::Pos((line, col)) => {
                 (col, format!("Line {}, column {}: ", line, col))
@@ -219,41 +220,46 @@ impl eframe::App for MyApp {
                 horiz.vertical_centered(|ui| {
                     ui.vertical_centered_justified(|ui| {
                         if let Some(desc) = self.tm.description() {
-                            ui.label(egui::RichText::new(desc).color(egui::Color32::GOLD).size(20.0).underline());
+                            ui.label(
+                                egui::RichText::new(desc)
+                                .color(egui::Color32::GOLD)
+                                .size(20.0)
+                                .underline()
+                            );
                         }
 
-                        let values = self.tm.tape_values();
-                        
-                        TableBuilder::new(ui).auto_shrink([true, true])
-                        .striped(true)
-                        .cell_layout(egui::Layout::centered_and_justified(egui::Direction::LeftToRight))
-                        .columns(Column::auto(), values.len() +1)
-                        .header(10.0, |mut header| {
-                            for i in 0..values.len() {
-                                header.col(|ui| {
-                                    ui.label(RichText::new(format!("Value {}", i)).heading());
-                                });
-                            }
+                        //let values = self.tm.tape_values();
 
-                            header.col(|ui| {
-                                ui.label(RichText::new("Result").heading());
-                            });
-                        })
-                        .body(|mut body| {
-                            body.row(10.0, |mut row| {
-                                values.iter().for_each(|v| {
-                                    row.col(|ui| {
-                                        ui.label(format!("{}", v));
-                                    });
-                                });
+                        // TableBuilder::new(ui).auto_shrink([true, true])
+                        // .striped(true)
+                        // .cell_layout(egui::Layout::centered_and_justified(egui::Direction::LeftToRight))
+                        // .columns(Column::auto(), values.len() +1)
+                        // .header(10.0, |mut header| {
+                        //     for i in 0..values.len() {
+                        //         header.col(|ui| {
+                        //             ui.label(RichText::new(format!("Value {}", i)).heading());
+                        //         });
+                        //     }
 
-                                row.col(|ui| {
-                                    ui.label(format!("{}", self.tm.tape_value()));
-                                });
-                            });
-                        });
+                        //     header.col(|ui| {
+                        //         ui.label(RichText::new("Result").heading());
+                        //     });
+                        // })
+                        // .body(|mut body| {
+                        //     body.row(10.0, |mut row| {
+                        //         values.iter().for_each(|v| {
+                        //             row.col(|ui| {
+                        //                 ui.label(format!("{}", v));
+                        //             });
+                        //         });
 
-                        ui.separator();
+                        //         row.col(|ui| {
+                        //             ui.label(format!("{}", self.tm.tape_value()));
+                        //         });
+                        //     });
+                        // });
+
+                        // ui.separator();
 
                         ui.add(
                             egui::Slider::new(&mut self.tm.tape_rect_size, 20.0..=300.0)

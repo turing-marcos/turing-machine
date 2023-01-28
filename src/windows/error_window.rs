@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use crate::Rule;
+use crate::turing::Rule;
 use eframe;
 use eframe::egui::{self, RichText};
 use eframe::epaint::Color32;

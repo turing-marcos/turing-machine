@@ -2,10 +2,10 @@ use pest::Parser;
 use pest_derive::Parser;
 use std::{collections::HashMap, fmt::Write};
 
-use crate::{instruction::Movement, TuringInstruction};
+use crate::turing::{instruction::Movement, TuringInstruction};
 
 #[derive(Parser)]
-#[grammar = "turing.pest"]
+#[grammar = "turing/turing.pest"]
 pub struct TuringParser;
 
 #[derive(Debug, Clone)]

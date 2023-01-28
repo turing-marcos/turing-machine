@@ -18,13 +18,21 @@ impl SecondaryWindow for AboutWindow {
                     ui.vertical_centered_justified(|ui| {
                         // TODO: Display the logo of the app
 
-                        ui.label(RichText::new("Turing Machine Simulator").size(32.0).strong());
+                        ui.label(
+                            RichText::new("Turing Machine Simulator")
+                                .size(32.0)
+                                .strong(),
+                        );
                         ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
                     });
 
                     ui.separator();
                     ui.vertical_centered_justified(|ui| {
-                        ui.label(RichText::new("Authors & honorable mentions").size(32.0).strong());
+                        ui.label(
+                            RichText::new("Authors & honorable mentions")
+                                .size(32.0)
+                                .strong(),
+                        );
                         ui.vertical_centered(|ui| {
                             ui.label(RichText::new("Marcos Gutiérrez Alonso").size(15.0).strong());
                             ui.label("Original author and maintainer of the project");
@@ -45,8 +53,10 @@ impl SecondaryWindow for AboutWindow {
                         ui.horizontal_centered(|ui| {
                             ui.label("This project is licensed under GPLv2");
                             if ui.link("Take a look at the source code").clicked() {
-                                webbrowser::open("https://github.com/margual56/turing-machine-2.0/")
-                                    .unwrap();
+                                webbrowser::open(
+                                    "https://github.com/margual56/turing-machine-2.0/",
+                                )
+                                .unwrap();
                             }
                         });
                     });
