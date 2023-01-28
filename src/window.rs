@@ -185,7 +185,7 @@ impl eframe::App for MyApp {
                 ui.horizontal_centered(|ui| {
                     ui.menu_button(t!("menu.debugger", lang), |ui| {
                         let mut debug_enabled = self.debug_window.is_some();
-                        ui.checkbox(&mut debug_enabled, t!("menu.debugger", lang));
+                        ui.checkbox(&mut debug_enabled, t!("menu.debugger.activate", lang));
                         if debug_enabled {
                             if self.debug_window.is_none(){
                                 self.debug_window = Some(Box::new(DebugWindow::default()));

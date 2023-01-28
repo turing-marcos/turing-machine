@@ -12,6 +12,10 @@
         "es": "Idioma"
     },
     "menu.debugger": {
+        "en": "Debugger",
+        "es": "Depurador"
+    },
+    "menu.debugger.activate": {
         "en": "Activate debugger",
         "es": "Activar depurador"
     },
