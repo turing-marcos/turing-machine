@@ -35,6 +35,9 @@ jobs:
             - name: Install dependencies
               run: sudo apt-get update && sudo apt-get --assume-yes install libfontconfig1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev librust-atk-dev libwebkit2gtk-4.0-dev libsoup2.4-dev
 
+            - name: Install wasm target
+              run: rustup target add wasm32-unknown-unknown
+
             - name: Checkout repository
               uses: actions/checkout@v3
 
@@ -50,6 +53,9 @@ jobs:
 
             - name: Build release
               run: cargo build --release --verbose
+            
+            - name: Build wasm32
+              run: cargo build --target wasm32-unknown-unknown --verbose
 
             - uses: actions/cache@v3
               id: stable-cargo-build

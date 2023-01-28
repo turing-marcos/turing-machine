@@ -2194,6 +2194,7 @@ dependencies = [
  "rfd",
  "tracing-subscriber",
  "tracing-wasm",
+ "wasm-bindgen-futures",
  "webbrowser",
 ]
 
