@@ -1,4 +1,8 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+//#[cfg(target_family = "wasm")]
+use std::sync::mpsc;
+
+//#[cfg(target_family = "wasm")]
+use web_sys::console;
 
 use crate::turing::Rule;
 use crate::windows::{AboutWindow, DebugWindow, SecondaryWindow};
@@ -15,11 +19,12 @@ pub enum Language {
     Spanish,
 }
 
+#[derive(Clone, Debug)]
 pub struct MyApp {
     code: String,
     error: Option<pest::error::Error<Rule>>,
     tm: TuringWidget,
-    about_window: Option<Box<dyn SecondaryWindow>>,
+    about_window: Option<Box<AboutWindow>>,
     debug_window: Option<Box<DebugWindow>>,
     lang: Language,
 }
@@ -219,9 +224,16 @@ impl eframe::App for MyApp {
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
                     if ui.button(t!("btn.open_file", lang)).clicked() {
+                        //#[cfg(target_family = "wasm")]
                         if cfg!(wasm) {
                             // Spawn dialog on main thread
-                            let task = rfd::AsyncFileDialog::new().pick_file();
+                            let task = rfd::AsyncFileDialog::new()
+                                .add_filter("TuringMachine", &["tm"])
+                                .pick_file();
+
+                            let (tx, rx) = mpsc::channel();
+
+                            console::debug_1(&"Spawning task...".into());
 
                             wasm_bindgen_futures::spawn_local(async move {
                                 let file = task.await;
@@ -230,12 +242,21 @@ impl eframe::App for MyApp {
                                     // If you care about wasm support you just read() the file
                                     let buffer = file.read().await;
                                     match String::from_utf8(buffer) {
-                                        Ok(s) => self.restart(&s), // Self is not available here
+                                        Ok(s) => tx.send(s).unwrap(),
                                         Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
                                     }
                                 }
                             });
-                        } else {
+
+                            let code = rx.recv().unwrap();
+
+                            console::debug_1(&format!("Code: {}", code).into());
+
+                            self.restart(&code);
+                        }
+
+                        #[cfg(not(target_family = "wasm"))]
+                        if !cfg!(wasm) {
                             let path = std::env::current_dir().unwrap();
 
                             let res = rfd::FileDialog::new()
