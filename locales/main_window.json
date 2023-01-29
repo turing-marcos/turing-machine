@@ -1,0 +1,75 @@
+{
+    "menu.about": {
+        "en": "About",
+        "es": "Acerca de"
+    },
+    "menu.repository": {
+        "en": "Repository",
+        "es": "Repositorio"
+    },
+    "menu.language": {
+        "en": "Language",
+        "es": "Idioma"
+    },
+    "menu.debugger": {
+        "en": "Debugger",
+        "es": "Depurador"
+    },
+    "menu.debugger.activate": {
+        "en": "Activate debugger",
+        "es": "Activar depurador"
+    },
+    "btn.open_file": {
+        "en": "Open File",
+        "es": "Abrir Archivo"
+    },
+    "btn.compile": {
+        "en": "Compile and run code",
+        "es": "Compilar y ejecutar código"
+    },
+    "lbl.tape.size": {
+        "en": "Tape rectangle size",
+        "es": "Tamaño de la cinta"
+    },
+    "lbl.tape.speed": {
+        "en": "Tape animation speed",
+        "es": "Velocidad de la cinta"
+    },
+    "lbl.machine.step": {
+        "en": "Do one step",
+        "es": "Dar un paso"
+    },
+    "lbl.seconds": {
+        "en": "seconds",
+        "es": "segundos"
+    },
+    "lbl.current_output": {
+        "en": "Current output: $out",
+        "es": "Salida actual: $out"
+    },
+    "lbl.pause": {
+        "en": "Pause",
+        "es": "Pausar"
+    },
+    "lbl.paused": {
+        "en":"The application is paused.\nTo unpause it, press the spacebar or this button:",
+        "es":"La aplicación está pausada.\nPara reanudarla, presione la barra espaciadora o este botón:"
+    },
+    "lbl.resume": {
+        "en": "Resume",
+        "es": "Reanudar"
+    },
+    "lbl.resumed": {
+        "en": "The simulation is running.\nTo pause it, press the spacebar or this button:",
+        "es": "La simulación está activa.\nPara pausarla, presione la barra espaciadora o este botón:"
+    },
+    "lang.en": {
+        "en": "English",
+        "es": "Inglés"
+    },
+    "lang.es": {
+        "en": "Spanish",
+        "es": "Español"
+    }
+}
+  

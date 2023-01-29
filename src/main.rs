@@ -26,6 +26,7 @@ use turing_machine::{turing::TuringMachine, MyApp};
     about,
     long_about = "Note: When playing, all the keybindings of mpv can be used, and `q` is reserved for exiting the program"
 )]
+
 pub struct Cli {
     /// Option: -f --file: Specify a file with the instructions.
     #[clap(long, short, help = "Specify a file with instructions.")]

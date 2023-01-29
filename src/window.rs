@@ -1,19 +1,27 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use crate::turing::Rule;
-use crate::windows::{AboutWindow, SecondaryWindow};
+use crate::windows::{AboutWindow, DebugWindow, SecondaryWindow};
 use crate::{turing::TuringMachine, TuringWidget};
 use eframe;
 use eframe::egui::{self, Id, RichText, Ui};
 use eframe::epaint::Color32;
+use internationalization::t;
 //use egui_extras::{Column, TableBuilder};
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum Language {
+    English,
+    Spanish,
+}
 
 pub struct MyApp {
     code: String,
     error: Option<pest::error::Error<Rule>>,
     tm: TuringWidget,
     about_window: Option<Box<dyn SecondaryWindow>>,
-    config_window: Option<Box<dyn SecondaryWindow>>,
+    debug_window: Option<Box<DebugWindow>>,
+    lang: Language,
 }
 
 impl MyApp {
@@ -30,7 +38,15 @@ impl MyApp {
             error: None,
             tm: TuringWidget::new(tm),
             about_window: None,
-            config_window: None,
+            debug_window: None,
+            lang: Language::English,
+        }
+    }
+
+    pub fn get_lang(&self) -> String {
+        match self.lang {
+            Language::English => String::from("en"),
+            Language::Spanish => String::from("es"),
         }
     }
 
@@ -93,10 +109,12 @@ impl MyApp {
         ui: &mut Ui,
         ctx: &egui::Context,
         editor_focused: bool,
+        lang: &str,
     ) -> bool {
         ui.add_enabled_ui(!editor_focused, |ui| {
             if self.tm.offset != 0.0 {
-                ui.add_enabled(false, |ui: &mut Ui| ui.button("Step"));
+                ui.add_enabled(false, |ui: &mut Ui| ui.button(t!("lbl.machine.step", lang)));
+
                 if self.tm.offset.abs() < 0.01 {
                     self.tm.offset = 0.0;
                     return false;
@@ -109,7 +127,9 @@ impl MyApp {
                     return true;
                 }
             } else if (ui
-                .add_enabled(self.tm.paused, |ui: &mut Ui| ui.button("Step"))
+                .add_enabled(self.tm.paused, |ui: &mut Ui| {
+                    ui.button(t!("lbl.machine.step", lang))
+                })
                 .clicked()
                 || ui.input().key_pressed(egui::Key::ArrowRight)
                 || !self.tm.paused)
@@ -127,43 +147,121 @@ impl MyApp {
         })
         .inner
     }
+
+    pub fn restart(&mut self, code: &str) {
+        self.tm = match self.tm.restart(code) {
+            Ok(t) => {
+                self.error = None;
+                t
+            }
+            Err(e) => {
+                self.error = Some(e);
+                self.tm.clone()
+            }
+        };
+        self.code = String::from(code);
+    }
 }
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let lang = self.get_lang();
         let mut editor_focused = false;
 
         if let Some(about) = &self.about_window {
             if !about.show(ctx) {
                 self.about_window = None;
+            } else if let Some(about) = &mut self.about_window {
+                about.set_lang(&lang);
             }
         }
-        if let Some(config) = &self.config_window {
-            if !config.show(ctx) {
-                self.config_window = None;
+        if let Some(debug) = &self.debug_window {
+            if !debug.show(ctx) {
+                self.debug_window = None;
+            } else if let Some(debug) = &mut self.debug_window {
+                debug.set_lang(&lang);
+                debug.set_values(self.tm.tape_values(), self.tm.tape_value());
             }
         }
 
         egui::TopBottomPanel::top("header")
-            .default_height(20.0)
+            .default_height(35.0)
             .show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    ui.menu_button("About", |ui| {
-                        if ui.button("About").clicked() {
-                            self.about_window = Some(Box::new(AboutWindow::default()));
+                ui.horizontal_centered(|ui| {
+                    ui.menu_button(t!("menu.debugger", lang), |ui| {
+                        let mut debug_enabled = self.debug_window.is_some();
+                        ui.checkbox(&mut debug_enabled, t!("menu.debugger.activate", lang));
+                        if debug_enabled {
+                            if self.debug_window.is_none() {
+                                self.debug_window = Some(Box::new(DebugWindow::new(
+                                    &lang,
+                                    self.tm.tape_values(),
+                                    self.tm.tape_value(),
+                                )));
+                            }
+                        } else {
+                            self.debug_window = None;
+                        }
+                    });
+
+                    ui.menu_button(t!("menu.language", lang), |ui| {
+                        ui.radio_value(&mut self.lang, Language::English, t!("lang.en", lang));
+                        ui.radio_value(&mut self.lang, Language::Spanish, t!("lang.es", lang));
+                    });
+
+                    ui.menu_button(t!("menu.about", lang), |ui| {
+                        if ui.button(t!("menu.about", lang)).clicked() {
+                            self.about_window = Some(Box::new(AboutWindow::new(&lang)));
                         }
 
-                        if ui.link("Repository").clicked() {
+                        if ui.link(t!("menu.repository", lang)).clicked() {
                             webbrowser::open("https://github.com/margual56/turing-machine-2.0")
                                 .unwrap();
                         }
-                    })
+                    });
                 });
             });
 
         self.tm.left = egui::SidePanel::left("left")
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
+                    // if ui.button(t!("btn.open_file", self.lang)).clicked() {
+                    //     if cfg!(wasm) {
+                    //         // Spawn dialog on main thread
+                    //         let task = rfd::AsyncFileDialog::new().pick_file();
+
+                    //         // Await somewhere else
+                    //         wasm_bindgen_futures::spawn_local(async move {
+                    //             let file = task.await;
+
+                    //             if let Some(file) = file {
+                    //                 // If you care about wasm support you just read() the file
+                    //                 let buffer = file.read().await;
+                    //                 match String::from_utf8(buffer) {
+                    //                     Ok(s) => self.restart(&s),
+                    //                     Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+                    //                 }
+                    //             }
+                    //         });
+                    //     } else {
+                    //         let path = std::env::current_dir().unwrap();
+
+                    //         let res = rfd::FileDialog::new()
+                    //             .add_filter("TuringMachine", &["tm"])
+                    //             .set_directory(&path)
+                    //             .pick_files();
+
+                    //         match res {
+                    //             Some(file) => {
+                    //                 let unparsed_file = std::fs::read_to_string(&file[0])
+                    //                     .expect("cannot read file");
+                    //                 self.restart(&unparsed_file);
+                    //             }
+                    //             None => {}
+                    //         }
+                    //     }
+                    // }
+
                     #[cfg(not(target_family = "wasm"))]
                     if !cfg!(wasm) && ui.button("Open file").clicked() {
                         let path = std::env::current_dir().unwrap();
@@ -192,7 +290,8 @@ impl eframe::App for MyApp {
                             None => {}
                         }
                     }
-                    if ui.button("Compile and run code").clicked() {
+
+                    if ui.button(t!("btn.compile", lang)).clicked() {
                         self.tm = match self.tm.restart(&self.code) {
                             Ok(t) => {
                                 self.error = None;
@@ -222,54 +321,21 @@ impl eframe::App for MyApp {
                         if let Some(desc) = self.tm.description() {
                             ui.label(
                                 egui::RichText::new(desc)
-                                .color(egui::Color32::GOLD)
-                                .size(20.0)
-                                .underline()
+                                    .color(egui::Color32::GOLD)
+                                    .size(20.0)
+                                    .underline(),
                             );
                         }
-
-                        //let values = self.tm.tape_values();
-
-                        // TableBuilder::new(ui).auto_shrink([true, true])
-                        // .striped(true)
-                        // .cell_layout(egui::Layout::centered_and_justified(egui::Direction::LeftToRight))
-                        // .columns(Column::auto(), values.len() +1)
-                        // .header(10.0, |mut header| {
-                        //     for i in 0..values.len() {
-                        //         header.col(|ui| {
-                        //             ui.label(RichText::new(format!("Value {}", i)).heading());
-                        //         });
-                        //     }
-
-                        //     header.col(|ui| {
-                        //         ui.label(RichText::new("Result").heading());
-                        //     });
-                        // })
-                        // .body(|mut body| {
-                        //     body.row(10.0, |mut row| {
-                        //         values.iter().for_each(|v| {
-                        //             row.col(|ui| {
-                        //                 ui.label(format!("{}", v));
-                        //             });
-                        //         });
-
-                        //         row.col(|ui| {
-                        //             ui.label(format!("{}", self.tm.tape_value()));
-                        //         });
-                        //     });
-                        // });
-
-                        // ui.separator();
 
                         ui.add(
                             egui::Slider::new(&mut self.tm.tape_rect_size, 20.0..=300.0)
                                 .suffix(" px")
-                                .text("Tape rectangle size"),
+                                .text(t!("lbl.tape.size", lang)),
                         );
                         ui.add(
                             egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
-                                .suffix(" seconds")
-                                .text("Tape animation speed"),
+                                .suffix(t!("lbl.seconds", lang))
+                                .text(t!("lbl.tape.speed", lang)),
                         );
                     });
 
@@ -278,33 +344,30 @@ impl eframe::App for MyApp {
                     ui.spacing();
                     ui.spacing();
 
-                    ui.label(format!("Current output: {}", self.tm.tape_value()));
+                    ui.label(
+                        t!("lbl.current_output", out: &self.tm.tape_value().to_string(), lang),
+                    );
 
                     ui.spacing();
                     ui.spacing();
 
                     ui.vertical_centered(|ui| {
-                    let mut text = "Pause";
-                    if self.tm.paused {
-                        ui.label(
-                    "The application is paused.\nTo unpause it, press the spacebar or this button:",
-                        );
-                        text = "Resume";
-                    }else{
-                        ui.label(
-                            "The application is unpaused.\nTo pause it, press the spacebar or this button:",
-                        );
-                    }
+                        let mut text = t!("lbl.pause", lang);
+                        if self.tm.paused {
+                            ui.label(t!("lbl.paused", lang));
+                            text = t!("lbl.resume", lang);
+                        } else {
+                            ui.label(t!("lbl.resumed", lang));
+                        }
                         let b = ui.button(text);
                         //b.ctx.set_style(style);
-                        if (b.clicked()
-                            || ui.input().key_pressed(egui::Key::Space))
+                        if (b.clicked() || ui.input().key_pressed(egui::Key::Space))
                             && !editor_focused
                         {
                             self.tm.paused = !self.tm.paused;
                         }
 
-                        if self.process_turing_controls(ui, &ctx, editor_focused) {
+                        if self.process_turing_controls(ui, &ctx, editor_focused, &lang) {
                             ctx.request_repaint();
                         }
                     });
