@@ -171,7 +171,7 @@ impl eframe::App for MyApp {
         if let Some(about) = &self.about_window {
             if !about.show(ctx) {
                 self.about_window = None;
-            }else if let Some(about) = &mut self.about_window {
+            } else if let Some(about) = &mut self.about_window {
                 about.set_lang(&lang);
             }
         }
@@ -193,7 +193,11 @@ impl eframe::App for MyApp {
                         ui.checkbox(&mut debug_enabled, t!("menu.debugger.activate", lang));
                         if debug_enabled {
                             if self.debug_window.is_none() {
-                                self.debug_window = Some(Box::new(DebugWindow::new(&lang, self.tm.tape_values(), self.tm.tape_value())));
+                                self.debug_window = Some(Box::new(DebugWindow::new(
+                                    &lang,
+                                    self.tm.tape_values(),
+                                    self.tm.tape_value(),
+                                )));
                             }
                         } else {
                             self.debug_window = None;

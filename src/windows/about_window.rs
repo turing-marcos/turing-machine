@@ -10,7 +10,9 @@ pub struct AboutWindow {
 
 impl AboutWindow {
     pub fn new(lang: &str) -> Self {
-        Self { lang: String::from(lang) }
+        Self {
+            lang: String::from(lang),
+        }
     }
 }
 
@@ -36,7 +38,11 @@ impl SecondaryWindow for AboutWindow {
                                 .size(32.0)
                                 .strong(),
                         );
-                        ui.label(t!("lbl.version", version: env!("CARGO_PKG_VERSION"), self.lang));
+                        ui.label(t!(
+                            "lbl.version",
+                            version: env!("CARGO_PKG_VERSION"),
+                            self.lang
+                        ));
                     });
 
                     ui.separator();
@@ -62,7 +68,11 @@ impl SecondaryWindow for AboutWindow {
                     });
                     ui.separator();
                     ui.vertical_centered_justified(|ui| {
-                        ui.label(RichText::new(t!("lbl.title.about", self.lang)).size(32.0).strong());
+                        ui.label(
+                            RichText::new(t!("lbl.title.about", self.lang))
+                                .size(32.0)
+                                .strong(),
+                        );
                         ui.horizontal_centered(|ui| {
                             ui.label(t!("lbl.about.license", self.lang));
                             if ui.link(t!("lbl.about.code", self.lang)).clicked() {

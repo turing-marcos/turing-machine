@@ -48,7 +48,14 @@ impl SecondaryWindow for DebugWindow {
                     .header(10.0, |mut header| {
                         for i in 0..self.tape_values.len() {
                             header.col(|ui| {
-                                ui.label(RichText::new(t!("lbl.value", val: &usize::to_string(&i), self.lang)).heading());
+                                ui.label(
+                                    RichText::new(t!(
+                                        "lbl.value",
+                                        val: &usize::to_string(&i),
+                                        self.lang
+                                    ))
+                                    .heading(),
+                                );
                             });
                         }
 
