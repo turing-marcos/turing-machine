@@ -171,12 +171,15 @@ impl eframe::App for MyApp {
         if let Some(about) = &self.about_window {
             if !about.show(ctx) {
                 self.about_window = None;
+            }else if let Some(about) = &mut self.about_window {
+                about.set_lang(&lang);
             }
         }
         if let Some(debug) = &self.debug_window {
             if !debug.show(ctx) {
                 self.debug_window = None;
             } else if let Some(debug) = &mut self.debug_window {
+                debug.set_lang(&lang);
                 debug.set_values(self.tm.tape_values(), self.tm.tape_value());
             }
         }
@@ -327,7 +330,7 @@ impl eframe::App for MyApp {
                         );
                         ui.add(
                             egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
-                                .suffix(format!(" {}", t!("lbl.seconds", lang)))
+                                .suffix(t!("lbl.seconds", lang))
                                 .text(t!("lbl.tape.speed", lang)),
                         );
                     });

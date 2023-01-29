@@ -1,0 +1,34 @@
+{
+    "lbl.version": {
+        "en": "Version $version",
+        "es": "Versión $version"
+    },
+    "lbl.title.name": {
+        "en": "Turing Machine Simulator",
+        "es": "Simulador de Máquina de Turing"
+    },
+    "lbl.title.credits": {
+        "en": "Authors & honorable mentions",
+        "es": "Autores y menciones honoríficas"
+    },
+    "lbl.title.about": {
+        "en": "About the application",
+        "es": "Acerca de la aplicación"
+    },
+    "lbl.credits.marcos": {
+        "en": "Original author and maintainer of the project",
+        "es": "Autor original y administrador del proyecto"
+    },
+    "lbl.credits.sezin": {
+        "en": "Supervisor of the project and a great moral support",
+        "es": "Supervisora del proyecto y un gran apoyo moral"
+    },
+    "lbl.about.license": {
+        "en": "This project is licensed under GPLv2",
+        "es": "Este proyecto está licenciado bajo GPLv2"
+    },
+    "lbl.about.code": {
+        "en": "Take a look at the source code",
+        "es": "Echa un vistazo al código fuente"
+    }
+}

@@ -5,13 +5,15 @@ use super::SecondaryWindow;
 
 #[derive(Debug, Clone, Default)]
 pub struct DebugWindow {
+    lang: String,
     pub tape_values: Vec<String>,
     pub tape_value: u32,
 }
 
 impl DebugWindow {
-    pub fn new(tape_values: Vec<String>, tape_value: u32) -> Self {
+    pub fn new(lang: String, tape_values: Vec<String>, tape_value: u32) -> Self {
         Self {
+            lang,
             tape_values,
             tape_value,
         }
@@ -24,6 +26,10 @@ impl DebugWindow {
 }
 
 impl SecondaryWindow for DebugWindow {
+    fn set_lang(&mut self, lang: &str) {
+        self.lang = lang.to_string();
+    }
+
     fn show(&self, ctx: &egui::Context) -> bool {
         let mut active = true;
 

@@ -9,5 +9,6 @@ pub use debug_window::DebugWindow;
 pub use error_window::ErrorWindow;
 
 pub trait SecondaryWindow {
+    fn set_lang(&mut self, lang: &str);
     fn show(&self, ctx: &egui::Context) -> bool;
 }
