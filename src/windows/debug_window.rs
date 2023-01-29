@@ -2,6 +2,7 @@ use eframe::egui::{self, RichText};
 use egui_extras::{Column, TableBuilder};
 
 use super::SecondaryWindow;
+use internationalization::t;
 
 #[derive(Debug, Clone, Default)]
 pub struct DebugWindow {
@@ -33,7 +34,7 @@ impl SecondaryWindow for DebugWindow {
     fn show(&self, ctx: &egui::Context) -> bool {
         let mut active = true;
 
-        egui::Window::new("Debug")
+        egui::Window::new(t!("title.debug", self.lang))
             .open(&mut active)
             .show(ctx, |ui| {
                 TableBuilder::new(ui)
@@ -46,12 +47,12 @@ impl SecondaryWindow for DebugWindow {
                     .header(10.0, |mut header| {
                         for i in 0..self.tape_values.len() {
                             header.col(|ui| {
-                                ui.label(RichText::new(format!("Value {}", i)).heading());
+                                ui.label(RichText::new(t!("lbl.value", val: &usize::to_string(&i), self.lang)).heading());
                             });
                         }
 
                         header.col(|ui| {
-                            ui.label(RichText::new("Result").heading());
+                            ui.label(RichText::new(t!("lbl.result", self.lang)).heading());
                         });
                     })
                     .body(|mut body| {

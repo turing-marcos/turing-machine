@@ -1,0 +1,14 @@
+{
+    "title.debug": {
+        "en": "Debugger",
+        "es": "Depurador"
+    },
+    "lbl.result": {
+        "en": "Result",
+        "es": "Resultado"
+    },
+    "lbl.value": {
+        "en": "Value $val",
+        "es": "Valor $val"
+    }
+}
