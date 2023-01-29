@@ -193,7 +193,7 @@ impl eframe::App for MyApp {
                         ui.checkbox(&mut debug_enabled, t!("menu.debugger.activate", lang));
                         if debug_enabled {
                             if self.debug_window.is_none() {
-                                self.debug_window = Some(Box::new(DebugWindow::default()));
+                                self.debug_window = Some(Box::new(DebugWindow::new(&lang, self.tm.tape_values(), self.tm.tape_value())));
                             }
                         } else {
                             self.debug_window = None;
@@ -207,7 +207,7 @@ impl eframe::App for MyApp {
 
                     ui.menu_button(t!("menu.about", lang), |ui| {
                         if ui.button(t!("menu.about", lang)).clicked() {
-                            self.about_window = Some(Box::new(AboutWindow::default()));
+                            self.about_window = Some(Box::new(AboutWindow::new(&lang)));
                         }
 
                         if ui.link(t!("menu.repository", lang)).clicked() {

@@ -12,9 +12,9 @@ pub struct DebugWindow {
 }
 
 impl DebugWindow {
-    pub fn new(lang: String, tape_values: Vec<String>, tape_value: u32) -> Self {
+    pub fn new(lang: &str, tape_values: Vec<String>, tape_value: u32) -> Self {
         Self {
-            lang,
+            lang: String::from(lang),
             tape_values,
             tape_value,
         }
@@ -35,6 +35,7 @@ impl SecondaryWindow for DebugWindow {
         let mut active = true;
 
         egui::Window::new(t!("title.debug", self.lang))
+            .resizable(false)
             .open(&mut active)
             .show(ctx, |ui| {
                 TableBuilder::new(ui)

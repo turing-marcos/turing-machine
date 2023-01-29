@@ -9,8 +9,8 @@ pub struct AboutWindow {
 }
 
 impl AboutWindow {
-    pub fn new(lang: String) -> Self {
-        Self { lang }
+    pub fn new(lang: &str) -> Self {
+        Self { lang: String::from(lang) }
     }
 }
 
