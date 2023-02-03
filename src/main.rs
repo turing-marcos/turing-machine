@@ -2,19 +2,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 #[cfg(not(target_arch = "wasm32"))]
-use clap::Parser as clap_parser;
-
-#[cfg(not(target_arch = "wasm32"))]
-use std::fs;
-
-#[cfg(not(target_arch = "wasm32"))]
-use std::io;
-
-#[cfg(not(target_arch = "wasm32"))]
-use std::path::PathBuf;
-
-#[cfg(not(target_arch = "wasm32"))]
-use turing_machine::{turing::Rule, windows::ErrorWindow};
+use {
+    clap::Parser as clap_parser,
+    std::{fs, io, path::PathBuf},
+    turing_machine::{turing::Rule, windows::ErrorWindow},
+    env_logger,
+    log::trace,
+};
 
 use turing_machine::{turing::TuringMachine, MyApp};
 
@@ -40,6 +34,9 @@ pub struct Cli {
         help = "Output in the command-line."
     )]
     cli: bool,
+    
+    #[clap(flatten)]
+    verbose: clap_verbosity_flag::Verbosity,
 }
 
 // when compiling to web using trunk.
@@ -92,13 +89,21 @@ F = {q2};
 fn main() {
     let args = Cli::parse();
 
+    env_logger::Builder::new().filter_level(args.verbose.log_level_filter()).init();
+
     if let Some(file) = args.file {
+        trace!("File provided: {:?}", file);
+
         if !args.cli {
+            trace!("The machine will run in GUI mode");
             run_machine_gui(file);
         } else {
+            trace!("The machine will run in CLI mode");
             run_machine_cli(file);
         }
     } else {
+        trace!("No file provided, opening file picker in the current folder");
+
         let path = std::env::current_dir().unwrap_or_default();
 
         let res = rfd::FileDialog::new()
@@ -115,10 +120,12 @@ fn main() {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn load_icon(path: &str) -> Option<eframe::IconData> {
+    use log::error;
+
     let data = match std::fs::read(path) {
         Ok(d) => d,
         Err(e) => {
-            println!("{}", e);
+            error!("{}", e);
             return None;
         }
     };

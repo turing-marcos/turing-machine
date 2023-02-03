@@ -1,3 +1,4 @@
+use log::{debug, warn, error};
 use pest::Parser;
 use pest_derive::Parser;
 use std::{collections::HashMap, fmt::Write};
@@ -38,12 +39,12 @@ impl TuringMachine {
                     let s = record.as_str();
                     if !s.is_empty() {
                         description = Some(String::from(s.replace("///", "").trim()));
-                        println!("Found description: \"{:?}\"", description);
+                        debug!("Found description: \"{:?}\"", description);
                     }
                 }
-                Rule::COMMENT => println!("Found comment: \"{:?}\"", record.as_str()),
+                Rule::COMMENT => debug!("Found comment: \"{:?}\"", record.as_str()),
                 Rule::tape => {
-                    println!(
+                    debug!(
                         "Entered tape rule: {}",
                         record.clone().into_inner().as_str()
                     );
@@ -53,7 +54,7 @@ impl TuringMachine {
                             Rule::value => {
                                 tape.push(r.as_str() == "1");
                             }
-                            _ => println!(
+                            _ => warn!(
                                 "Unhandled: ({:?}, {})",
                                 r.as_rule(),
                                 r.into_inner().as_str()
@@ -61,19 +62,19 @@ impl TuringMachine {
                         }
                     }
 
-                    println!("Initial state: {}", current_state);
-                    println!("Tape: {:?}", tape);
+                    debug!("Initial state: {}", current_state);
+                    debug!("Tape: {:?}", tape);
                 }
                 Rule::initial_state => {
                     current_state = String::from(record.into_inner().as_str());
-                    println!("The initial tape state is \"{}\"", current_state);
+                    debug!("The initial tape state is \"{}\"", current_state);
                 }
                 Rule::final_state => {
                     final_states = record
                         .into_inner()
                         .map(|v| String::from(v.as_span().as_str()))
                         .collect();
-                    println!("The final tape state is {:?}", final_states);
+                    debug!("The final tape state is {:?}", final_states);
                 }
                 Rule::instruction => {
                     let tmp = TuringInstruction::from(record.into_inner());
@@ -82,13 +83,13 @@ impl TuringMachine {
                         tmp.clone(),
                     );
 
-                    println!("Found instruction {}", tmp);
+                    debug!("Found instruction {}", tmp);
                 }
                 Rule::EOI => {
-                    println!("End of file");
+                    debug!("End of file");
                 }
                 _ => {
-                    println!("Unhandled: {}", record.into_inner().as_str());
+                    warn!("Unhandled: {}", record.into_inner().as_str());
                 }
             }
         }
@@ -140,32 +141,32 @@ impl TuringMachine {
     }
 
     pub fn handle_error(e: pest::error::Error<Rule>) {
-        println!("I found an error while parsing the file!");
+        error!("I found an error while parsing the file!");
 
         match e.clone().variant {
             pest::error::ErrorVariant::ParsingError {
                 positives,
                 negatives,
-            } => println!("Expected {:?}, found {:?}", positives, negatives),
-            pest::error::ErrorVariant::CustomError { message } => println!("\t{}", message),
+            } => error!("Expected {:?}, found {:?}", positives, negatives),
+            pest::error::ErrorVariant::CustomError { message } => error!("\t{}", message),
         };
 
         let mut cols = (0, 0);
         match e.line_col {
             pest::error::LineColLocation::Pos((line, col)) => {
-                println!("Line {}, column {}: ", line, col);
+                error!("Line {}, column {}: ", line, col);
                 cols.0 = col;
                 cols.1 = col + 1;
             }
             pest::error::LineColLocation::Span((line1, col1), (line2, col2)) => {
-                println!("From line {}:{} to {}:{}. Found:", line1, col1, line2, col2);
+                error!("From line {}:{} to {}:{}. Found:", line1, col1, line2, col2);
                 cols.0 = col1;
                 cols.1 = col2;
             }
         };
 
-        println!("\t\"{}\"", e.line());
-        println!(
+        error!("\t\"{}\"", e.line());
+        error!(
             "\t {: ^width1$}{:^^width2$}{: ^width3$}",
             "^",
             " ",

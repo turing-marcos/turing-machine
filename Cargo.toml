@@ -19,6 +19,9 @@ egui_extras = "0.20.0"
 webbrowser = "0.8.3" # There is a vulnerability in version 0.8.5
 internationalization = "0.0.3"
 wasm-bindgen-futures = "0.4.33"
+log = "0.4.17"
+clap-verbosity-flag = "2.0.0"
+env_logger = "0.10.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tracing-subscriber = "0.3"
