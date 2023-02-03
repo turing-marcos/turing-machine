@@ -328,7 +328,7 @@ impl eframe::App for MyApp {
                         }
 
                         ui.add(
-                            egui::Slider::new(&mut self.tm.tape_rect_size, 20.0..=300.0)
+                            egui::Slider::new(&mut self.tm.tape_rect_size, 25.0..=300.0)
                                 .suffix(" px")
                                 .text(t!("lbl.tape.size", lang)),
                         );
