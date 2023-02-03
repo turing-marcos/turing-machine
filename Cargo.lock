@@ -2211,7 +2211,7 @@ checksum = "375812fa44dab6df41c195cd2f7fecb488f6c09fbaafb62807488cefab642bff"
 
 [[package]]
 name = "turing-machine"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "clap",
  "clap-verbosity-flag",
