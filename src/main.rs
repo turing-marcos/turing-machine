@@ -35,6 +35,16 @@ pub struct Cli {
     )]
     cli: bool,
 
+    /// Option: -i --interactive: print the machine result interactively (step by step) instead of printing directly the result.
+    /// Note: this option is only available in the CLI mode.
+    #[clap(
+        long,
+        short,
+        default_value = "false",
+        help = "print the machine result interactively (step by step).\nNote: this option is only available in the CLI mode."
+    )]
+    interactive: bool,
+
     #[clap(flatten)]
     verbose: clap_verbosity_flag::Verbosity,
 }
@@ -101,7 +111,7 @@ fn main() {
             run_machine_gui(file);
         } else {
             trace!("The machine will run in CLI mode");
-            run_machine_cli(file);
+            run_machine_cli(file, args.interactive);
         }
     } else {
         trace!("No file provided, opening file picker in the current folder");
@@ -188,7 +198,7 @@ fn handle_error(e: pest::error::Error<Rule>, file: PathBuf) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn run_machine_cli(file: PathBuf) {
+fn run_machine_cli(file: PathBuf, interactive: bool) {
     let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
     let mut tm = match TuringMachine::new(&unparsed_file) {
         Ok(t) => t,
@@ -197,6 +207,12 @@ fn run_machine_cli(file: PathBuf) {
             std::process::exit(1);
         }
     };
+
+    if !interactive {
+        let res = tm.final_result();
+        println!("After {} steps, the result is: {}", res.0, res.1);
+        std::process::exit(0);
+    }
 
     println!("{}", tm.to_string());
     let mut input = String::new();

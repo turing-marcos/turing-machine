@@ -298,11 +298,14 @@ impl TuringMachine {
         self.tape.iter().map(|v| if *v { 1 } else { 0 }).sum()
     }
 
-    pub fn final_result(&mut self) -> u32 {
+    pub fn final_result(&mut self) -> (usize, u32) {
+        let mut steps = 0;
+
         while !self.finished() {
             self.step();
+            steps += 1;
         }
 
-        self.tape_value()
+        (steps, self.tape_value())
     }
 }

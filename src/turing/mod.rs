@@ -13,7 +13,7 @@ mod tests {
     use crate::turing::TuringParser;
     use pest::error::ErrorVariant;
     use pest::Position;
-    use pest::{consumes_to, fails_with, parses_to};
+    use pest::{consumes_to, parses_to};
 
     #[test]
     fn parse_description() {
