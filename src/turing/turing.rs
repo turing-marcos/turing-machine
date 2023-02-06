@@ -1,5 +1,5 @@
 use log::{debug, error, warn};
-use pest::Parser;
+use pest::{error::ErrorVariant, Parser, Position};
 use pest_derive::Parser;
 use std::{collections::HashMap, fmt::Write};
 
@@ -64,6 +64,16 @@ impl TuringMachine {
 
                     debug!("Initial state: {}", current_state);
                     debug!("Tape: {:?}", tape);
+
+                    if tape.is_empty() || !tape.contains(&true) {
+                        error!("The tape did not contain at least a 1");
+                        return Err(pest::error::Error::new_from_pos(
+                            ErrorVariant::CustomError {
+                                message: String::from("Expected at least a 1 in the tape"),
+                            },
+                            Position::from_start(""),
+                        ));
+                    }
                 }
                 Rule::initial_state => {
                     current_state = String::from(record.into_inner().as_str());
@@ -286,5 +296,13 @@ impl TuringMachine {
 
     pub fn tape_value(&self) -> u32 {
         self.tape.iter().map(|v| if *v { 1 } else { 0 }).sum()
+    }
+
+    pub fn final_result(&mut self) -> u32 {
+        while !self.finished() {
+            self.step();
+        }
+
+        self.tape_value()
     }
 }

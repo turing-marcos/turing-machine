@@ -11,7 +11,9 @@ mod tests {
     use crate::turing::Rule;
     use crate::turing::TuringMachine;
     use crate::turing::TuringParser;
-    use pest::{consumes_to, parses_to, fails_with};
+    use pest::error::ErrorVariant;
+    use pest::Position;
+    use pest::{consumes_to, fails_with, parses_to};
 
     #[test]
     fn parse_description() {
@@ -51,16 +53,29 @@ mod tests {
     #[test]
     // Test that the parser fails when the tape does not contain a 1
     fn parse_tape_zeros() {
-        let test = "{000};";
+        let test = "
+        {000};
+        I = {q0};
+        F = {q2};
+        
+        (q0, 1, 0, R, q1);
+        
+        (q1, 1, 1, R, q1);
+        (q1, 0, 0, R, q2);
+        
+        (q2, 1, 0, H, q2);
+        (q2, 0, 0, H, q2);
+        ";
 
-        fails_with! {
-            parser: TuringParser,
-            input: test,
-            rule: Rule::tape,
-            positives: [Rule::tape],
-            negatives: [],
-            pos: 0
-        }
+        let tm_error = TuringMachine::new(test);
+
+        let expected: pest::error::Error<Rule> = pest::error::Error::new_from_pos(
+            ErrorVariant::CustomError {
+                message: String::from("Expected at least a 1 in the tape"),
+            },
+            Position::from_start(""),
+        );
+        assert_eq!(tm_error.unwrap_err(), expected);
     }
 
     #[test]

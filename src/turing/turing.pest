@@ -6,7 +6,7 @@ value = { "0" | "1" }
 movement = { "R" | "L" | "H" | "N" }
 description = @{ SOI ~ ("/" ~ COMMENT)? }
 
-tape = { "{" ~ "0"* ~ "1" ~ value* ~ "}" ~ ";" }
+tape = { "{" ~ value* ~ "}" ~ ";" }
 final_state = { "F" ~ "=" ~ "{" ~ state ~ ("," ~ state)* ~ "}" ~ ";" }
 initial_state = { "I" ~ "=" ~ "{" ~ state ~ "}" ~ ";" }
 instruction = { ( "(" ~ state ~ "," ~ value ~ "," ~ value ~ "," ~ movement ~ "," ~ state ~ ")" ~ ";" )}
