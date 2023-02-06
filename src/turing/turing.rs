@@ -1,4 +1,4 @@
-use log::{debug, warn, error};
+use log::{debug, error, warn};
 use pest::Parser;
 use pest_derive::Parser;
 use std::{collections::HashMap, fmt::Write};

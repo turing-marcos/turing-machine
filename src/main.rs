@@ -4,10 +4,10 @@
 #[cfg(not(target_arch = "wasm32"))]
 use {
     clap::Parser as clap_parser,
-    std::{fs, io, path::PathBuf},
-    turing_machine::{turing::Rule, windows::ErrorWindow},
     env_logger,
     log::trace,
+    std::{fs, io, path::PathBuf},
+    turing_machine::{turing::Rule, windows::ErrorWindow},
 };
 
 use turing_machine::{turing::TuringMachine, MyApp};
@@ -34,7 +34,7 @@ pub struct Cli {
         help = "Output in the command-line."
     )]
     cli: bool,
-    
+
     #[clap(flatten)]
     verbose: clap_verbosity_flag::Verbosity,
 }
@@ -89,7 +89,9 @@ F = {q2};
 fn main() {
     let args = Cli::parse();
 
-    env_logger::Builder::new().filter_level(args.verbose.log_level_filter()).init();
+    env_logger::Builder::new()
+        .filter_level(args.verbose.log_level_filter())
+        .init();
 
     if let Some(file) = args.file {
         trace!("File provided: {:?}", file);

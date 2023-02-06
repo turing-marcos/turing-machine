@@ -19,7 +19,7 @@ pub struct MyApp {
     code: String,
     error: Option<pest::error::Error<Rule>>,
     tm: TuringWidget,
-    about_window: Option<Box<dyn SecondaryWindow>>,
+    about_window: Option<Box<AboutWindow>>,
     debug_window: Option<Box<DebugWindow>>,
     lang: Language,
 }
@@ -197,6 +197,7 @@ impl eframe::App for MyApp {
                                     &lang,
                                     self.tm.tape_values(),
                                     self.tm.tape_value(),
+                                    Some(egui::Pos2::new(0.0, 100.0)),
                                 )));
                             }
                         } else {
@@ -211,7 +212,10 @@ impl eframe::App for MyApp {
 
                     ui.menu_button(t!("menu.about", lang), |ui| {
                         if ui.button(t!("menu.about", lang)).clicked() {
-                            self.about_window = Some(Box::new(AboutWindow::new(&lang)));
+                            self.about_window = Some(Box::new(AboutWindow::new(
+                                &lang,
+                                Some(ctx.available_rect().center()),
+                            )));
                         }
 
                         if ui.link(t!("menu.repository", lang)).clicked() {

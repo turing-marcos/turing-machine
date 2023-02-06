@@ -6,17 +6,24 @@ use internationalization::t;
 #[derive(Debug, Clone, Default)]
 pub struct AboutWindow {
     lang: String,
+    position: egui::Pos2,
 }
 
 impl AboutWindow {
-    pub fn new(lang: &str) -> Self {
+    pub fn new(lang: &str, position: Option<egui::Pos2>) -> Self {
         Self {
             lang: String::from(lang),
+            position: position.unwrap_or(egui::Pos2::new(100.0, 100.0)),
         }
     }
 }
 
 impl SecondaryWindow for AboutWindow {
+    // fn set_position(&mut self, pos: egui::Pos2) -> &Self {
+    //     self.position = pos;
+    //     self
+    // }
+
     fn set_lang(&mut self, lang: &str) {
         self.lang = lang.to_string();
     }
@@ -28,6 +35,7 @@ impl SecondaryWindow for AboutWindow {
             .open(&mut active)
             .collapsible(false)
             .resizable(false)
+            .default_pos(self.position)
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     ui.vertical_centered_justified(|ui| {
