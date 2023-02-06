@@ -11,7 +11,7 @@ mod tests {
     use crate::turing::Rule;
     use crate::turing::TuringMachine;
     use crate::turing::TuringParser;
-    use pest::{consumes_to, parses_to};
+    use pest::{consumes_to, parses_to, fails_with};
 
     #[test]
     fn parse_description() {
@@ -28,7 +28,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_tape() {
+    fn parse_tape_valid() {
         let test = "{111011};";
 
         parses_to! {
@@ -45,6 +45,21 @@ mod tests {
                     value(6, 7),
                 ]),
             ]
+        }
+    }
+
+    #[test]
+    // Test that the parser fails when the tape does not contain a 1
+    fn parse_tape_zeros() {
+        let test = "{000};";
+
+        fails_with! {
+            parser: TuringParser,
+            input: test,
+            rule: Rule::tape,
+            positives: [Rule::tape],
+            negatives: [],
+            pos: 0
         }
     }
 
