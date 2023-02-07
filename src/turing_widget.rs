@@ -72,7 +72,7 @@ impl TuringWidget {
         self.tm.step();
         self.offset = self.tm.tape_position as f32 - prev as f32;
 
-        if self.tm.finished() {
+        if self.tm.finished() || self.tm.is_undefined() {
             self.paused = true;
         }
 
@@ -101,7 +101,7 @@ impl TuringWidget {
             .map(|v| v.to_string())
             .collect::<Vec<String>>()
     }
-    
+
     pub fn finished(&self) -> bool {
         self.tm.finished()
     }
@@ -174,18 +174,24 @@ impl Widget for TuringWidget {
                 Color32::BLACK,
             );
 
-            let ins = match self.tm.get_current_instruction() {
-                Some(txt) => format!("{}", txt),
-                None => String::from("ERROR: No instruction matches this situation!"),
+            if let Some(txt) = self.tm.get_current_instruction() {
+                ui.painter().text(
+                    center + Vec2::new(0.0, self.tri_size + 100.0),
+                    Align2::CENTER_CENTER,
+                    &txt,
+                    self.font_id.clone(),
+                    Color32::GRAY,
+                );
+            } else if self.tm.is_undefined() {
+                ui.painter().text(
+                    center + Vec2::new(0.0, self.tri_size + 100.0),
+                    Align2::CENTER_CENTER,
+                    "The machine is in an undefined state",
+                    self.font_id.clone(),
+                    Color32::LIGHT_RED,
+                );
+                self.paused = true;
             };
-
-            ui.painter().text(
-                center + Vec2::new(0.0, self.tri_size + 100.0),
-                Align2::CENTER_CENTER,
-                &ins,
-                self.font_id.clone(),
-                Color32::GRAY,
-            );
 
             if self.tm.finished() {
                 ui.painter().text(

@@ -212,16 +212,24 @@ impl TuringMachine {
         self.get_instruction(index)
     }
 
+    pub fn is_undefined(&self) -> bool {
+        let current_val: bool = self.tape[self.tape_position];
+        let index = (self.current_state.clone(), current_val);
+        self.get_instruction(index).is_none()
+    }
+
     pub fn step(&mut self) {
         let current_val: bool = self.tape[self.tape_position];
         let index = (self.current_state.clone(), current_val);
 
         let Some(instruction) = self.get_instruction(index) else {
-            panic!(
+            error!(
                 "No instruction given for state ({}, {})",
                 self.current_state.clone(),
                 if current_val {"1"} else {"0"}
             );
+
+            return;
         };
         self.tape[self.tape_position] = instruction.to_value;
 
