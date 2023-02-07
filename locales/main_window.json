@@ -63,6 +63,14 @@
         "en": "The simulation is running.\nTo pause it, press the spacebar or this button:",
         "es": "La simulación está activa.\nPara pausarla, presione la barra espaciadora o este botón:"
     },
+    "lbl.restart": {
+        "en": "Restart",
+        "es": "Reiniciar"
+    },
+    "lbl.finished": {
+        "en": "The program has finished.\nTo restart it, press this button:",
+        "es": "El programa ha terminado.\nPara reiniciarlo, presione este botón:"
+    },
     "lang.en": {
         "en": "English",
         "es": "Inglés"

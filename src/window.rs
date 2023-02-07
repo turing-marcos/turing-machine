@@ -355,7 +355,10 @@ impl eframe::App for MyApp {
 
                     ui.vertical_centered(|ui| {
                         let mut text = t!("lbl.pause", lang);
-                        if self.tm.paused {
+                        if self.tm.finished() {
+                            ui.label(t!("lbl.finished", lang));
+                            text = t!("lbl.restart", lang)
+                        } else if self.tm.paused {
                             ui.label(t!("lbl.paused", lang));
                             text = t!("lbl.resume", lang);
                         } else {
@@ -366,7 +369,11 @@ impl eframe::App for MyApp {
                         if (b.clicked() || ui.input().key_pressed(egui::Key::Space))
                             && !editor_focused
                         {
-                            self.tm.paused = !self.tm.paused;
+                            if self.tm.finished() {
+                                self.tm = self.tm.restart(&self.code).unwrap();
+                            } else {
+                                self.tm.paused = !self.tm.paused;
+                            }
                         }
 
                         if self.process_turing_controls(ui, &ctx, editor_focused, &lang) {

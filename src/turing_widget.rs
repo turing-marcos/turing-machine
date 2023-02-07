@@ -71,6 +71,11 @@ impl TuringWidget {
         let prev = self.tm.tape_position;
         self.tm.step();
         self.offset = self.tm.tape_position as f32 - prev as f32;
+
+        if self.tm.finished() {
+            self.paused = true;
+        }
+
         return self.offset;
     }
 
@@ -95,6 +100,10 @@ impl TuringWidget {
             .iter()
             .map(|v| v.to_string())
             .collect::<Vec<String>>()
+    }
+    
+    pub fn finished(&self) -> bool {
+        self.tm.finished()
     }
 }
 
