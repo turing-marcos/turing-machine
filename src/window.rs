@@ -226,7 +226,7 @@ impl eframe::App for MyApp {
                         if ui.button(t!("menu.about", lang)).clicked() {
                             self.about_window = Some(Box::new(AboutWindow::new(
                                 &lang,
-                                Some(ctx.available_rect().center()),
+                                Some(egui::Pos2::new(150.0, 100.0)),
                             )));
                         }
 
