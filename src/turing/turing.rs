@@ -1,4 +1,4 @@
-use log::{debug, error, warn, info};
+use log::{debug, error, info, warn};
 use pest::{error::ErrorVariant, Parser, Position};
 use pest_derive::Parser;
 use std::{collections::HashMap, fmt::Write};
@@ -52,7 +52,11 @@ impl TuringMachine {
                     for r in record.into_inner() {
                         match r.as_rule() {
                             Rule::value => {
-                                tape.push(r.as_str() == "1");
+                                if tape.is_empty() && r.as_str() == "0" {
+                                    info!("The tape started with a 0, skipping it");
+                                }else{
+                                    tape.push(r.as_str() == "1");
+                                }
                             }
                             _ => warn!(
                                 "Unhandled: ({:?}, {})",
@@ -105,8 +109,11 @@ impl TuringMachine {
         }
 
         for final_state in &final_states {
-            if !instructions.contains_key(&(final_state.clone(), false)){
-                info!("Adding a HALT instruction for the final state ({}, 0)", final_state);
+            if !instructions.contains_key(&(final_state.clone(), false)) {
+                info!(
+                    "Adding a HALT instruction for the final state ({}, 0)",
+                    final_state
+                );
                 instructions.insert(
                     (final_state.clone(), false),
                     TuringInstruction {
@@ -119,8 +126,11 @@ impl TuringMachine {
                 );
             }
 
-            if !instructions.contains_key(&(final_state.clone(), true)){
-                info!("Adding a HALT instruction for the final state ({}, 1)", final_state);
+            if !instructions.contains_key(&(final_state.clone(), true)) {
+                info!(
+                    "Adding a HALT instruction for the final state ({}, 1)",
+                    final_state
+                );
                 instructions.insert(
                     (final_state.clone(), false),
                     TuringInstruction {
