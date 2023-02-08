@@ -1,12 +1,11 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
-
 use crate::turing::Rule;
-use crate::windows::{AboutWindow, DebugWindow, SecondaryWindow};
+use crate::windows::{AboutWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow};
 use crate::{turing::TuringMachine, TuringWidget};
 use eframe;
 use eframe::egui::{self, Id, RichText, Ui};
 use eframe::epaint::Color32;
 use internationalization::t;
+use log::warn;
 //use egui_extras::{Column, TableBuilder};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -19,8 +18,9 @@ pub struct MyApp {
     code: String,
     error: Option<pest::error::Error<Rule>>,
     tm: TuringWidget,
-    about_window: Option<Box<dyn SecondaryWindow>>,
+    about_window: Option<Box<AboutWindow>>,
     debug_window: Option<Box<DebugWindow>>,
+    infinite_loop_window: Option<Box<InfiniteLoopWindow>>,
     lang: Language,
 }
 
@@ -39,6 +39,7 @@ impl MyApp {
             tm: TuringWidget::new(tm),
             about_window: None,
             debug_window: None,
+            infinite_loop_window: None,
             lang: Language::English,
         }
     }
@@ -184,6 +185,17 @@ impl eframe::App for MyApp {
             }
         }
 
+        if let Some(inf_loop) = &self.infinite_loop_window {
+            if !inf_loop.show(ctx) {
+                self.infinite_loop_window = None;
+                self.tm.paused = false;
+            } else if let Some(inf_loop) = &mut self.infinite_loop_window {
+                inf_loop.set_lang(&lang);
+                self.tm.paused = true;
+                self.tm.reset_frequencies();
+            }
+        }
+
         egui::TopBottomPanel::top("header")
             .default_height(35.0)
             .show(ctx, |ui| {
@@ -197,6 +209,7 @@ impl eframe::App for MyApp {
                                     &lang,
                                     self.tm.tape_values(),
                                     self.tm.tape_value(),
+                                    Some(egui::Pos2::new(0.0, 100.0)),
                                 )));
                             }
                         } else {
@@ -211,7 +224,10 @@ impl eframe::App for MyApp {
 
                     ui.menu_button(t!("menu.about", lang), |ui| {
                         if ui.button(t!("menu.about", lang)).clicked() {
-                            self.about_window = Some(Box::new(AboutWindow::new(&lang)));
+                            self.about_window = Some(Box::new(AboutWindow::new(
+                                &lang,
+                                Some(ctx.available_rect().center()),
+                            )));
                         }
 
                         if ui.link(t!("menu.repository", lang)).clicked() {
@@ -328,7 +344,7 @@ impl eframe::App for MyApp {
                         }
 
                         ui.add(
-                            egui::Slider::new(&mut self.tm.tape_rect_size, 20.0..=300.0)
+                            egui::Slider::new(&mut self.tm.tape_rect_size, 25.0..=300.0)
                                 .suffix(" px")
                                 .text(t!("lbl.tape.size", lang)),
                         );
@@ -336,6 +352,11 @@ impl eframe::App for MyApp {
                             egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
                                 .suffix(t!("lbl.seconds", lang))
                                 .text(t!("lbl.tape.speed", lang)),
+                        );
+                        ui.add(
+                            egui::Slider::new(&mut self.tm.threshold_inf_loop, 10..=2000)
+                                .suffix(t!("lbl.iterations", lang))
+                                .text(t!("lbl.tape.inf_loop", lang)),
                         );
                     });
 
@@ -353,7 +374,10 @@ impl eframe::App for MyApp {
 
                     ui.vertical_centered(|ui| {
                         let mut text = t!("lbl.pause", lang);
-                        if self.tm.paused {
+                        if self.tm.finished() {
+                            ui.label(t!("lbl.finished", lang));
+                            text = t!("lbl.restart", lang)
+                        } else if self.tm.paused {
                             ui.label(t!("lbl.paused", lang));
                             text = t!("lbl.resume", lang);
                         } else {
@@ -364,11 +388,21 @@ impl eframe::App for MyApp {
                         if (b.clicked() || ui.input().key_pressed(egui::Key::Space))
                             && !editor_focused
                         {
-                            self.tm.paused = !self.tm.paused;
+                            if self.tm.finished() {
+                                self.tm = self.tm.restart(&self.code).unwrap();
+                            } else {
+                                self.tm.paused = !self.tm.paused;
+                            }
                         }
 
                         if self.process_turing_controls(ui, &ctx, editor_focused, &lang) {
                             ctx.request_repaint();
+                            if self.tm.is_inf_loop() {
+                                warn!("Infinite loop detected!");
+                                self.infinite_loop_window =
+                                    Some(Box::new(InfiniteLoopWindow::new(&self.get_lang())));
+                                self.tm.paused = true;
+                            }
                         }
                     });
                     ui.add(self.tm.clone());

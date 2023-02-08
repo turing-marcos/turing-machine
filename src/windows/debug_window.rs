@@ -9,14 +9,21 @@ pub struct DebugWindow {
     lang: String,
     pub tape_values: Vec<String>,
     pub tape_value: u32,
+    position: egui::Pos2,
 }
 
 impl DebugWindow {
-    pub fn new(lang: &str, tape_values: Vec<String>, tape_value: u32) -> Self {
+    pub fn new(
+        lang: &str,
+        tape_values: Vec<String>,
+        tape_value: u32,
+        position: Option<egui::Pos2>,
+    ) -> Self {
         Self {
             lang: String::from(lang),
             tape_values,
             tape_value,
+            position: position.unwrap_or(egui::Pos2::new(100.0, 100.0)),
         }
     }
 
@@ -27,6 +34,11 @@ impl DebugWindow {
 }
 
 impl SecondaryWindow for DebugWindow {
+    // fn set_position(&mut self, pos: egui::Pos2) -> Self {
+    //     self.position = pos;
+    //     self
+    // }
+
     fn set_lang(&mut self, lang: &str) {
         self.lang = lang.to_string();
     }
@@ -37,6 +49,7 @@ impl SecondaryWindow for DebugWindow {
         egui::Window::new(t!("title.debug", self.lang))
             .resizable(false)
             .open(&mut active)
+            .default_pos(self.position)
             .show(ctx, |ui| {
                 TableBuilder::new(ui)
                     .auto_shrink([true, true])

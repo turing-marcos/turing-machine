@@ -1,6 +1,6 @@
 [package]
 name = "turing-machine"
-version = "1.0.2"
+version = "1.1.0"
 edition = "2021"
 authors = ["Marcos Gutiérrez Alonso <margual56@gmail.com>"]
 description = "Turing Machine Simulator"
@@ -14,19 +14,24 @@ clap = { version = "^4.1", features = ["derive"] }
 pest = "^2.4"
 pest_derive = "^2.4"
 eframe = "^0.20"
-rfd = "^0.10"
+rfd = "^0.11"
 egui_extras = "0.20.0"
 webbrowser = "0.8.3" # There is a vulnerability in version 0.8.5
 internationalization = "0.0.3"
-wasm-bindgen-futures = "0.4.33"
+log = "0.4.17"
+env_logger = "0.10.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tracing-subscriber = "0.3"
+clap-verbosity-flag = "2.0.0"
+log = "0.4.17"
+env_logger = "0.10.0"
 
 # web:
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.6"
 tracing-wasm = "0.2"
+wasm-bindgen-futures = "0.4.33"
 
 
 [profile.release]

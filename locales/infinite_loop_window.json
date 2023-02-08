@@ -1,0 +1,14 @@
+{
+    "lbl.inf_loop.title": {
+        "en": "An infinite loop was detected!",
+        "es": "¡Se detectó un bucle infinito!"
+    },
+    "lbl.inf_loop.description1": {
+        "en": "Maybe your program has a bug...",
+        "es": "Parece que tu programa tiene un error..."
+    },
+    "lbl.inf_loop.description2": {
+        "en": "If you are sure it is sound, close this window to continue the execution",
+        "es": "Si estás seguro de que es correcto, cierra esta ventana para continuar la ejecución"
+    }
+}
