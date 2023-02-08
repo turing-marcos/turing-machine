@@ -1,4 +1,4 @@
-use log::{debug, error, warn};
+use log::{debug, error, warn, info};
 use pest::{error::ErrorVariant, Parser, Position};
 use pest_derive::Parser;
 use std::{collections::HashMap, fmt::Write};
@@ -101,6 +101,36 @@ impl TuringMachine {
                 _ => {
                     warn!("Unhandled: {}", record.into_inner().as_str());
                 }
+            }
+        }
+
+        for final_state in &final_states {
+            if !instructions.contains_key(&(final_state.clone(), false)){
+                info!("Adding a HALT instruction for the final state ({}, 0)", final_state);
+                instructions.insert(
+                    (final_state.clone(), false),
+                    TuringInstruction {
+                        from_state: final_state.clone(),
+                        from_value: false,
+                        to_value: false,
+                        movement: Movement::HALT,
+                        to_state: final_state.clone(),
+                    },
+                );
+            }
+
+            if !instructions.contains_key(&(final_state.clone(), true)){
+                info!("Adding a HALT instruction for the final state ({}, 1)", final_state);
+                instructions.insert(
+                    (final_state.clone(), false),
+                    TuringInstruction {
+                        from_state: final_state.clone(),
+                        from_value: true,
+                        to_value: true,
+                        movement: Movement::HALT,
+                        to_state: final_state.clone(),
+                    },
+                );
             }
         }
 
