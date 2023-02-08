@@ -15,6 +15,7 @@ pub struct TuringWidget {
     pub paused: bool,
     pub tape_anim_speed: f32,
     pub left: f32,
+    pub threshold_inf_loop: usize, // Threshold for infinite loop detection
     tri_color: Color32,
     tri_stroke_wid: f32,
     tri_stroke: Stroke,
@@ -37,6 +38,7 @@ impl TuringWidget {
             font_id: FontId::new(30f32, FontFamily::Monospace),
             paused: true,
             left: 300.0,
+            threshold_inf_loop: 100,
             tri_color,
             tri_stroke_wid,
             tri_stroke,
@@ -59,6 +61,7 @@ impl TuringWidget {
             font_id: self.font_id.clone(),
             paused: self.paused,
             left: self.left,
+            threshold_inf_loop: self.threshold_inf_loop,
             tri_color: self.tri_color,
             tri_stroke_wid: self.tri_stroke_wid,
             tri_stroke: self.tri_stroke,
@@ -72,7 +75,10 @@ impl TuringWidget {
         self.tm.step();
         self.offset = self.tm.tape_position as f32 - prev as f32;
 
-        if self.tm.finished() || self.tm.is_undefined() {
+        if self.tm.finished()
+            || self.tm.is_undefined()
+            || self.tm.is_infinite_loop(self.threshold_inf_loop)
+        {
             self.paused = true;
         }
 
@@ -82,6 +88,7 @@ impl TuringWidget {
     pub fn tape_value(&self) -> u32 {
         self.tm.tape_value()
     }
+
     pub fn len(&self) -> usize {
         self.tm.tape.len()
     }
@@ -104,6 +111,14 @@ impl TuringWidget {
 
     pub fn finished(&self) -> bool {
         self.tm.finished()
+    }
+
+    pub fn reset_frequencies(&mut self) {
+        self.tm.reset_frequencies();
+    }
+
+    pub fn is_inf_loop(&self) -> bool {
+        self.tm.is_infinite_loop(self.threshold_inf_loop)
     }
 }
 

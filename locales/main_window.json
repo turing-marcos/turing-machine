@@ -35,13 +35,21 @@
         "en": "Tape animation speed",
         "es": "Velocidad de la cinta"
     },
+    "lbl.tape.inf_loop": {
+        "en": "Infinite loop threshold",
+        "es": "Umbral de bucle infinito"
+    },
     "lbl.machine.step": {
         "en": "Do one step",
         "es": "Dar un paso"
     },
     "lbl.seconds": {
-        "en": "seconds",
-        "es": "segundos"
+        "en": " seconds",
+        "es": " segundos"
+    },
+    "lbl.iterations": {
+        "en": " iterations",
+        "es": " iteraciones"
     },
     "lbl.current_output": {
         "en": "Current output: $out",

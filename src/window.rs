@@ -1,10 +1,11 @@
 use crate::turing::Rule;
-use crate::windows::{AboutWindow, DebugWindow, SecondaryWindow};
+use crate::windows::{AboutWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow};
 use crate::{turing::TuringMachine, TuringWidget};
 use eframe;
 use eframe::egui::{self, Id, RichText, Ui};
 use eframe::epaint::Color32;
 use internationalization::t;
+use log::warn;
 //use egui_extras::{Column, TableBuilder};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -19,6 +20,7 @@ pub struct MyApp {
     tm: TuringWidget,
     about_window: Option<Box<AboutWindow>>,
     debug_window: Option<Box<DebugWindow>>,
+    infinite_loop_window: Option<Box<InfiniteLoopWindow>>,
     lang: Language,
 }
 
@@ -37,6 +39,7 @@ impl MyApp {
             tm: TuringWidget::new(tm),
             about_window: None,
             debug_window: None,
+            infinite_loop_window: None,
             lang: Language::English,
         }
     }
@@ -179,6 +182,17 @@ impl eframe::App for MyApp {
             } else if let Some(debug) = &mut self.debug_window {
                 debug.set_lang(&lang);
                 debug.set_values(self.tm.tape_values(), self.tm.tape_value());
+            }
+        }
+
+        if let Some(inf_loop) = &self.infinite_loop_window {
+            if !inf_loop.show(ctx) {
+                self.infinite_loop_window = None;
+                self.tm.paused = false;
+            } else if let Some(inf_loop) = &mut self.infinite_loop_window {
+                inf_loop.set_lang(&lang);
+                self.tm.paused = true;
+                self.tm.reset_frequencies();
             }
         }
 
@@ -339,6 +353,11 @@ impl eframe::App for MyApp {
                                 .suffix(t!("lbl.seconds", lang))
                                 .text(t!("lbl.tape.speed", lang)),
                         );
+                        ui.add(
+                            egui::Slider::new(&mut self.tm.threshold_inf_loop, 10..=2000)
+                                .suffix(t!("lbl.iterations", lang))
+                                .text(t!("lbl.tape.inf_loop", lang)),
+                        );
                     });
 
                     ui.separator();
@@ -378,6 +397,12 @@ impl eframe::App for MyApp {
 
                         if self.process_turing_controls(ui, &ctx, editor_focused, &lang) {
                             ctx.request_repaint();
+                            if self.tm.is_inf_loop() {
+                                warn!("Infinite loop detected!");
+                                self.infinite_loop_window =
+                                    Some(Box::new(InfiniteLoopWindow::new(&self.get_lang())));
+                                self.tm.paused = true;
+                            }
                         }
                     });
                     ui.add(self.tm.clone());

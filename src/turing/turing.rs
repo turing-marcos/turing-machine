@@ -16,6 +16,7 @@ pub struct TuringMachine {
     pub current_state: String,
     pub tape_position: usize,
     pub tape: Vec<bool>,
+    pub frequencies: HashMap<String, usize>,
     pub description: Option<String>,
     pub code: String,
 }
@@ -54,7 +55,7 @@ impl TuringMachine {
                             Rule::value => {
                                 if tape.is_empty() && r.as_str() == "0" {
                                     info!("The tape started with a 0, skipping it");
-                                }else{
+                                } else {
                                     tape.push(r.as_str() == "1");
                                 }
                             }
@@ -156,6 +157,7 @@ impl TuringMachine {
             current_state,
             tape_position,
             tape,
+            frequencies: HashMap::new(),
             description,
             code: String::from(code),
         })
@@ -185,6 +187,7 @@ impl TuringMachine {
             current_state,
             tape_position: 2,
             tape,
+            frequencies: HashMap::new(),
             description,
             code: String::new(),
         }
@@ -300,7 +303,34 @@ impl TuringMachine {
             self.tape.push(false);
         }
 
-        self.current_state = instruction.to_state.clone();
+        self.update_state(instruction.to_state.clone());
+    }
+
+    fn update_state(&mut self, state: String) {
+        self.current_state = state.clone();
+
+        if self.frequencies.contains_key(&state) {
+            let Some(f) = self.frequencies.get_mut(&state) else {
+                return;
+            };
+            *f += 1;
+        } else {
+            self.frequencies.insert(state.clone(), 1);
+        }
+    }
+
+    pub fn is_infinite_loop(&self, threshold: usize) -> bool {
+        for (_, v) in self.frequencies.iter() {
+            if *v > threshold {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    pub fn reset_frequencies(&mut self) {
+        self.frequencies = HashMap::new();
     }
 
     pub fn finished(&self) -> bool {
