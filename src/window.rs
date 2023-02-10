@@ -66,7 +66,15 @@ impl MyApp {
             pest::error::ErrorVariant::ParsingError {
                 positives,
                 negatives,
-            } => format!("Expected {:?}, found {:?}", positives, negatives),
+            } => {
+                if negatives.is_empty() {
+                    format!("Expected one of: {:?}. \nFound nothing", positives)
+                }else{
+
+                    format!("Expected one of: {:?}. \nFound {:?}", positives, negatives)
+                }
+            }
+
             pest::error::ErrorVariant::CustomError { message } => message.clone(),
         };
 
@@ -90,13 +98,13 @@ impl MyApp {
                         ui.horizontal(|ui| {
                             ui.label(
                                 RichText::new(format!("{: ^width$}", "^", width = error_pos + 1))
-                                    .color(Color32::RED)
+                                    .color(Color32::DARK_RED)
                                     .size(20.0),
                             );
 
                             ui.label(
                                 RichText::new(&expected_msg)
-                                    .color(Color32::DARK_RED)
+                                    .color(Color32::YELLOW)
                                     .size(20.0),
                             );
                         });
@@ -405,6 +413,8 @@ impl eframe::App for MyApp {
                             }
                         }
                     });
+
+                    self.tm.lang = self.get_lang();
                     ui.add(self.tm.clone());
 
                     if let Some(e) = &self.error {

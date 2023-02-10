@@ -86,6 +86,10 @@
     "lang.es": {
         "en": "Spanish",
         "es": "Español"
+    },
+    "err.undefined.state": {
+        "en": "The machine is in an undefined state",
+        "es": "La máquina está en un estado indefinido"
     }
 }
   

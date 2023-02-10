@@ -1,6 +1,7 @@
 use eframe::egui::{self, widgets::Widget};
 use eframe::emath::Align2;
 use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, Vec2};
+use internationalization::t;
 
 use crate::turing::TuringMachine;
 
@@ -21,6 +22,7 @@ pub struct TuringWidget {
     tri_stroke: Stroke,
     tri_size: f32,
     tm: TuringMachine,
+    pub lang: String,
 }
 
 impl TuringWidget {
@@ -44,6 +46,7 @@ impl TuringWidget {
             tri_stroke,
             tri_size,
             tm,
+            lang: "en".to_string(),
         }
     }
 
@@ -67,6 +70,7 @@ impl TuringWidget {
             tri_stroke: self.tri_stroke,
             tri_size: self.tri_size,
             tm,
+            lang: self.lang.clone(),
         })
     }
 
@@ -201,7 +205,7 @@ impl Widget for TuringWidget {
                 ui.painter().text(
                     center + Vec2::new(0.0, self.tri_size + 100.0),
                     Align2::CENTER_CENTER,
-                    "The machine is in an undefined state",
+                    t!("err.undefined.state", self.lang),
                     self.font_id.clone(),
                     Color32::LIGHT_RED,
                 );
