@@ -12,6 +12,7 @@ use super::TuringOutput;
 pub struct TuringParser;
 
 #[derive(Debug, Clone)]
+/// A Turing machine
 pub struct TuringMachine {
     pub instructions: HashMap<(String, bool), TuringInstruction>,
     pub final_states: Vec<String>,
@@ -24,6 +25,7 @@ pub struct TuringMachine {
 }
 
 impl TuringMachine {
+    /// Create a new Turing machine from a string of code
     pub fn new(code: &str) -> Result<Self, pest::error::Error<Rule>> {
         let mut instructions: HashMap<(String, bool), TuringInstruction> = HashMap::new();
         let mut final_states: Vec<String> = Vec::new();
@@ -111,42 +113,6 @@ impl TuringMachine {
             }
         }
 
-        /*for final_state in &final_states {
-            if !instructions.contains_key(&(final_state.clone(), false)) {
-                info!(
-                    "Adding a HALT instruction for the final state ({}, 0)",
-                    final_state
-                );
-                instructions.insert(
-                    (final_state.clone(), false),
-                    TuringInstruction {
-                        from_state: final_state.clone(),
-                        from_value: false,
-                        to_value: false,
-                        movement: Movement::HALT,
-                        to_state: final_state.clone(),
-                    },
-                );
-            }
-
-            if !instructions.contains_key(&(final_state.clone(), true)) {
-                info!(
-                    "Adding a HALT instruction for the final state ({}, 1)",
-                    final_state
-                );
-                instructions.insert(
-                    (final_state.clone(), false),
-                    TuringInstruction {
-                        from_state: final_state.clone(),
-                        from_value: true,
-                        to_value: true,
-                        movement: Movement::HALT,
-                        to_state: final_state.clone(),
-                    },
-                );
-            }
-        }*/
-
         let mut tape_position = 0;
         while tape_position <= 2 {
             tape.insert(0, false);
@@ -167,6 +133,7 @@ impl TuringMachine {
         })
     }
 
+    /// Create a new empty Turing machine
     pub fn none() -> Self {
         let state = String::from("f");
         let mut instructions: HashMap<(String, bool), TuringInstruction> = HashMap::new();
@@ -197,6 +164,8 @@ impl TuringMachine {
         }
     }
 
+    /// Parse a Turing machine code syntax error
+    /// and print it to the console
     pub fn handle_error(e: pest::error::Error<Rule>) {
         error!("I found an error while parsing the file!");
 
@@ -239,7 +208,12 @@ impl TuringMachine {
         std::io::stdin().read_line(&mut input).unwrap_or_default();
     }
 
-    fn get_instruction(&self, index: (String, bool)) -> Option<TuringInstruction> {
+    /// Gets the current instruction, or a halt instruction if the current state is a final state
+    /// even if there is no instruction for the current state and value
+    fn get_instruction(&self) -> Option<TuringInstruction> {
+        let current_val: bool = self.tape[self.tape_position];
+        let index = (self.current_state.clone(), current_val);
+
         match self.instructions.get(&index) {
             Some(i) => Some(i.to_owned()),
             None => {
@@ -252,6 +226,7 @@ impl TuringMachine {
         }
     }
 
+    /// Gets the current instruction
     pub fn get_current_instruction(&self) -> Option<TuringInstruction> {
         let current_val: bool = self.tape[self.tape_position];
         let index = (self.current_state.clone(), current_val);
@@ -259,17 +234,18 @@ impl TuringMachine {
         self.instructions.get(&index).cloned()
     }
 
+    /// Returns true if the current state is undefined
+    /// (i.e. there is no instruction for the current state and value)
+    /// except if the current state is a final state
     pub fn is_undefined(&self) -> bool {
-        let current_val: bool = self.tape[self.tape_position];
-        let index = (self.current_state.clone(), current_val);
-        self.get_instruction(index).is_none()
+        self.get_instruction().is_none()
     }
 
+    /// Calculates the next step of the Turing machine and returns true if the current state is a final state
     pub fn step(&mut self) -> bool {
         let current_val: bool = self.tape[self.tape_position];
-        let index = (self.current_state.clone(), current_val);
 
-        let Some(instruction) = self.get_instruction(index) else {
+        let Some(instruction) = self.get_instruction() else {
             if self.final_states.contains(&self.current_state) {
                 return true;
             }
@@ -314,6 +290,7 @@ impl TuringMachine {
         self.update_state(instruction.to_state.clone())
     }
 
+    /// Updates the current state and returns true if the current state is a final state
     fn update_state(&mut self, state: String) -> bool {
         self.current_state = state.clone();
 
@@ -329,6 +306,7 @@ impl TuringMachine {
         return self.final_states.contains(&self.current_state);
     }
 
+    /// Returns true if the current state has been reached more times than the given threshold
     pub fn is_infinite_loop(&self, threshold: usize) -> bool {
         for (_, v) in self.frequencies.iter() {
             if *v > threshold {
@@ -339,14 +317,18 @@ impl TuringMachine {
         return false;
     }
 
+    /// Resets the frequencies of the states
     pub fn reset_frequencies(&mut self) {
         self.frequencies = HashMap::new();
     }
 
+    /// Returns true if the current state is a final state
     pub fn finished(&self) -> bool {
         return self.final_states.contains(&self.current_state);
     }
 
+    /// Returns the values of the tape
+    /// (i.e. the number of 1s between each 0)
     pub fn values(&self) -> Vec<u32> {
         let tmp: String = self
             .tape
@@ -365,6 +347,7 @@ impl TuringMachine {
             .collect()
     }
 
+    /// Returns the string representation of the tape
     pub fn to_string(&self) -> String {
         let mut tmp1 = String::new();
         let mut tmp2 = String::new();
@@ -382,6 +365,9 @@ impl TuringMachine {
         format!("{}\n{}", tmp1, tmp2)
     }
 
+    /// Returns the current output of the Turing machine
+    /// (i.e. the number of steps and the number of 1s on the tape,
+    /// or undefined if the Turing machine is in an undefined state)
     pub fn tape_value(&self) -> TuringOutput {
         if self.is_undefined() {
             return TuringOutput::Undefined(0);
@@ -390,6 +376,8 @@ impl TuringMachine {
         TuringOutput::Defined((0, self.tape.iter().map(|v| if *v { 1 } else { 0 }).sum()))
     }
 
+    /// Returns the final output of the Turing machine directly
+    /// (i.e. keeps calculating the next step until the current state is a final state)
     pub fn final_result(&mut self) -> TuringOutput {
         let mut steps = 0;
 
