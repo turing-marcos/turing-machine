@@ -1,4 +1,4 @@
-use crate::turing::Rule;
+use crate::turing::{Rule, TuringOutput};
 use crate::windows::{AboutWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow};
 use crate::{turing::TuringMachine, TuringWidget};
 use eframe;
@@ -365,9 +365,14 @@ impl eframe::App for MyApp {
                     ui.spacing();
                     ui.spacing();
 
-                    ui.label(
-                        t!("lbl.current_output", out: &self.tm.tape_value().to_string(), lang),
-                    );
+                    match &self.tm.tape_value() {
+                        TuringOutput::Undefined(_) => {
+                            ui.label(t!("lbl.undefined", lang));
+                        }
+                        TuringOutput::Defined((_, out)) => {
+                            ui.label(t!("lbl.current_output", out: &out.to_string(), lang));
+                        }
+                    }
 
                     ui.spacing();
                     ui.spacing();

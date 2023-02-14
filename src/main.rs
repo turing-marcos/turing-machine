@@ -199,6 +199,8 @@ fn handle_error(e: pest::error::Error<Rule>, file: PathBuf) {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn run_machine_cli(file: PathBuf, interactive: bool) {
+    use turing_machine::turing::TuringOutput;
+
     let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
     let mut tm = match TuringMachine::new(&unparsed_file) {
         Ok(t) => t,
@@ -210,7 +212,14 @@ fn run_machine_cli(file: PathBuf, interactive: bool) {
 
     if !interactive {
         let res = tm.final_result();
-        println!("After {} steps, the result is: {}", res.0, res.1);
+        match res {
+            TuringOutput::Undefined(steps) => {
+                println!("After {} steps, the result is: {}", steps, "Undefined");
+            }
+            TuringOutput::Defined((steps, value)) => {
+                println!("After {} steps, the result is: {}", steps, value);
+            }
+        }
         std::process::exit(0);
     }
 

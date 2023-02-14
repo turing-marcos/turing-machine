@@ -55,6 +55,10 @@
         "en": "Current output: $out",
         "es": "Salida actual: $out"
     },
+    "lbl.undefined": {
+        "en": "undefined output",
+        "es": "salida indefinida"
+    },
     "lbl.pause": {
         "en": "Pause",
         "es": "Pausar"
