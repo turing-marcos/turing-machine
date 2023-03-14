@@ -13,9 +13,10 @@ license = "GPL-2.0"
 clap = { version = "^4.1", features = ["derive"] }
 pest = "^2.4"
 pest_derive = "^2.4"
-eframe = "^0.20"
+eframe = "^0.21.3"
 rfd = "^0.11"
-egui_extras = "0.20.0"
+egui_extras = {version = "^0.21.0", features = ["image"] }
+image = { version = "^0.24", default-features = false, features = ["png"] }
 webbrowser = "0.8.3" # There is a vulnerability in version 0.8.5
 internationalization = "0.0.3"
 log = "0.4.17"

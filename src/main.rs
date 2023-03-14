@@ -174,7 +174,7 @@ fn run_machine_gui(file: PathBuf) {
         ),
         options,
         Box::new(|cc| Box::new(MyApp::new(tm, cc))),
-    );
+    ).unwrap();
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -194,7 +194,7 @@ fn handle_error(e: pest::error::Error<Rule>, file: PathBuf) {
         ),
         options,
         Box::new(|cc| Box::new(ErrorWindow::new(e, file, cc))),
-    );
+    ).unwrap();
 }
 
 #[cfg(not(target_arch = "wasm32"))]
