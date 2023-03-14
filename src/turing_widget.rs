@@ -2,11 +2,12 @@ use eframe::egui::{self, widgets::Widget};
 use eframe::emath::Align2;
 use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, Vec2};
 
-use crate::turing::TuringMachine;
+use crate::turing::{TuringMachine, TuringOutput};
 
 const STROKE_WIDTH: f32 = 3f32;
 
 #[derive(Debug, Clone)]
+/// A widget that displays a Turing machine
 pub struct TuringWidget {
     stroke_width: f32,
     pub tape_rect_size: f32,
@@ -24,6 +25,7 @@ pub struct TuringWidget {
 }
 
 impl TuringWidget {
+    /// Creates a new TuringWidget from a TuringMachine
     pub fn new(tm: TuringMachine) -> Self {
         let tri_color = Color32::from_rgb(148, 73, 141);
         let tri_stroke_wid: f32 = 10.0;
@@ -47,6 +49,7 @@ impl TuringWidget {
         }
     }
 
+    /// Restarts the turing machine with the given code
     pub fn restart(&self, code: &str) -> Result<Self, pest::error::Error<crate::turing::Rule>> {
         let tm = match TuringMachine::new(code) {
             Ok(t) => t,
@@ -70,6 +73,7 @@ impl TuringWidget {
         })
     }
 
+    /// Calculate a step of the Turing machine
     pub fn step(&mut self) -> f32 {
         let prev = self.tm.tape_position;
         self.tm.step();
@@ -85,22 +89,28 @@ impl TuringWidget {
         return self.offset;
     }
 
-    pub fn tape_value(&self) -> u32 {
+    /// Returns the current tape value
+    pub fn tape_value(&self) -> TuringOutput {
         self.tm.tape_value()
     }
 
+    /// Returns the current tape length
     pub fn len(&self) -> usize {
         self.tm.tape.len()
     }
 
+    /// Returns the description of the Turing machine if it exists
+    /// (i.e. the triple comment at the top of the code)
     pub fn description(&self) -> Option<String> {
         self.tm.description.clone()
     }
 
+    /// Returns the current code
     pub fn code(&self) -> &str {
         &self.tm.code
     }
 
+    /// Returns the current values of the tape converted to strings
     pub fn tape_values(&self) -> Vec<String> {
         self.tm
             .values()
@@ -109,20 +119,24 @@ impl TuringWidget {
             .collect::<Vec<String>>()
     }
 
+    /// Returns whether the Turing machine has finished
     pub fn finished(&self) -> bool {
         self.tm.finished()
     }
 
+    /// Reset the frequencies of the Turing machine
     pub fn reset_frequencies(&mut self) {
         self.tm.reset_frequencies();
     }
 
+    /// Returns true if the Turing machine is in an infinite loop
     pub fn is_inf_loop(&self) -> bool {
         self.tm.is_infinite_loop(self.threshold_inf_loop)
     }
 }
 
 impl Widget for TuringWidget {
+    /// Paints the Turing machine
     fn ui(mut self, ui: &mut eframe::egui::Ui) -> eframe::egui::Response {
         if ui.is_rect_visible(ui.cursor()) {
             let stroke = Stroke::new(self.stroke_width, Color32::BLACK);

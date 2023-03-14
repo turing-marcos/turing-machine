@@ -33,6 +33,3 @@ F = {f};
 //Search for the mark, remove it and start over
 (q6, 1, 1, L, q6);
 (q6, 0, 1, R, q2);
-
-(f, 0, 0, H, f);
-(f, 1, 1, H, f);

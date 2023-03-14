@@ -1,7 +1,9 @@
 mod instruction;
+mod output;
 mod turing;
 
 pub use instruction::TuringInstruction;
+pub use output::TuringOutput;
 pub use turing::{Rule, TuringMachine, TuringParser};
 
 #[cfg(test)]

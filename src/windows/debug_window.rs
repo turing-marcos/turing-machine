@@ -1,6 +1,8 @@
 use eframe::egui::{self, RichText};
 use egui_extras::{Column, TableBuilder};
 
+use crate::turing::TuringOutput;
+
 use super::SecondaryWindow;
 use internationalization::t;
 
@@ -8,7 +10,7 @@ use internationalization::t;
 pub struct DebugWindow {
     lang: String,
     pub tape_values: Vec<String>,
-    pub tape_value: u32,
+    pub tape_value: TuringOutput,
     position: egui::Pos2,
 }
 
@@ -16,7 +18,7 @@ impl DebugWindow {
     pub fn new(
         lang: &str,
         tape_values: Vec<String>,
-        tape_value: u32,
+        tape_value: TuringOutput,
         position: Option<egui::Pos2>,
     ) -> Self {
         Self {
@@ -27,7 +29,7 @@ impl DebugWindow {
         }
     }
 
-    pub fn set_values(&mut self, tape_values: Vec<String>, tape_value: u32) {
+    pub fn set_values(&mut self, tape_values: Vec<String>, tape_value: TuringOutput) {
         self.tape_values = tape_values;
         self.tape_value = tape_value;
     }
@@ -85,7 +87,7 @@ impl SecondaryWindow for DebugWindow {
                             });
 
                             row.col(|ui| {
-                                ui.label(format!("{}", self.tape_value));
+                                ui.label(format!("{:?}", self.tape_value));
                             });
                         });
                     });
