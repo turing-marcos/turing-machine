@@ -132,7 +132,7 @@ impl MyApp {
                     ui.button(t!("lbl.machine.step", lang))
                 })
                 .clicked()
-                || ui.input().key_pressed(egui::Key::ArrowRight)
+                || ui.input(|i| i.key_pressed(egui::Key::ArrowRight))
                 || !self.tm.paused)
                 && !editor_focused
             {
@@ -390,7 +390,7 @@ impl eframe::App for MyApp {
                         }
                         let b = ui.button(text);
                         //b.ctx.set_style(style);
-                        if (b.clicked() || ui.input().key_pressed(egui::Key::Space))
+                        if (b.clicked() || ui.input(|i| i.key_pressed(egui::Key::Space)))
                             && !editor_focused
                         {
                             if self.tm.finished() {
