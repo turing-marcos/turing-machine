@@ -22,8 +22,8 @@ use turing_machine::{turing::TuringMachine, MyApp};
 )]
 
 pub struct Cli {
-    /// Option: -f --file: Specify a file with the instructions.
-    #[clap(long, short, help = "Specify a file with instructions.")]
+    /// Option: Specify a file with the instructions.
+    #[clap(help = "Specify a file with instructions.")]
     file: Option<PathBuf>,
 
     /// Option: -c --cli: Output in the command-line instead of the GUI.
@@ -174,7 +174,7 @@ fn run_machine_gui(file: PathBuf) {
         ),
         options,
         Box::new(|cc| Box::new(MyApp::new(tm, cc))),
-    );
+    ).unwrap();
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -194,7 +194,7 @@ fn handle_error(e: pest::error::Error<Rule>, file: PathBuf) {
         ),
         options,
         Box::new(|cc| Box::new(ErrorWindow::new(e, file, cc))),
-    );
+    ).unwrap();
 }
 
 #[cfg(not(target_arch = "wasm32"))]
