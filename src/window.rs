@@ -296,8 +296,8 @@ impl eframe::App for MyApp {
 
                         match res {
                             Some(file) => {
-                                let unparsed_file = std::fs::read_to_string(&file[0])
-                                    .expect("cannot read file");
+                                let unparsed_file =
+                                    std::fs::read_to_string(&file[0]).expect("cannot read file");
                                 self.restart(&unparsed_file);
                             }
                             None => {}
@@ -322,7 +322,7 @@ impl eframe::App for MyApp {
                         editor_focused = editor.has_focus();
                     });
                 });
-        })
+            })
             .response
             .rect
             .right();
