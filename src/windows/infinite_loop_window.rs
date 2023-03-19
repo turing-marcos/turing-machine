@@ -24,6 +24,7 @@ impl SecondaryWindow for InfiniteLoopWindow {
         let mut active = true;
 
         Window::new("Oops!")
+            .id(egui::Id::new("infinite_window"))
             .open(&mut active)
             .collapsible(false)
             .resizable(false)

@@ -2,7 +2,7 @@ use crate::turing::{Rule, TuringOutput};
 use crate::windows::{AboutWindow, BookWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow};
 use crate::{turing::TuringMachine, TuringWidget};
 use eframe;
-use eframe::egui::{self, Id, RichText, Ui};
+use eframe::egui::{self, Id, RichText, TextEdit, Ui};
 use eframe::epaint::Color32;
 use internationalization::t;
 use log::warn;
@@ -182,7 +182,9 @@ impl eframe::App for MyApp {
                 self.debug_window = None;
             } else if let Some(debug) = &mut self.debug_window {
                 debug.set_lang(&lang);
-                debug.set_values(self.tm.tape_values(), self.tm.tape_value());
+                if !self.error.is_some() {
+                    debug.set_values(self.tm.tape_values(), self.tm.tape_value());
+                }
             }
         }
 
@@ -202,6 +204,12 @@ impl eframe::App for MyApp {
 
             if let Some(c) = code {
                 self.restart(&c);
+                self.debug_window = Some(Box::new(DebugWindow::new(
+                    &lang,
+                    None,
+                    None,
+                    Some(egui::Pos2::new(0.0, 100.0)),
+                )));
                 self.book_window = None;
             } else if !active {
                 self.book_window = None;
@@ -219,8 +227,8 @@ impl eframe::App for MyApp {
                             if self.debug_window.is_none() {
                                 self.debug_window = Some(Box::new(DebugWindow::new(
                                     &lang,
-                                    self.tm.tape_values(),
-                                    self.tm.tape_value(),
+                                    Some(self.tm.tape_values()),
+                                    Some(self.tm.tape_value()),
                                     Some(egui::Pos2::new(0.0, 100.0)),
                                 )));
                             }
@@ -337,8 +345,10 @@ impl eframe::App for MyApp {
                     }
 
                     egui::ScrollArea::vertical().show(ui, |my_ui: &mut Ui| {
-                        let editor = my_ui.code_editor(&mut self.code);
-                        editor_focused = editor.has_focus();
+                        let editor = TextEdit::multiline(&mut self.code)
+                            .code_editor()
+                            .desired_width(0.0);
+                        editor_focused = my_ui.add(editor).has_focus();
                     });
                 })
             })

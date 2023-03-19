@@ -10,5 +10,9 @@
     "lbl.value": {
         "en": "Value $val",
         "es": "Valor $val"
+    },
+    "debug.lbl.no_values": {
+        "en": "The debugger has no values to show. Compile a program to see the values.",
+        "es": "El depurador no tiene valores para mostrar. Compila un programa para ver los valores."
     }
 }

@@ -55,6 +55,7 @@ impl BookWindow {
         let mut code = None;
 
         egui::Window::new(t!("title.debug", self.lang))
+            .id(egui::Id::new("exercises_window"))
             .resizable(false)
             .open(&mut active)
             .show(ctx, |ui| {
