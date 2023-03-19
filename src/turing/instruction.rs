@@ -4,6 +4,7 @@ use crate::turing::Rule;
 use pest::iterators::Pairs;
 
 #[derive(Debug, Clone, Copy)]
+/// The possible movements of the tape head
 pub enum Movement {
     RIGHT,
     LEFT,
@@ -13,6 +14,7 @@ pub enum Movement {
 impl std::str::FromStr for Movement {
     type Err = ();
 
+    /// Parse a movement from a string
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         match input {
             "R" => Ok(Self::RIGHT),
@@ -23,6 +25,7 @@ impl std::str::FromStr for Movement {
 }
 
 impl Display for Movement {
+    /// Display a movement as a string
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Movement::RIGHT => write!(f, "R"),
@@ -33,6 +36,7 @@ impl Display for Movement {
 }
 
 #[derive(Debug, Clone)]
+/// A Turing machine instruction
 pub struct TuringInstruction {
     pub from_state: String,
     pub from_value: bool,
@@ -42,6 +46,7 @@ pub struct TuringInstruction {
 }
 
 impl Display for TuringInstruction {
+    /// Display an instruction as a string
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -56,6 +61,7 @@ impl Display for TuringInstruction {
 }
 
 impl TuringInstruction {
+    /// Create an instruction from a Pairs<Rule> object
     pub fn from(mut code: Pairs<Rule>) -> Self {
         let from_state = match code.next() {
             Some(s) => String::from(s.as_span().as_str()),
@@ -88,6 +94,8 @@ impl TuringInstruction {
             to_state,
         }
     }
+
+    /// Create a halt instruction when there is missing information
     pub fn halt(index: (String, bool)) -> Self {
         Self {
             from_state: index.0.clone(),

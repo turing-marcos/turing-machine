@@ -35,17 +35,29 @@
         "en": "Tape animation speed",
         "es": "Velocidad de la cinta"
     },
+    "lbl.tape.inf_loop": {
+        "en": "Infinite loop threshold",
+        "es": "Umbral de bucle infinito"
+    },
     "lbl.machine.step": {
         "en": "Do one step",
         "es": "Dar un paso"
     },
     "lbl.seconds": {
-        "en": "seconds",
-        "es": "segundos"
+        "en": " seconds",
+        "es": " segundos"
+    },
+    "lbl.iterations": {
+        "en": " iterations",
+        "es": " iteraciones"
     },
     "lbl.current_output": {
         "en": "Current output: $out",
         "es": "Salida actual: $out"
+    },
+    "lbl.undefined": {
+        "en": "undefined output",
+        "es": "salida indefinida"
     },
     "lbl.pause": {
         "en": "Pause",
@@ -62,6 +74,14 @@
     "lbl.resumed": {
         "en": "The simulation is running.\nTo pause it, press the spacebar or this button:",
         "es": "La simulación está activa.\nPara pausarla, presione la barra espaciadora o este botón:"
+    },
+    "lbl.restart": {
+        "en": "Restart",
+        "es": "Reiniciar"
+    },
+    "lbl.finished": {
+        "en": "The program has finished.\nTo restart it, press this button:",
+        "es": "El programa ha terminado.\nPara reiniciarlo, presione este botón:"
     },
     "lang.en": {
         "en": "English",

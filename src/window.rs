@@ -1,16 +1,17 @@
-//#[cfg(target_family = "wasm")]
+#[cfg(target_family = "wasm")]
 use std::sync::mpsc;
 
-//#[cfg(target_family = "wasm")]
+#[cfg(target_family = "wasm")]
 use web_sys::console;
 
-use crate::turing::Rule;
-use crate::windows::{AboutWindow, DebugWindow, SecondaryWindow};
+use crate::turing::{Rule, TuringOutput};
+use crate::windows::{AboutWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow};
 use crate::{turing::TuringMachine, TuringWidget};
 use eframe;
 use eframe::egui::{self, Id, RichText, Ui};
 use eframe::epaint::Color32;
 use internationalization::t;
+use log::warn;
 //use egui_extras::{Column, TableBuilder};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -26,6 +27,7 @@ pub struct MyApp {
     tm: TuringWidget,
     about_window: Option<Box<AboutWindow>>,
     debug_window: Option<Box<DebugWindow>>,
+    infinite_loop_window: Option<Box<InfiniteLoopWindow>>,
     lang: Language,
 }
 
@@ -44,6 +46,7 @@ impl MyApp {
             tm: TuringWidget::new(tm),
             about_window: None,
             debug_window: None,
+            infinite_loop_window: None,
             lang: Language::English,
         }
     }
@@ -136,7 +139,7 @@ impl MyApp {
                     ui.button(t!("lbl.machine.step", lang))
                 })
                 .clicked()
-                || ui.input().key_pressed(egui::Key::ArrowRight)
+                || ui.input(|i| i.key_pressed(egui::Key::ArrowRight))
                 || !self.tm.paused)
                 && !editor_focused
             {
@@ -176,13 +179,27 @@ impl eframe::App for MyApp {
         if let Some(about) = &self.about_window {
             if !about.show(ctx) {
                 self.about_window = None;
+            } else if let Some(about) = &mut self.about_window {
+                about.set_lang(&lang);
             }
         }
         if let Some(debug) = &self.debug_window {
             if !debug.show(ctx) {
                 self.debug_window = None;
             } else if let Some(debug) = &mut self.debug_window {
+                debug.set_lang(&lang);
                 debug.set_values(self.tm.tape_values(), self.tm.tape_value());
+            }
+        }
+
+        if let Some(inf_loop) = &self.infinite_loop_window {
+            if !inf_loop.show(ctx) {
+                self.infinite_loop_window = None;
+                self.tm.paused = false;
+            } else if let Some(inf_loop) = &mut self.infinite_loop_window {
+                inf_loop.set_lang(&lang);
+                self.tm.paused = true;
+                self.tm.reset_frequencies();
             }
         }
 
@@ -195,7 +212,12 @@ impl eframe::App for MyApp {
                         ui.checkbox(&mut debug_enabled, t!("menu.debugger.activate", lang));
                         if debug_enabled {
                             if self.debug_window.is_none() {
-                                self.debug_window = Some(Box::new(DebugWindow::default()));
+                                self.debug_window = Some(Box::new(DebugWindow::new(
+                                    &lang,
+                                    self.tm.tape_values(),
+                                    self.tm.tape_value(),
+                                    Some(egui::Pos2::new(0.0, 100.0)),
+                                )));
                             }
                         } else {
                             self.debug_window = None;
@@ -209,7 +231,10 @@ impl eframe::App for MyApp {
 
                     ui.menu_button(t!("menu.about", lang), |ui| {
                         if ui.button(t!("menu.about", lang)).clicked() {
-                            self.about_window = Some(Box::new(AboutWindow::default()));
+                            self.about_window = Some(Box::new(AboutWindow::new(
+                                &lang,
+                                Some(egui::Pos2::new(150.0, 100.0)),
+                            )));
                         }
 
                         if ui.link(t!("menu.repository", lang)).clicked() {
@@ -223,86 +248,61 @@ impl eframe::App for MyApp {
         self.tm.left = egui::SidePanel::left("left")
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
-                    if ui.button(t!("btn.open_file", lang)).clicked() {
-                        //#[cfg(target_family = "wasm")]
-                        if cfg!(wasm) {
-                            // Spawn dialog on main thread
-                            let task = rfd::AsyncFileDialog::new()
-                                .add_filter("TuringMachine", &["tm"])
-                                .pick_file();
+                    // if ui.button(t!("btn.open_file", self.lang)).clicked() {
+                    //     if cfg!(wasm) {
+                    //         // Spawn dialog on main thread
+                    //         let task = rfd::AsyncFileDialog::new().pick_file();
 
-                            let (tx, rx) = mpsc::channel();
+                    //         // Await somewhere else
+                    //         wasm_bindgen_futures::spawn_local(async move {
+                    //             let file = task.await;
 
-                            console::debug_1(&"Spawning task...".into());
-
-                            wasm_bindgen_futures::spawn_local(async move {
-                                let file = task.await;
-
-                                if let Some(file) = file {
-                                    // If you care about wasm support you just read() the file
-                                    let buffer = file.read().await;
-                                    match String::from_utf8(buffer) {
-                                        Ok(s) => tx.send(s).unwrap(),
-                                        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-                                    }
-                                }
-                            });
-
-                            let code = rx.recv().unwrap();
-
-                            console::debug_1(&format!("Code: {}", code).into());
-
-                            self.restart(&code);
-                        }
-
-                        #[cfg(not(target_family = "wasm"))]
-                        if !cfg!(wasm) {
-                            let path = std::env::current_dir().unwrap();
-
-                            let res = rfd::FileDialog::new()
-                                .add_filter("TuringMachine", &["tm"])
-                                .set_directory(&path)
-                                .pick_files();
-
-                            match res {
-                                Some(file) => {
-                                    let unparsed_file = std::fs::read_to_string(&file[0])
-                                        .expect("cannot read file");
-                                    self.restart(&unparsed_file);
-                                }
-                                None => {}
-                            }
-                        }
-                    }
-
-                    // #[cfg(not(target_family = "wasm"))]
-                    // if !cfg!(wasm) && ui.button("Open file").clicked() {
-                    //     let path = std::env::current_dir().unwrap();
-
-                    //     let res = rfd::FileDialog::new()
-                    //         .add_filter("TuringMachine", &["tm"])
-                    //         .set_directory(&path)
-                    //         .pick_files();
-
-                    //     match res {
-                    //         Some(file) => {
-                    //             let unparsed_file =
-                    //                 std::fs::read_to_string(&file[0]).expect("cannot read file");
-                    //             self.tm = match self.tm.restart(&unparsed_file) {
-                    //                 Ok(t) => {
-                    //                     self.error = None;
-                    //                     t
+                    //             if let Some(file) = file {
+                    //                 // If you care about wasm support you just read() the file
+                    //                 let buffer = file.read().await;
+                    //                 match String::from_utf8(buffer) {
+                    //                     Ok(s) => self.restart(&s),
+                    //                     Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
                     //                 }
-                    //                 Err(e) => {
-                    //                     self.error = Some(e);
-                    //                     self.tm.clone()
-                    //                 }
-                    //             };
-                    //             self.code = unparsed_file;
+                    //             }
+                    //         });
+                    //     } else {
+                    //         let path = std::env::current_dir().unwrap();
+
+                    //         let res = rfd::FileDialog::new()
+                    //             .add_filter("TuringMachine", &["tm"])
+                    //             .set_directory(&path)
+                    //             .pick_files();
+
+                    //         match res {
+                    //             Some(file) => {
+                    //                 let unparsed_file = std::fs::read_to_string(&file[0])
+                    //                     .expect("cannot read file");
+                    //                 self.restart(&unparsed_file);
+                    //             }
+                    //             None => {}
                     //         }
-                    //         None => {}
                     //     }
                     // }
+
+                    #[cfg(not(target_family = "wasm"))]
+                    if !cfg!(wasm) && ui.button(t!("btn.open_file", lang)).clicked() {
+                        let path = std::env::current_dir().unwrap();
+
+                        let res = rfd::FileDialog::new()
+                            .add_filter("TuringMachine", &["tm"])
+                            .set_directory(&path)
+                            .pick_files();
+
+                        match res {
+                            Some(file) => {
+                                let unparsed_file = std::fs::read_to_string(&file[0])
+                                    .expect("cannot read file");
+                                self.restart(&unparsed_file);
+                            }
+                            None => {}
+                        }
+                    }
 
                     if ui.button(t!("btn.compile", lang)).clicked() {
                         self.tm = match self.tm.restart(&self.code) {
@@ -321,8 +321,8 @@ impl eframe::App for MyApp {
                         let editor = my_ui.code_editor(&mut self.code);
                         editor_focused = editor.has_focus();
                     });
-                })
-            })
+                });
+        })
             .response
             .rect
             .right();
@@ -341,14 +341,19 @@ impl eframe::App for MyApp {
                         }
 
                         ui.add(
-                            egui::Slider::new(&mut self.tm.tape_rect_size, 20.0..=300.0)
+                            egui::Slider::new(&mut self.tm.tape_rect_size, 25.0..=300.0)
                                 .suffix(" px")
                                 .text(t!("lbl.tape.size", lang)),
                         );
                         ui.add(
                             egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
-                                .suffix(format!(" {}", t!("lbl.seconds", lang)))
+                                .suffix(t!("lbl.seconds", lang))
                                 .text(t!("lbl.tape.speed", lang)),
+                        );
+                        ui.add(
+                            egui::Slider::new(&mut self.tm.threshold_inf_loop, 10..=2000)
+                                .suffix(t!("lbl.iterations", lang))
+                                .text(t!("lbl.tape.inf_loop", lang)),
                         );
                     });
 
@@ -357,16 +362,24 @@ impl eframe::App for MyApp {
                     ui.spacing();
                     ui.spacing();
 
-                    ui.label(
-                        t!("lbl.current_output", out: &self.tm.tape_value().to_string(), lang),
-                    );
+                    match &self.tm.tape_value() {
+                        TuringOutput::Undefined(_) => {
+                            ui.label(t!("lbl.undefined", lang));
+                        }
+                        TuringOutput::Defined((_, out)) => {
+                            ui.label(t!("lbl.current_output", out: &out.to_string(), lang));
+                        }
+                    }
 
                     ui.spacing();
                     ui.spacing();
 
                     ui.vertical_centered(|ui| {
                         let mut text = t!("lbl.pause", lang);
-                        if self.tm.paused {
+                        if self.tm.finished() {
+                            ui.label(t!("lbl.finished", lang));
+                            text = t!("lbl.restart", lang)
+                        } else if self.tm.paused {
                             ui.label(t!("lbl.paused", lang));
                             text = t!("lbl.resume", lang);
                         } else {
@@ -374,14 +387,24 @@ impl eframe::App for MyApp {
                         }
                         let b = ui.button(text);
                         //b.ctx.set_style(style);
-                        if (b.clicked() || ui.input().key_pressed(egui::Key::Space))
+                        if (b.clicked() || ui.input(|i| i.key_pressed(egui::Key::Space)))
                             && !editor_focused
                         {
-                            self.tm.paused = !self.tm.paused;
+                            if self.tm.finished() {
+                                self.tm = self.tm.restart(&self.code).unwrap();
+                            } else {
+                                self.tm.paused = !self.tm.paused;
+                            }
                         }
 
                         if self.process_turing_controls(ui, &ctx, editor_focused, &lang) {
                             ctx.request_repaint();
+                            if self.tm.is_inf_loop() {
+                                warn!("Infinite loop detected!");
+                                self.infinite_loop_window =
+                                    Some(Box::new(InfiniteLoopWindow::new(&self.get_lang())));
+                                self.tm.paused = true;
+                            }
                         }
                     });
                     ui.add(self.tm.clone());

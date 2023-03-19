@@ -2,11 +2,12 @@ use eframe::egui::{self, widgets::Widget};
 use eframe::emath::Align2;
 use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, Vec2};
 
-use crate::turing::TuringMachine;
+use crate::turing::{TuringMachine, TuringOutput};
 
 const STROKE_WIDTH: f32 = 3f32;
 
 #[derive(Debug, Clone)]
+/// A widget that displays a Turing machine
 pub struct TuringWidget {
     stroke_width: f32,
     pub tape_rect_size: f32,
@@ -15,6 +16,7 @@ pub struct TuringWidget {
     pub paused: bool,
     pub tape_anim_speed: f32,
     pub left: f32,
+    pub threshold_inf_loop: usize, // Threshold for infinite loop detection
     tri_color: Color32,
     tri_stroke_wid: f32,
     tri_stroke: Stroke,
@@ -23,6 +25,7 @@ pub struct TuringWidget {
 }
 
 impl TuringWidget {
+    /// Creates a new TuringWidget from a TuringMachine
     pub fn new(tm: TuringMachine) -> Self {
         let tri_color = Color32::from_rgb(148, 73, 141);
         let tri_stroke_wid: f32 = 10.0;
@@ -37,6 +40,7 @@ impl TuringWidget {
             font_id: FontId::new(30f32, FontFamily::Monospace),
             paused: true,
             left: 300.0,
+            threshold_inf_loop: 100,
             tri_color,
             tri_stroke_wid,
             tri_stroke,
@@ -45,6 +49,7 @@ impl TuringWidget {
         }
     }
 
+    /// Restarts the turing machine with the given code
     pub fn restart(&self, code: &str) -> Result<Self, pest::error::Error<crate::turing::Rule>> {
         let tm = match TuringMachine::new(code) {
             Ok(t) => t,
@@ -59,6 +64,7 @@ impl TuringWidget {
             font_id: self.font_id.clone(),
             paused: self.paused,
             left: self.left,
+            threshold_inf_loop: self.threshold_inf_loop,
             tri_color: self.tri_color,
             tri_stroke_wid: self.tri_stroke_wid,
             tri_stroke: self.tri_stroke,
@@ -67,28 +73,44 @@ impl TuringWidget {
         })
     }
 
+    /// Calculate a step of the Turing machine
     pub fn step(&mut self) -> f32 {
         let prev = self.tm.tape_position;
         self.tm.step();
         self.offset = self.tm.tape_position as f32 - prev as f32;
+
+        if self.tm.finished()
+            || self.tm.is_undefined()
+            || self.tm.is_infinite_loop(self.threshold_inf_loop)
+        {
+            self.paused = true;
+        }
+
         return self.offset;
     }
 
-    pub fn tape_value(&self) -> u32 {
+    /// Returns the current tape value
+    pub fn tape_value(&self) -> TuringOutput {
         self.tm.tape_value()
     }
+
+    /// Returns the current tape length
     pub fn len(&self) -> usize {
         self.tm.tape.len()
     }
 
+    /// Returns the description of the Turing machine if it exists
+    /// (i.e. the triple comment at the top of the code)
     pub fn description(&self) -> Option<String> {
         self.tm.description.clone()
     }
 
+    /// Returns the current code
     pub fn code(&self) -> &str {
         &self.tm.code
     }
 
+    /// Returns the current values of the tape converted to strings
     pub fn tape_values(&self) -> Vec<String> {
         self.tm
             .values()
@@ -96,15 +118,32 @@ impl TuringWidget {
             .map(|v| v.to_string())
             .collect::<Vec<String>>()
     }
+
+    /// Returns whether the Turing machine has finished
+    pub fn finished(&self) -> bool {
+        self.tm.finished()
+    }
+
+    /// Reset the frequencies of the Turing machine
+    pub fn reset_frequencies(&mut self) {
+        self.tm.reset_frequencies();
+    }
+
+    /// Returns true if the Turing machine is in an infinite loop
+    pub fn is_inf_loop(&self) -> bool {
+        self.tm.is_infinite_loop(self.threshold_inf_loop)
+    }
 }
 
 impl Widget for TuringWidget {
+    /// Paints the Turing machine
     fn ui(mut self, ui: &mut eframe::egui::Ui) -> eframe::egui::Response {
         if ui.is_rect_visible(ui.cursor()) {
             let stroke = Stroke::new(self.stroke_width, Color32::BLACK);
             let rounding = Rounding::same(10f32);
             let size = Vec2::new(self.tape_rect_size, self.tape_rect_size);
-            let center = ui.cursor().center_top() + Vec2::new(0.0, 100.0);
+            let center =
+                ui.cursor().center_top() + Vec2::new(0.0, self.tape_rect_size / 2.0 + 50.0);
 
             let pos = center + Vec2::new((self.offset as f32) * size.x, 0.0);
 
@@ -164,18 +203,24 @@ impl Widget for TuringWidget {
                 Color32::BLACK,
             );
 
-            let ins = match self.tm.get_current_instruction() {
-                Some(txt) => format!("{}", txt),
-                None => String::from("ERROR: No instruction matches this situation!"),
+            if let Some(txt) = self.tm.get_current_instruction() {
+                ui.painter().text(
+                    center + Vec2::new(0.0, self.tri_size + 100.0),
+                    Align2::CENTER_CENTER,
+                    &txt,
+                    self.font_id.clone(),
+                    Color32::GRAY,
+                );
+            } else if self.tm.is_undefined() {
+                ui.painter().text(
+                    center + Vec2::new(0.0, self.tri_size + 100.0),
+                    Align2::CENTER_CENTER,
+                    "The machine is in an undefined state",
+                    self.font_id.clone(),
+                    Color32::LIGHT_RED,
+                );
+                self.paused = true;
             };
-
-            ui.painter().text(
-                center + Vec2::new(0.0, self.tri_size + 100.0),
-                Align2::CENTER_CENTER,
-                &ins,
-                self.font_id.clone(),
-                Color32::GRAY,
-            );
 
             if self.tm.finished() {
                 ui.painter().text(
