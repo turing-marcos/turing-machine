@@ -1,5 +1,5 @@
 use crate::turing::{Rule, TuringOutput};
-use crate::windows::{AboutWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow, BookWindow};
+use crate::windows::{AboutWindow, BookWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow};
 use crate::{turing::TuringMachine, TuringWidget};
 use eframe;
 use eframe::egui::{self, Id, RichText, Ui};
@@ -41,7 +41,7 @@ impl MyApp {
             debug_window: None,
             infinite_loop_window: None,
             book_window: None,
-            lang: Language::English
+            lang: Language::English,
         }
     }
 
@@ -203,7 +203,7 @@ impl eframe::App for MyApp {
             if let Some(c) = code {
                 self.restart(&c);
                 self.book_window = None;
-            }else if !active { 
+            } else if !active {
                 self.book_window = None;
             }
         }
