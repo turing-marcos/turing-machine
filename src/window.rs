@@ -1,12 +1,11 @@
 use crate::turing::{Rule, TuringOutput};
-use crate::windows::{AboutWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow};
+use crate::windows::{AboutWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow, BookWindow};
 use crate::{turing::TuringMachine, TuringWidget};
 use eframe;
 use eframe::egui::{self, Id, RichText, Ui};
 use eframe::epaint::Color32;
 use internationalization::t;
 use log::warn;
-//use egui_extras::{Column, TableBuilder};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Language {
@@ -21,6 +20,7 @@ pub struct MyApp {
     about_window: Option<Box<AboutWindow>>,
     debug_window: Option<Box<DebugWindow>>,
     infinite_loop_window: Option<Box<InfiniteLoopWindow>>,
+    book_window: Option<Box<BookWindow>>,
     lang: Language,
 }
 
@@ -40,7 +40,8 @@ impl MyApp {
             about_window: None,
             debug_window: None,
             infinite_loop_window: None,
-            lang: Language::English,
+            book_window: None,
+            lang: Language::English
         }
     }
 
@@ -196,6 +197,17 @@ impl eframe::App for MyApp {
             }
         }
 
+        if let Some(book) = self.book_window.as_mut() {
+            let (active, code) = book.show(ctx);
+
+            if let Some(c) = code {
+                self.restart(&c);
+                self.book_window = None;
+            }else if !active { 
+                self.book_window = None;
+            }
+        }
+
         egui::TopBottomPanel::top("header")
             .default_height(35.0)
             .show(ctx, |ui| {
@@ -216,6 +228,10 @@ impl eframe::App for MyApp {
                             self.debug_window = None;
                         }
                     });
+
+                    if ui.button("Exercises").clicked() {
+                        self.book_window = Some(Box::new(BookWindow::new(&self.get_lang())));
+                    }
 
                     ui.menu_button(t!("menu.language", lang), |ui| {
                         ui.radio_value(&mut self.lang, Language::English, t!("lang.en", lang));
