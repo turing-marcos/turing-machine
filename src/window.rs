@@ -7,6 +7,7 @@ use eframe::epaint::Color32;
 use internationalization::t;
 use log::warn;
 //use egui_extras::{Column, TableBuilder};
+use egui_demo_lib::syntax_highlighting;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Language {
@@ -320,10 +321,37 @@ impl eframe::App for MyApp {
                         };
                     }
 
-                    egui::ScrollArea::vertical().show(ui, |my_ui: &mut Ui| {
-                        let editor = my_ui.code_editor(&mut self.code);
-                        editor_focused = editor.has_focus();
+                    let mut theme = ThemeSet::get_theme()
+                    ui.collapsing("Theme", |ui| {
+                        ui.group(|ui| {
+                            theme.ui(ui);
+                            theme.clone().store_in_memory(ui.ctx());
+                        });
                     });
+            
+                    let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
+                        let mut layout_job =
+                            syntax_highlighting::highlight(ui.ctx(), &theme, string, language);
+                        layout_job.wrap.max_width = wrap_width;
+                        ui.fonts().layout_job(layout_job)
+                    };
+            
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        ui.add(
+                            egui::TextEdit::multiline(code)
+                                .font(egui::TextStyle::Monospace) // for cursor height
+                                .code_editor()
+                                .desired_rows(10)
+                                .lock_focus(true)
+                                .desired_width(f32::INFINITY)
+                                .layouter(&mut layouter),
+                        );
+                    });
+
+                    // egui::ScrollArea::vertical().show(ui, |my_ui: &mut Ui| {
+                    //     let editor = my_ui.code_editor(&mut self.code);
+                    //     editor_focused = editor.has_focus();
+                    // });
                 })
             })
             .response
