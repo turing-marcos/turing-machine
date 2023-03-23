@@ -4,6 +4,7 @@ use internationalization::t;
 
 struct Exercise {
     image: RetainedImage,
+    title: String,
     code: String,
 }
 
@@ -11,6 +12,7 @@ impl Exercise {
     pub fn new(title: &str, img: &[u8], code: String) -> Self {
         Self {
             image: RetainedImage::from_image_bytes(title, img).unwrap(),
+            title: String::from(title),
             code: String::from(code),
         }
     }
@@ -54,40 +56,62 @@ impl BookWindow {
         let mut active = true;
         let mut code = None;
 
-        egui::Window::new(t!("title.debug", self.lang))
+        egui::Window::new("Workbook") //TODO: t!("title.debug", self.lang))
             .id(egui::Id::new("exercises_window"))
             .resizable(false)
             .open(&mut active)
             .show(ctx, |ui| {
-                ui.vertical_centered_justified(|ui| {
-                    self.exercises[self.selected]
-                        .image
-                        .show_max_size(ui, Vec2::new(600.0, 500.0));
+                ui.horizontal(|ui|{
+                    ui.vertical(|ui| {
+                        ui.heading("Catalog"); //t!("title.exercises", self.lang));
 
-                    ui.horizontal(|ui| {
-                        if ui
-                            .add_enabled(self.selected > 0, egui::Button::new("Previous"))
-                            .clicked()
-                        {
-                            self.selected -= 1;
-                        }
-
-                        ui.add_space(ui.available_width() - 50.0);
-
-                        if ui
-                            .add_enabled(
-                                self.selected < self.exercises.len() - 1,
-                                egui::Button::new("Next"),
-                            )
-                            .clicked()
-                        {
-                            self.selected += 1;
-                        }
+                        egui::ScrollArea::vertical().show(ui, |ui| {
+                            for (i, exercise) in self.exercises.iter().enumerate() {
+                                if ui
+                                    .add_enabled(self.selected != i, egui::Button::new(&exercise.title))
+                                    .clicked()
+                                {
+                                    self.selected = i;
+                                }
+                            }
+                        });
                     });
 
-                    if ui.button("Use this exercise").clicked() {
-                        code = Some(self.exercises[self.selected].code.clone());
-                    }
+                    ui.add(|ui: &mut egui::Ui| {
+                        ui.set_min_height(350.0); // Set the minimum height to fill the available space
+                        ui.separator()
+                    });
+
+                    ui.vertical_centered_justified(|ui| {
+                        self.exercises[self.selected]
+                            .image
+                            .show_max_size(ui, Vec2::new(600.0, 500.0));
+
+                        ui.horizontal(|ui| {
+                            if ui
+                                .add_enabled(self.selected > 0, egui::Button::new("Previous"))
+                                .clicked()
+                            {
+                                self.selected -= 1;
+                            }
+
+                            ui.add_space(ui.available_width() - 50.0);
+
+                            if ui
+                                .add_enabled(
+                                    self.selected < self.exercises.len() - 1,
+                                    egui::Button::new("Next"),
+                                )
+                                .clicked()
+                            {
+                                self.selected += 1;
+                            }
+                        });
+
+                        if ui.button("Use this exercise").clicked() {
+                            code = Some(self.exercises[self.selected].code.clone());
+                        }
+                    });
                 });
             });
 

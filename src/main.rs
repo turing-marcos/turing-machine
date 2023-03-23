@@ -5,7 +5,7 @@
 use {
     clap::Parser as clap_parser,
     env_logger,
-    log::trace,
+    log::{error, trace},
     std::{fs, io, path::PathBuf},
     turing_machine::{turing::Rule, windows::ErrorWindow},
 };
@@ -30,7 +30,7 @@ pub struct Cli {
     #[clap(
         long,
         short,
-        default_value = "false",
+        default_value_t = false,
         help = "Output in the command-line."
     )]
     cli: bool,
@@ -40,13 +40,22 @@ pub struct Cli {
     #[clap(
         long,
         short,
-        default_value = "false",
+        default_value_t = false,
         help = "print the machine result interactively (step by step).\nNote: this option is only available in the CLI mode."
     )]
     interactive: bool,
 
     #[clap(flatten)]
     verbose: clap_verbosity_flag::Verbosity,
+
+    #[clap(
+        long,
+        short,
+        default_value_t = false,
+        help = "Activate the visual debug mode (only available in the GUI mode).",
+        conflicts_with = "cli"
+    )]
+    debug: bool,
 }
 
 // when compiling to web using trunk.
@@ -103,37 +112,41 @@ fn main() {
         .filter_level(args.verbose.log_level_filter())
         .init();
 
-    if let Some(file) = args.file {
-        trace!("File provided: {:?}", file);
-
-        if !args.cli {
+    if args.cli {
+        if let Some(file) = args.file {
             trace!("The machine will run in GUI mode");
-            run_machine_gui(file);
-        } else {
-            trace!("The machine will run in CLI mode");
             run_machine_cli(file, args.interactive);
+        } else {
+            error!("No file provided, exiting...");
+            std::process::exit(1);
         }
     } else {
-        trace!("No file provided, opening file picker in the current folder");
+        if let Some(file) = args.file {
+            trace!("File provided: {:?}", file);
+            run_machine_gui(file, args.debug);
+        } else {
+            trace!("No file provided, opening file picker in the current folder");
 
-        let path = std::env::current_dir().unwrap_or_default();
+            let path = std::env::current_dir().unwrap_or_default();
 
-        let res = rfd::FileDialog::new()
-            .add_filter("TuringMachine", &["tm"])
-            .set_directory(&path)
-            .pick_files();
+            let res = rfd::FileDialog::new()
+                .add_filter("TuringMachine", &["tm"])
+                .set_directory(&path)
+                .pick_files();
 
-        match res {
-            Some(file) => run_machine_gui(file[0].clone()),
-            None => panic!("No file was chosen"),
-        };
+            match res {
+                Some(file) => run_machine_gui(file[0].clone(), args.debug),
+                None => {
+                    error!("No file was chosen");
+                    std::process::exit(1)
+                }
+            };
+        }
     }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 fn load_icon(path: &str) -> Option<eframe::IconData> {
-    use log::error;
-
     let data = match std::fs::read(path) {
         Ok(d) => d,
         Err(e) => {
@@ -150,7 +163,7 @@ fn load_icon(path: &str) -> Option<eframe::IconData> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn run_machine_gui(file: PathBuf) {
+fn run_machine_gui(file: PathBuf, debug: bool) {
     let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
     let tm = match TuringMachine::new(&unparsed_file) {
         Ok(t) => t,
@@ -173,7 +186,10 @@ fn run_machine_gui(file: PathBuf) {
                 .unwrap_or(std::ffi::OsStr::new("User input"))
         ),
         options,
-        Box::new(|cc| Box::new(MyApp::new(tm, cc))),
+        Box::new(move |cc| {
+            cc.egui_ctx.set_debug_on_hover(debug);
+            Box::new(MyApp::new(tm, cc))
+        }),
     )
     .unwrap();
 }
