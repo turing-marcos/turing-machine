@@ -7,12 +7,12 @@ use {
     env_logger,
     log::{error, trace},
     std::{fs, io, path::PathBuf},
+    turing_lib::Rule,
     turing_machine::windows::ErrorWindow,
-    turing_lib::Rule
 };
 
-use turing_machine::MyApp;
 use turing_lib::TuringMachine;
+use turing_machine::MyApp;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(clap_parser, Debug)]

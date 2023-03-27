@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
-use turing_lib::Rule;
 use eframe;
 use eframe::egui::{self, RichText};
 use eframe::epaint::Color32;
+use turing_lib::Rule;
 
 pub struct ErrorWindow {
     error: pest::error::Error<Rule>,

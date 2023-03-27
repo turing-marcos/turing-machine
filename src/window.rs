@@ -1,11 +1,14 @@
-use turing_lib::{Rule, TuringOutput};
-use crate::{TuringWidget, windows::{AboutWindow, BookWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow}};
-use turing_lib::TuringMachine;
+use crate::{
+    windows::{AboutWindow, BookWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow},
+    TuringWidget,
+};
 use eframe;
 use eframe::egui::{self, Id, RichText, TextEdit, Ui};
 use eframe::epaint::Color32;
 use internationalization::t;
 use log::warn;
+use turing_lib::TuringMachine;
+use turing_lib::{Rule, TuringOutput};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Language {
