@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::turing::Rule;
+use turing_lib::Rule;
 use eframe;
 use eframe::egui::{self, RichText};
 use eframe::epaint::Color32;

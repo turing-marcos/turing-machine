@@ -2497,6 +2497,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0609f771ad9c6155384897e1df4d948e692667cc0588548b68eb44d052b27633"
 
 [[package]]
+name = "turing-lib"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "769951aefc8c603b506ceb110357b6cc3113472560c81b4d1f22903d894e89bb"
+dependencies = [
+ "env_logger",
+ "log",
+ "pest",
+ "pest_derive",
+]
+
+[[package]]
 name = "turing-machine"
 version = "1.1.2"
 dependencies = [
@@ -2514,6 +2526,7 @@ dependencies = [
  "rfd",
  "tracing-subscriber",
  "tracing-wasm",
+ "turing-lib",
  "wasm-bindgen-futures",
  "webbrowser",
 ]

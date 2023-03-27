@@ -1,6 +1,6 @@
-use crate::turing::{Rule, TuringOutput};
-use crate::windows::{AboutWindow, BookWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow};
-use crate::{turing::TuringMachine, TuringWidget};
+use turing_lib::{Rule, TuringOutput};
+use crate::{TuringWidget, windows::{AboutWindow, BookWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow}};
+use turing_lib::TuringMachine;
 use eframe;
 use eframe::egui::{self, Id, RichText, TextEdit, Ui};
 use eframe::epaint::Color32;

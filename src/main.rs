@@ -7,10 +7,12 @@ use {
     env_logger,
     log::{error, trace},
     std::{fs, io, path::PathBuf},
-    turing_machine::{turing::Rule, windows::ErrorWindow},
+    turing_machine::windows::ErrorWindow,
+    turing_lib::Rule
 };
 
-use turing_machine::{turing::TuringMachine, MyApp};
+use turing_machine::MyApp;
+use turing_lib::TuringMachine;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(clap_parser, Debug)]
@@ -217,7 +219,7 @@ fn handle_error(e: pest::error::Error<Rule>, file: PathBuf) {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn run_machine_cli(file: PathBuf, interactive: bool) {
-    use turing_machine::turing::TuringOutput;
+    use turing_lib::TuringOutput;
 
     let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
     let mut tm = match TuringMachine::new(&unparsed_file) {
