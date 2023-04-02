@@ -8,8 +8,8 @@ use {
     log::{error, trace},
     std::{fs, io, path::PathBuf},
     turing_lib::Rule,
-    turing_machine::windows::ErrorWindow,
     turing_lib::TuringMachine,
+    turing_machine::windows::ErrorWindow,
 };
 
 use turing_machine::MyApp;

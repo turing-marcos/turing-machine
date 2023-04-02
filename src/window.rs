@@ -19,8 +19,8 @@ use turing_lib::{Rule, TuringOutput};
 
 #[cfg(target_arch = "wasm32")]
 use {
-    wasm_bindgen::prelude::wasm_bindgen,
     std::sync::{Arc, Mutex},
+    wasm_bindgen::prelude::wasm_bindgen,
 };
 
 const DEFAULT_CODE: &str = include_str!("../Examples/Example1.tm");
@@ -381,8 +381,7 @@ impl MyApp {
             };
 
             if let Some(f) = file {
-                std::fs::write(&f, self.code.as_bytes())
-                    .expect("cannot write file");
+                std::fs::write(&f, self.code.as_bytes()).expect("cannot write file");
                 self.file = Some(f);
 
                 debug!("Set auto-save file to {:?}", self.file);
@@ -477,8 +476,8 @@ impl MyApp {
 
             match res {
                 Some(file) => {
-                    let unparsed_file = std::fs::read_to_string(&file[0])
-                        .expect("cannot read file");
+                    let unparsed_file =
+                        std::fs::read_to_string(&file[0]).expect("cannot read file");
                     self.tm = match self.tm.restart(&unparsed_file) {
                         Ok(t) => {
                             self.error = None;
@@ -620,9 +619,9 @@ impl MyApp {
 
     /// Draws the side panel containing the file open/save buttons, compile button, and code editor.
     /// It also handles autosaving and displays a "Saved file" feedback popup if applicable.
-    /// 
-    /// # Returns 
-    /// 
+    ///
+    /// # Returns
+    ///
     /// The x-coordinate of the right side of the side panel.
     ///
     /// # Arguments
@@ -630,7 +629,12 @@ impl MyApp {
     /// * ctx - An egui::Context object required for creating and displaying UI components.
     /// * lang - A string representing the language used for displaying text in the UI.
     /// * editor_focused - A mutable reference to a boolean indicating whether the code editor is currently focused.
-    fn draw_side_panel(&mut self, ctx: &egui::Context, lang: &str, editor_focused: &mut bool) -> f32 {
+    fn draw_side_panel(
+        &mut self,
+        ctx: &egui::Context,
+        lang: &str,
+        editor_focused: &mut bool,
+    ) -> f32 {
         egui::SidePanel::left("left")
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
@@ -698,8 +702,8 @@ impl MyApp {
             .response
             .rect
             .right()
-    } 
-    
+    }
+
     /// Draws the central panel containing the Turing machine description, sliders for tape size, animation speed,
     /// and infinite loop threshold, as well as the current output and playback controls.
     ///
@@ -708,7 +712,7 @@ impl MyApp {
     /// * ctx - An egui::Context object required for creating and displaying UI components.
     /// * lang - A string representing the language used for displaying text in the UI.
     /// * editor_focused - A boolean indicating whether the code editor is currently focused.
-    fn draw_central_panel(&mut self, ctx: &egui::Context, lang: &str, editor_focused: bool){
+    fn draw_central_panel(&mut self, ctx: &egui::Context, lang: &str, editor_focused: bool) {
         egui::CentralPanel::default().show(ctx, |main_panel| {
             main_panel.horizontal_top(|horiz| {
                 horiz.vertical_centered(|ui| {

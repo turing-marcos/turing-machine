@@ -33,16 +33,12 @@ impl BookWindow {
                     Exercise::new(
                         "Exercise 1",
                         include_bytes!("../../assets/ui/exercise1/cover.png"),
-                        String::from(
-                            include_str!("../../assets/ui/exercise1/code.tm"),
-                        ),
+                        String::from(include_str!("../../assets/ui/exercise1/code.tm")),
                     ),
                     Exercise::new(
                         "Exercise 2",
                         include_bytes!("../../assets/ui/exercise2/cover.png"),
-                        String::from(
-                            include_str!("../../assets/ui/exercise2/code.tm"),
-                        ),
+                        String::from(include_str!("../../assets/ui/exercise2/code.tm")),
                     ),
                 ],
             ),
