@@ -926,6 +926,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "file-lock"
+version = "2.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f59be9010c5418713a48aac4c1b897d85dafd958055683dc31bdae553536647b"
+dependencies = [
+ "cc",
+ "libc",
+]
+
+[[package]]
 name = "flate2"
 version = "1.0.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2510,7 +2520,7 @@ dependencies = [
 
 [[package]]
 name = "turing-machine"
-version = "1.2.0-rc.1"
+version = "1.2.1"
 dependencies = [
  "clap",
  "clap-verbosity-flag",
@@ -2518,6 +2528,7 @@ dependencies = [
  "eframe",
  "egui_extras",
  "env_logger",
+ "file-lock",
  "image",
  "internationalization",
  "log",
