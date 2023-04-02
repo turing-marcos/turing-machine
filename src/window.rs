@@ -95,6 +95,18 @@ impl MyApp {
         }
     }
 
+    /// This function handles parsing errors in the Turing machine's input and displays an error message
+    /// in the UI, showing information about the location and nature of the error.
+    ///
+    /// # Arguments
+    /// * _ui - A mutable reference to the egui Ui, used to build and update the user interface.
+    /// * ctx - A reference to the egui::Context, providing access to the UI context.
+    /// * error - A reference to a pest::error::Error, containing information about the parsing error.
+    ///
+    /// The error panel is displayed at the bottom of the UI, showing the line and column numbers
+    /// where the error occurred, the erroneous input, and a message describing the expected input or
+    /// the reason for the error. The panel uses different text colors and sizes to improve readability
+    /// and highlight the most important information.
     fn handle_error(_ui: &mut Ui, ctx: &egui::Context, error: &pest::error::Error<Rule>) {
         let (error_pos, line_msg) = match error.line_col {
             pest::error::LineColLocation::Pos((line, col)) => {
@@ -149,6 +161,19 @@ impl MyApp {
         });
     }
 
+    /// This function processes the Turing machine's controls, handling UI updates and animations
+    /// for stepping through the machine's operations. It enables or disables the UI elements based on the
+    /// editor_focused parameter, and handles the step button click, arrow key press, and machine state changes.
+    /// It also manages the tape animation based on the current offset and animation speed.
+    ///
+    /// # Arguments
+    /// * ui - A mutable reference to the egui Ui, used to build and update the user interface.
+    /// * ctx - A reference to the egui::Context, providing access to the UI context.
+    /// * editor_focused - A boolean flag indicating whether the editor is currently focused.
+    /// * lang - A string slice representing the current language, used for text localization.
+    ///
+    /// # Returns
+    /// A boolean value indicating whether the UI state has changed and requires a redraw.
     fn process_turing_controls(
         &mut self,
         ui: &mut Ui,
@@ -193,6 +218,17 @@ impl MyApp {
         .inner
     }
 
+    /// This method restarts the Turing machine with the provided code. It attempts to parse the new code
+    /// and update the Turing machine's state accordingly. If the parsing is successful, the Turing machine
+    /// is updated and any previous error information is cleared. If an error occurs during parsing, the error
+    /// information is stored, and the Turing machine retains its previous state.
+    ///
+    /// # Arguments
+    /// * code - A string slice containing the new code for the Turing machine.
+    ///
+    /// The method updates the tm field with a new Turing machine instance or keeps the old instance if an
+    /// error occurs. It also updates the code field with the provided code and manages the error field
+    /// based on the success or failure of parsing the new code.
     pub fn restart(&mut self, code: &str) {
         self.tm = match self.tm.restart(code) {
             Ok(t) => {
@@ -207,9 +243,15 @@ impl MyApp {
         self.code = String::from(code);
     }
 
-    /// Saves the current code to the file,
-    /// and returns a time if the file was saved, or None if it wasn't
-    fn save_file(&self) -> Option<Instant> {
+    /// The method checks if a file is associated with the Turing machine's code. If there is an associated
+    /// file, it attempts to create and write the file with the current code. If the write operation is
+    /// successful, the method returns the current Instant. If an error occurs during the save operation,
+    /// the method logs the error and returns None.
+    ///
+    /// # Returns
+    /// An Option<Instant> representing the time the file was saved if the save operation is successful,
+    /// or None if the save operation fails or if there is no associated file.
+    fn auto_save_file(&self) -> Option<Instant> {
         if let Some(file) = &self.file {
             if let Ok(mut file) = File::create(file) {
                 if let Err(e) = file.write_all(self.code.as_bytes()) {
@@ -226,6 +268,16 @@ impl MyApp {
         None
     }
 
+    /// The method checks if there's a saved_feedback timestamp, indicating that a save operation has occurred.
+    /// If so, it calculates the elapsed time since the save operation and determines the appropriate alpha value
+    /// for the fade-in and fade-out animations. The popup is positioned above the current ui.cursor(), with its
+    /// position adjusted based on the available height. The popup consists of a rectangle with rounded corners and
+    /// the "Saved file" text inside. The method also schedules a repaint after a short duration to ensure smooth
+    /// animation. Once the total duration of the animation has passed, the saved_feedback value is set to None.
+    ///
+    /// # Arguments
+    /// * ui - A mutable reference to the egui Ui, used to build and update the user interface.
+    /// * ctx - A reference to the egui::Context, providing access to the UI context.    
     fn draw_saved_feedback_popup(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         if let Some(start_time) = self.saved_feedback {
             let elapsed = start_time.elapsed().as_secs_f32();
@@ -280,13 +332,149 @@ impl MyApp {
             }
         }
     }
-}
 
-impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let lang = self.get_lang();
-        let mut editor_focused = false;
+    /// This method saves the current code to an associated file, or spawns a dialog to select a file and
+    /// saves the code there. The method handles both WebAssembly and non-WebAssembly targets.
+    ///
+    /// For WebAssembly targets, an async file dialog is spawned on the main thread, and the code is saved
+    /// to the selected file using the write_all method in an async context.
+    ///
+    /// For non-WebAssembly targets, the method checks if there is an associated file. If there is, it saves
+    /// the code to that file. If there isn't, it spawns a file dialog to select a file, sets the file filter
+    /// to "TuringMachine" with a ".tm" extension, and saves the code to the selected file using std::fs::write.
+    ///
+    /// After a successful save operation, the file is set as the new auto-save file. If the save operation
+    /// fails, an error message is logged.
+    fn save_file(&mut self) {
+        #[cfg(target_family = "wasm")]
+        {
+            // Spawn dialog on main thread
+            let task = rfd::AsyncFileDialog::new().save_file();
 
+            // Await somewhere else
+            wasm_bindgen_futures::spawn_local(async move {
+                let file = task.await;
+
+                if let Some(f) = file {
+                    // If you care about wasm support you just read() the file
+                    f.write_all(self.code.as_bytes()).await;
+                    self.file = Some(f);
+                }
+            });
+        }
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            let file: Option<PathBuf> = match &self.file {
+                Some(f) => Some(f.clone()),
+                None => {
+                    let path = std::env::current_dir().unwrap();
+
+                    rfd::FileDialog::new()
+                        .add_filter("TuringMachine", &["tm"])
+                        .set_directory(&path)
+                        .save_file()
+                }
+            };
+
+            if let Some(f) = file {
+                std::fs::write(&f, self.code.as_bytes())
+                    .expect("cannot write file");
+                self.file = Some(f);
+
+                debug!("Set auto-save file to {:?}", self.file);
+            } else {
+                error!("Cannot save file");
+            }
+        }
+    }
+
+    /// This method loads the code from an associated file, or spawns a dialog to select a file and then
+    /// loads the code from it. The method handles both WebAssembly and non-WebAssembly targets.
+    ///
+    /// For WebAssembly targets, an async file dialog is spawned on the main thread, and the code is read
+    /// from the selected file using the read method in an async context. If the file contents are valid
+    /// UTF-8, the Turing machine is restarted with the new code, and the code is stored in self.code.
+    /// If the file contents are not valid UTF-8, a panic occurs with an "Invalid UTF-8 sequence" error message.
+    ///
+    /// For non-WebAssembly targets, a file dialog is spawned to select a file, sets the file filter
+    /// to "TuringMachine" with a ".tm" extension, and reads the contents of the selected file using
+    /// std::fs::read_to_string. If the file contents are successfully read, the Turing machine is
+    /// restarted with the new code, and the code is stored in self.code.
+    ///
+    /// If the Turing machine fails to restart due to an error, the error is stored in self.error, and
+    /// the Turing machine state remains unchanged. If no file is selected or the file dialog operation
+    /// fails, the method does nothing.
+    fn load_file(&mut self) {
+        #[cfg(target_family = "wasm")]
+        {
+            // Spawn dialog on main thread
+            let task = rfd::AsyncFileDialog::new().pick_file();
+
+            // Await somewhere else
+            wasm_bindgen_futures::spawn_local(async move {
+                let file = task.await;
+
+                if let Some(file) = file {
+                    // If you care about wasm support you just read() the file
+                    let buffer = file.read().await;
+                    match String::from_utf8(buffer) {
+                        Ok(s) => {
+                            self.tm = match self.tm.restart(&s) {
+                                Ok(t) => {
+                                    self.error = None;
+                                    t
+                                }
+                                Err(e) => {
+                                    self.error = Some(e);
+                                    self.tm.clone()
+                                }
+                            };
+                            self.code = s;
+                        }
+                        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+                    }
+                }
+            });
+        }
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            let path = std::env::current_dir().unwrap();
+
+            let res = rfd::FileDialog::new()
+                .add_filter("TuringMachine", &["tm"])
+                .set_directory(&path)
+                .pick_files();
+
+            match res {
+                Some(file) => {
+                    let unparsed_file = std::fs::read_to_string(&file[0])
+                        .expect("cannot read file");
+                    self.tm = match self.tm.restart(&unparsed_file) {
+                        Ok(t) => {
+                            self.error = None;
+                            t
+                        }
+                        Err(e) => {
+                            self.error = Some(e);
+                            self.tm.clone()
+                        }
+                    };
+                    self.code = unparsed_file;
+                }
+                None => {}
+            }
+        }
+    }
+
+    /// Handles the display and behavior of various windows like the About window, Debugger window, Infinite Loop window, and the Book window.
+    ///
+    /// # Arguments
+    ///
+    /// * ctx - An egui::Context object required for creating and displaying UI components.
+    /// * lang - A string representing the language used for displaying text in the UI.
+    fn handle_windows(&mut self, ctx: &egui::Context, lang: &str) {
         if let Some(about) = &self.about_window {
             if !about.show(ctx) {
                 self.about_window = None;
@@ -332,15 +520,27 @@ impl eframe::App for MyApp {
                 self.book_window = None;
             }
         }
+    }
 
+    /// Draws the top panel containing the menu with options for file handling, debugger, exercises, language, and about information.
+    ///
+    /// # Arguments
+    ///
+    /// * ctx - An egui::Context object required for creating and displaying UI components.
+    /// * lang - A string representing the language used for displaying text in the UI
+    fn draw_top_panel(&mut self, ctx: &egui::Context, lang: &str) {
         egui::TopBottomPanel::top("header")
             .default_height(35.0)
             .show(ctx, |ui| {
                 ui.horizontal_centered(|ui| {
                     ui.menu_button("File", |ui| {
-                        if ui.button("Open").clicked() {}
+                        if ui.button("Open").clicked() {
+                            self.load_file();
+                        }
 
-                        if ui.button("Save").clicked() {}
+                        if ui.button("Save").clicked() {
+                            self.save_file();
+                        }
 
                         if ui.button("Save as...").clicked() {}
 
@@ -388,8 +588,22 @@ impl eframe::App for MyApp {
                     });
                 });
             });
+    }
 
-        self.tm.left = egui::SidePanel::left("left")
+    /// Draws the side panel containing the file open/save buttons, compile button, and code editor.
+    /// It also handles autosaving and displays a "Saved file" feedback popup if applicable.
+    /// 
+    /// # Returns 
+    /// 
+    /// The x-coordinate of the right side of the side panel.
+    ///
+    /// # Arguments
+    ///
+    /// * ctx - An egui::Context object required for creating and displaying UI components.
+    /// * lang - A string representing the language used for displaying text in the UI.
+    /// * editor_focused - A mutable reference to a boolean indicating whether the code editor is currently focused.
+    fn draw_side_panel(&mut self, ctx: &egui::Context, lang: &str, editor_focused: &mut bool) -> f32 {
+        egui::SidePanel::left("left")
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
                     ui.add_space(10.0);
@@ -403,66 +617,7 @@ impl eframe::App for MyApp {
                             ))
                             .clicked()
                         {
-                            #[cfg(target_family = "wasm")]
-                            {
-                                // Spawn dialog on main thread
-                                let task = rfd::AsyncFileDialog::new().pick_file();
-
-                                // Await somewhere else
-                                wasm_bindgen_futures::spawn_local(async move {
-                                    let file = task.await;
-
-                                    if let Some(file) = file {
-                                        // If you care about wasm support you just read() the file
-                                        let buffer = file.read().await;
-                                        match String::from_utf8(buffer) {
-                                            Ok(s) => {
-                                                self.tm = match self.tm.restart(&s) {
-                                                    Ok(t) => {
-                                                        self.error = None;
-                                                        t
-                                                    }
-                                                    Err(e) => {
-                                                        self.error = Some(e);
-                                                        self.tm.clone()
-                                                    }
-                                                };
-                                                self.code = s;
-                                            }
-                                            Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-                                        }
-                                    }
-                                });
-                            }
-
-                            #[cfg(not(target_family = "wasm"))]
-                            {
-                                let path = std::env::current_dir().unwrap();
-
-                                let res = rfd::FileDialog::new()
-                                    .add_filter("TuringMachine", &["tm"])
-                                    .set_directory(&path)
-                                    .pick_files();
-
-                                match res {
-                                    Some(file) => {
-                                        let unparsed_file = std::fs::read_to_string(&file[0])
-                                            .expect("cannot read file");
-                                        self.tm = match self.tm.restart(&unparsed_file) {
-                                            Ok(t) => {
-                                                self.error = None;
-                                                t
-                                            }
-                                            Err(e) => {
-                                                self.error = Some(e);
-                                                self.tm.clone()
-                                            }
-                                        };
-                                        self.code = unparsed_file;
-                                    }
-                                    None => {}
-                                }
-                            }
+                            self.load_file();
                         }
 
                         ui.add_space(spacer);
@@ -474,43 +629,7 @@ impl eframe::App for MyApp {
                             )
                             .clicked()
                         {
-                            #[cfg(target_family = "wasm")]
-                            {
-                                // Spawn dialog on main thread
-                                let task = rfd::AsyncFileDialog::new().save_file();
-
-                                // Await somewhere else
-                                wasm_bindgen_futures::spawn_local(async move {
-                                    let file = task.await;
-
-                                    if let Some(file) = file {
-                                        // If you care about wasm support you just read() the file
-                                        file.write_all(self.code.as_bytes()).await;
-                                    }
-                                });
-                            }
-
-                            #[cfg(not(target_family = "wasm"))]
-                            {
-                                let file: Option<PathBuf> = match &self.file {
-                                    Some(f) => Some(f.clone()),
-                                    None => {
-                                        let path = std::env::current_dir().unwrap();
-
-                                        rfd::FileDialog::new()
-                                            .add_filter("TuringMachine", &["tm"])
-                                            .set_directory(&path)
-                                            .save_file()
-                                    }
-                                };
-
-                                if let Some(f) = file {
-                                    std::fs::write(&f, self.code.as_bytes())
-                                        .expect("cannot write file");
-                                } else {
-                                    error!("Cannot save file");
-                                }
-                            }
+                            self.save_file();
                         }
                     });
 
@@ -534,12 +653,12 @@ impl eframe::App for MyApp {
 
                         let res = my_ui.add(editor);
 
-                        if res.lost_focus() {
+                        if self.autosave && res.lost_focus() {
                             debug!("Saving file");
-                            self.saved_feedback = self.save_file();
+                            self.saved_feedback = self.auto_save_file();
                         }
 
-                        editor_focused = res.has_focus();
+                        *editor_focused = res.has_focus().clone();
                     });
 
                     if self.saved_feedback.is_some() {
@@ -550,8 +669,18 @@ impl eframe::App for MyApp {
             })
             .response
             .rect
-            .right();
-
+            .right()
+    } 
+    
+    /// Draws the central panel containing the Turing machine description, sliders for tape size, animation speed,
+    /// and infinite loop threshold, as well as the current output and playback controls.
+    ///
+    /// # Arguments
+    ///
+    /// * ctx - An egui::Context object required for creating and displaying UI components.
+    /// * lang - A string representing the language used for displaying text in the UI.
+    /// * editor_focused - A boolean indicating whether the code editor is currently focused.
+    fn draw_central_panel(&mut self, ctx: &egui::Context, lang: &str, editor_focused: bool){
         egui::CentralPanel::default().show(ctx, |main_panel| {
             main_panel.horizontal_top(|horiz| {
                 horiz.vertical_centered(|ui| {
@@ -640,5 +769,20 @@ impl eframe::App for MyApp {
                 });
             });
         });
+    }
+}
+
+impl eframe::App for MyApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let lang = self.get_lang();
+        let mut editor_focused = false;
+
+        self.handle_windows(ctx, &lang);
+
+        self.draw_top_panel(ctx, &lang);
+
+        self.tm.left = self.draw_side_panel(ctx, &lang, &mut editor_focused);
+
+        self.draw_central_panel(ctx, &lang, editor_focused);
     }
 }
