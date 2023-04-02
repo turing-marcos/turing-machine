@@ -9,9 +9,9 @@ use {
     std::{fs, io, path::PathBuf},
     turing_lib::Rule,
     turing_machine::windows::ErrorWindow,
+    turing_lib::TuringMachine,
 };
 
-use turing_lib::TuringMachine;
 use turing_machine::MyApp;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -68,20 +68,12 @@ fn main() {
     // Redirect tracing to console.log and friends:
     tracing_wasm::set_as_global_default();
 
-    let tm = match TuringMachine::new(UNPARSED_FILE) {
-        Ok(t) => t,
-        Err(_e) => {
-            //handle_error(e, file);
-            std::process::exit(1);
-        }
-    };
-
     let web_options = eframe::WebOptions::default();
     wasm_bindgen_futures::spawn_local(async {
         eframe::start_web(
             "the_canvas_id", // hardcode it
             web_options,
-            Box::new(|cc| Box::new(MyApp::new(tm, cc))),
+            Box::new(|cc| Box::new(MyApp::new(&None, cc).unwrap())),
         )
         .await
         .expect("failed to start eframe");

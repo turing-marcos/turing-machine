@@ -17,7 +17,20 @@ use log::{debug, error, info, trace, warn};
 use turing_lib::TuringMachine;
 use turing_lib::{Rule, TuringOutput};
 
+#[cfg(target_arch = "wasm32")]
+use {
+    wasm_bindgen::prelude::wasm_bindgen,
+    std::sync::{Arc, Mutex},
+};
+
 const DEFAULT_CODE: &str = include_str!("../Examples/Example1.tm");
+
+// Import the saveFile function
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen(module = "/dist/.stage/save_file.js")]
+extern "C" {
+    fn saveFile(filename: &str, content: &str);
+}
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Language {
@@ -348,19 +361,9 @@ impl MyApp {
     fn save_file(&mut self) {
         #[cfg(target_family = "wasm")]
         {
-            // Spawn dialog on main thread
-            let task = rfd::AsyncFileDialog::new().save_file();
-
-            // Await somewhere else
-            wasm_bindgen_futures::spawn_local(async move {
-                let file = task.await;
-
-                if let Some(f) = file {
-                    // If you care about wasm support you just read() the file
-                    f.write_all(self.code.as_bytes()).await;
-                    self.file = Some(f);
-                }
-            });
+            let filename = "exercise.tm"; // Replace with your desired file name
+            let content = &self.code;
+            saveFile(filename, content);
         }
 
         #[cfg(not(target_family = "wasm"))]
@@ -389,6 +392,24 @@ impl MyApp {
         }
     }
 
+    #[cfg(target_family = "wasm")]
+    fn clone_for_load_file(&self) -> Self {
+        MyApp {
+            tm: self.tm.clone(),
+            code: self.code.clone(),
+            error: self.error.clone(),
+            about_window: None,
+            debug_window: None,
+            infinite_loop_window: None,
+            book_window: None,
+            lang: self.lang.clone(),
+
+            file: self.file.clone(),
+            autosave: self.autosave.clone(),
+            saved_feedback: None,
+        }
+    }
+
     /// This method loads the code from an associated file, or spawns a dialog to select a file and then
     /// loads the code from it. The method handles both WebAssembly and non-WebAssembly targets.
     ///
@@ -408,34 +429,41 @@ impl MyApp {
     fn load_file(&mut self) {
         #[cfg(target_family = "wasm")]
         {
-            // Spawn dialog on main thread
             let task = rfd::AsyncFileDialog::new().pick_file();
 
+            // Wrap MyApp in Arc<Mutex> with the custom clone method
+            let shared_self = Arc::new(Mutex::new(self.clone_for_load_file()));
+
             // Await somewhere else
-            wasm_bindgen_futures::spawn_local(async move {
+            let load_future = async move {
                 let file = task.await;
 
-                if let Some(file) = file {
+                if let Some(f) = file {
                     // If you care about wasm support you just read() the file
-                    let buffer = file.read().await;
+                    let buffer = f.read().await;
                     match String::from_utf8(buffer) {
                         Ok(s) => {
-                            self.tm = match self.tm.restart(&s) {
+                            let mut borrowed_self = shared_self.lock().unwrap();
+
+                            borrowed_self.tm = match borrowed_self.tm.restart(&s) {
                                 Ok(t) => {
-                                    self.error = None;
+                                    borrowed_self.error = None;
                                     t
                                 }
                                 Err(e) => {
-                                    self.error = Some(e);
-                                    self.tm.clone()
+                                    borrowed_self.error = Some(e);
+                                    borrowed_self.tm.clone()
                                 }
                             };
-                            self.code = s;
+                            borrowed_self.code = s;
                         }
                         Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
                     }
                 }
-            });
+            };
+
+            // Spawn future without boxing it
+            wasm_bindgen_futures::spawn_local(load_future);
         }
 
         #[cfg(not(target_family = "wasm"))]
