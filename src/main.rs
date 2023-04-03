@@ -7,10 +7,12 @@ use {
     env_logger,
     log::{error, trace},
     std::{fs, io, path::PathBuf},
-    turing_machine::{turing::Rule, windows::ErrorWindow},
+    turing_lib::Rule,
+    turing_lib::TuringMachine,
+    turing_machine::windows::ErrorWindow,
 };
 
-use turing_machine::{turing::TuringMachine, MyApp};
+use turing_machine::MyApp;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(clap_parser, Debug)]
@@ -20,7 +22,6 @@ use turing_machine::{turing::TuringMachine, MyApp};
     about,
     long_about = "Note: When playing, all the keybindings of mpv can be used, and `q` is reserved for exiting the program"
 )]
-
 pub struct Cli {
     /// Option: Specify a file with the instructions.
     #[clap(help = "Specify a file with instructions.")]
@@ -67,36 +68,12 @@ fn main() {
     // Redirect tracing to console.log and friends:
     tracing_wasm::set_as_global_default();
 
-    let unparsed_file = "/// a + b
-
-{11111011};
-
-I = {q0};
-F = {q2};
-
-(q0, 1, 0, R, q1);
-
-(q1, 1, 1, R, q1);
-(q1, 0, 0, R, q2);
-
-(q2, 1, 0, H, q2);
-(q2, 0, 0, H, q2);
-";
-
-    let tm = match TuringMachine::new(&unparsed_file) {
-        Ok(t) => t,
-        Err(_e) => {
-            //handle_error(e, file);
-            std::process::exit(1);
-        }
-    };
-
     let web_options = eframe::WebOptions::default();
     wasm_bindgen_futures::spawn_local(async {
         eframe::start_web(
             "the_canvas_id", // hardcode it
             web_options,
-            Box::new(|cc| Box::new(MyApp::new(tm, cc))),
+            Box::new(|cc| Box::new(MyApp::new(&None, cc).unwrap())),
         )
         .await
         .expect("failed to start eframe");
@@ -121,27 +98,7 @@ fn main() {
             std::process::exit(1);
         }
     } else {
-        if let Some(file) = args.file {
-            trace!("File provided: {:?}", file);
-            run_machine_gui(file, args.debug);
-        } else {
-            trace!("No file provided, opening file picker in the current folder");
-
-            let path = std::env::current_dir().unwrap_or_default();
-
-            let res = rfd::FileDialog::new()
-                .add_filter("TuringMachine", &["tm"])
-                .set_directory(&path)
-                .pick_files();
-
-            match res {
-                Some(file) => run_machine_gui(file[0].clone(), args.debug),
-                None => {
-                    error!("No file was chosen");
-                    std::process::exit(1)
-                }
-            };
-        }
+        run_machine_gui(args.file, args.debug);
     }
 }
 
@@ -163,39 +120,40 @@ fn load_icon(path: &str) -> Option<eframe::IconData> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn run_machine_gui(file: PathBuf, debug: bool) {
-    let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
-    let tm = match TuringMachine::new(&unparsed_file) {
-        Ok(t) => t,
-        Err(e) => {
-            handle_error(e, file);
-            std::process::exit(1);
-        }
-    };
-
+fn run_machine_gui(file: Option<PathBuf>, debug: bool) {
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
         hardware_acceleration: eframe::HardwareAcceleration::Preferred,
         icon_data: load_icon("assets/icon.png"),
         ..Default::default()
     };
+
+    let file_name = match &file {
+        Some(file_some) => file_some
+            .file_name()
+            .unwrap_or(std::ffi::OsStr::new("User input")),
+        None => std::ffi::OsStr::new("Example 1"),
+    };
+
     eframe::run_native(
-        &format!(
-            "Turing Machine: {:?}",
-            file.file_name()
-                .unwrap_or(std::ffi::OsStr::new("User input"))
-        ),
+        &format!("Turing Machine: {:?}", file_name),
         options,
         Box::new(move |cc| {
             cc.egui_ctx.set_debug_on_hover(debug);
-            Box::new(MyApp::new(tm, cc))
+            Box::new(match MyApp::new(&file, cc) {
+                Ok(w) => w,
+                Err(e) => {
+                    handle_error(e, file);
+                    std::process::exit(1);
+                }
+            })
         }),
     )
     .unwrap();
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn handle_error(e: pest::error::Error<Rule>, file: PathBuf) {
+fn handle_error(e: pest::error::Error<Rule>, file: Option<PathBuf>) {
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
         hardware_acceleration: eframe::HardwareAcceleration::Preferred,
@@ -203,12 +161,15 @@ fn handle_error(e: pest::error::Error<Rule>, file: PathBuf) {
         ..Default::default()
     };
 
+    let file_name = match &file {
+        Some(file_some) => file_some
+            .file_name()
+            .unwrap_or(std::ffi::OsStr::new("User input")),
+        None => std::ffi::OsStr::new("Example 1"),
+    };
+
     eframe::run_native(
-        &format!(
-            "Turing Machine: {:?}",
-            file.file_name()
-                .unwrap_or(std::ffi::OsStr::new("User input"))
-        ),
+        &format!("Turing Machine: {:?}", file_name),
         options,
         Box::new(|cc| Box::new(ErrorWindow::new(e, file, cc))),
     )
@@ -217,10 +178,10 @@ fn handle_error(e: pest::error::Error<Rule>, file: PathBuf) {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn run_machine_cli(file: PathBuf, interactive: bool) {
-    use turing_machine::turing::TuringOutput;
+    use turing_lib::TuringOutput;
 
-    let unparsed_file = fs::read_to_string(&file).expect("cannot read file");
-    let mut tm = match TuringMachine::new(&unparsed_file) {
+    let u_code = fs::read_to_string(&file).expect("cannot read file");
+    let mut tm = match TuringMachine::new(&u_code) {
         Ok(t) => t,
         Err(e) => {
             TuringMachine::handle_error(e);

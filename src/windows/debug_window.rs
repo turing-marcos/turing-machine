@@ -1,7 +1,7 @@
 use eframe::egui::{self, RichText};
 use egui_extras::{Column, TableBuilder};
 
-use crate::turing::TuringOutput;
+use turing_lib::TuringOutput;
 
 use super::SecondaryWindow;
 use internationalization::t;

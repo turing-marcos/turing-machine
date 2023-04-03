@@ -2,7 +2,7 @@ use eframe::egui::{self, widgets::Widget};
 use eframe::emath::Align2;
 use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, Vec2};
 
-use crate::turing::{TuringMachine, TuringOutput};
+use turing_lib::{TuringMachine, TuringOutput};
 
 const STROKE_WIDTH: f32 = 3f32;
 
@@ -50,7 +50,7 @@ impl TuringWidget {
     }
 
     /// Restarts the turing machine with the given code
-    pub fn restart(&self, code: &str) -> Result<Self, pest::error::Error<crate::turing::Rule>> {
+    pub fn restart(&self, code: &str) -> Result<Self, pest::error::Error<turing_lib::Rule>> {
         let tm = match TuringMachine::new(code) {
             Ok(t) => t,
             Err(e) => return Err(e),
