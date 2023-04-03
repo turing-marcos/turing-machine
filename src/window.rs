@@ -83,7 +83,6 @@ impl MyApp {
         st.spacing.button_padding = egui::Vec2::new(10.0, 5.0);
         st.spacing.item_spacing = egui::Vec2::new(10.0, 10.0);
         cc.egui_ctx.set_style(st);
-        cc.egui_ctx.set_debug_on_hover(true);
 
         Ok(Self {
             code: String::from(&tm.code),
@@ -571,7 +570,9 @@ impl MyApp {
 
                         if ui.button("Save as...").clicked() {}
 
-                        ui.checkbox(&mut self.autosave, "Autosave");
+                        ui.add_enabled_ui(
+                            self.file.is_some(), 
+                            |ui| ui.checkbox(&mut self.autosave, "Autosave"));
                     });
 
                     ui.menu_button(t!("menu.debugger", lang), |ui| {
