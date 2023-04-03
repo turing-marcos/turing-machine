@@ -384,6 +384,49 @@ impl MyApp {
                 self.file = Some(f);
 
                 debug!("Set auto-save file to {:?}", self.file);
+
+                self.saved_feedback = Some(Instant::now());
+            } else {
+                error!("Cannot save file");
+            }
+        }
+    }
+
+    /// This method spawns a dialog to select a file and saves the code there.
+    /// The method handles both WebAssembly and non-WebAssembly targets.
+    ///
+    /// For WebAssembly targets, an async file dialog is spawned on the main thread, and the code is saved
+    /// to the selected file using the write_all method in an async context.
+    ///
+    /// For non-WebAssembly targets, the method spawns a file dialog to select a file, sets the file filter
+    /// to "TuringMachine" with a ".tm" extension, and saves the code to the selected file using std::fs::write.
+    ///
+    /// After a successful save operation, the file is set as the new auto-save file. If the save operation
+    /// fails, an error message is logged.
+    fn save_file_as(&mut self) {
+        #[cfg(target_family = "wasm")]
+        {
+            let filename = "exercise.tm"; // Replace with your desired file name
+            let content = &self.code;
+            saveFile(filename, content);
+        }
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            let path = std::env::current_dir().unwrap();
+
+            let file = rfd::FileDialog::new()
+                .add_filter("TuringMachine", &["tm"])
+                .set_directory(&path)
+                .save_file();
+
+            if let Some(f) = file {
+                std::fs::write(&f, self.code.as_bytes()).expect("cannot write file");
+                self.file = Some(f);
+
+                debug!("Set auto-save file to {:?}", self.file);
+
+                self.saved_feedback = Some(Instant::now());
             } else {
                 error!("Cannot save file");
             }
@@ -560,19 +603,30 @@ impl MyApp {
             .show(ctx, |ui| {
                 ui.horizontal_centered(|ui| {
                     ui.menu_button("File", |ui| {
-                        if ui.button("Open").clicked() {
+                        if ui
+                            .add(egui::Button::new("Open").shortcut_text("Ctrl + O"))
+                            .clicked()
+                        {
                             self.load_file();
                         }
 
-                        if ui.button("Save").clicked() {
+                        if ui
+                            .add(egui::Button::new("Save").shortcut_text("Ctrl + S"))
+                            .clicked()
+                        {
                             self.save_file();
                         }
 
-                        if ui.button("Save as...").clicked() {}
+                        if ui
+                            .add(egui::Button::new("Save as...").shortcut_text("Ctrl + Shift + S"))
+                            .clicked()
+                        {
+                            self.save_file_as();
+                        }
 
-                        ui.add_enabled_ui(
-                            self.file.is_some(), 
-                            |ui| ui.checkbox(&mut self.autosave, "Autosave"));
+                        ui.add_enabled_ui(self.file.is_some(), |ui| {
+                            ui.checkbox(&mut self.autosave, "Autosave")
+                        });
                     });
 
                     ui.menu_button(t!("menu.debugger", lang), |ui| {
@@ -773,7 +827,7 @@ impl MyApp {
                             ui.label(t!("lbl.resumed", lang));
                         }
                         let b = ui.button(text);
-                        //b.ctx.set_style(style);
+                        // b.ctx.set_style(style);
                         if (b.clicked() || ui.input(|i| i.key_pressed(egui::Key::Space)))
                             && !editor_focused
                         {
@@ -809,6 +863,31 @@ impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let lang = self.get_lang();
         let mut editor_focused = false;
+
+        ctx.input(|i| {
+            let ctrl_pressed = i.modifiers.ctrl || i.modifiers.command;
+
+            // Check for keyboard shortcuts
+            if ctrl_pressed {
+                if i.key_down(egui::Key::S) {
+                    // Ctrl+S
+                    debug!("Saving...");
+                    self.save_file();
+                } else if i.key_down(egui::Key::O) {
+                    // Ctrl+O
+                    debug!("Opening...");
+                    self.load_file();
+                } else if i.modifiers.shift && i.key_down(egui::Key::S) {
+                    // Ctrl+Shift+S
+                    debug!("Saving as...");
+                    self.save_file_as();
+                } else if i.key_down(egui::Key::R) {
+                    // Ctrl+R
+                    debug!("Restarting...");
+                    self.tm = self.tm.restart(&self.code).unwrap();
+                }
+            }
+        });
 
         self.handle_windows(ctx, &lang);
 
