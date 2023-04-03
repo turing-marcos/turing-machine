@@ -2,7 +2,7 @@ use super::SecondaryWindow;
 use eframe::egui::{self, RichText, Window};
 use internationalization::t;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InfiniteLoopWindow {
     lang: String,
 }
