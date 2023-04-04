@@ -7,14 +7,9 @@ use bincode::{deserialize, serialize};
 use eframe::{egui, epaint::Vec2};
 use internationalization::t;
 use log::{debug, error};
-use serde::{
-    self,
-    Deserialize, Serialize,
-};
+use serde::{self, Deserialize, Serialize};
 
 use super::exercise::Exercise;
-
-
 
 #[derive(Serialize, Deserialize)]
 pub struct BookWindow {
