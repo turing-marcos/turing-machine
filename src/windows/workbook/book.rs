@@ -1,4 +1,8 @@
-use std::{fmt, fs::File, io::Write};
+use std::{
+    fmt,
+    fs::File,
+    io::{Read, Write},
+};
 
 use bincode::{deserialize, serialize};
 use eframe::{egui, epaint::Vec2};
@@ -12,7 +16,7 @@ use serde::{
 };
 
 #[derive(Serialize)]
-struct Exercise {
+pub struct Exercise {
     #[serde(skip_serializing)]
     image: RetainedImage,
     original_image: Vec<u8>,
@@ -114,7 +118,7 @@ impl BookWindow {
                     ),
                 ],
             ),
-            ("Chapter 2".to_string(), vec![]),
+            //("Chapter 2".to_string(), vec![]),
         ];
 
         Self {
@@ -162,6 +166,14 @@ impl BookWindow {
 
                         if ui.button("Save workbook").clicked() {
                             self.save_workbook();
+                        }
+
+                        if ui.button("Load workbook").clicked() {
+                            let new_exercises = BookWindow::load_workbook();
+                            if let Some(new_exercises) = new_exercises {
+                                self.exercises = new_exercises;
+                                self.selected = (0, 0);
+                            }
                         }
                     });
 
@@ -214,7 +226,7 @@ impl BookWindow {
         let path = std::env::current_dir().unwrap();
 
         let file_path = rfd::FileDialog::new()
-            .add_filter("TuringMachine", &["tm"])
+            .add_filter("Turing Machine Workbook", &["wb"])
             .set_directory(&path)
             .save_file();
 
@@ -224,11 +236,35 @@ impl BookWindow {
             file.write_all(&data).unwrap();
             debug!("Workbook saved at {:?}", f);
         } else {
-            error!("Cannot save file");
+            error!("Cannot save workbook");
         }
     }
 
-    pub fn load_workbook(data: &[u8]) -> Self {
-        deserialize(data).unwrap()
+    pub fn load_workbook() -> Option<Vec<(String, Vec<Exercise>)>> {
+        let path = std::env::current_dir().unwrap();
+
+        let file_path = rfd::FileDialog::new()
+            .add_filter("Turing Machine Workbook", &["wb"])
+            .set_directory(&path)
+            .save_file();
+
+        if let Some(f) = file_path {
+            let data = match File::open(&f) {
+                Ok(mut file) => {
+                    let mut data = Vec::new();
+                    file.read_to_end(&mut data).unwrap();
+                    data
+                }
+                Err(_) => {
+                    error!("Cannot open workbook at {:?}", f);
+                    return None;
+                }
+            };
+
+            return deserialize(&data).unwrap();
+        } else {
+            error!("Cannot load workbook");
+            return None;
+        }
     }
 }
