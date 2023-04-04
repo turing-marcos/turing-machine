@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{
-    windows::{AboutWindow, BookWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow},
+    windows::{AboutWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow, WorkbookWindow},
     TuringWidget,
 };
 use eframe;
@@ -45,7 +45,7 @@ pub struct MyApp {
     about_window: Option<Box<AboutWindow>>,
     debug_window: Option<Box<DebugWindow>>,
     infinite_loop_window: Option<Box<InfiniteLoopWindow>>,
-    book_window: Option<Box<BookWindow>>,
+    book_window: Option<Box<WorkbookWindow>>,
     lang: Language,
 
     file: Option<PathBuf>,
@@ -647,7 +647,7 @@ impl MyApp {
                     });
 
                     if ui.button("Exercises").clicked() {
-                        self.book_window = Some(Box::new(BookWindow::new(&self.get_lang())));
+                        self.book_window = Some(Box::new(WorkbookWindow::new(&self.get_lang())));
                     }
 
                     ui.menu_button(t!("menu.language", lang), |ui| {
