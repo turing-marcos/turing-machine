@@ -2,12 +2,14 @@ use std::{
     fs::File,
     io::{Write, BufReader},
 };
-use eframe::{egui, epaint::Vec2};
+use eframe::egui;
 use internationalization::t;
 use log::{debug, error};
 use serde::{self, Deserialize, Serialize};
 
 use super::exercise::Exercise;
+
+const MAX_IMG_SIZE: egui::Vec2 = egui::Vec2::new(600.0, 500.0);
 
 #[derive(Serialize, Deserialize)]
 pub struct BookWindow {
@@ -102,10 +104,10 @@ impl BookWindow {
                     ui.vertical_centered_justified(|ui| {
                         self.get_exercise(self.selected)
                             .image
-                            .show_max_size(ui, Vec2::new(600.0, 500.0));
+                            .show_max_size(ui, MAX_IMG_SIZE);
 
                         // Add expandable empty space
-                        ui.allocate_space(egui::Vec2::new(0.0, (500.0-self.get_exercise(self.selected)
+                        ui.allocate_space(egui::Vec2::new(0.0, (MAX_IMG_SIZE.y-self.get_exercise(self.selected)
                         .image.height() as f32)/3.5));
 
 
