@@ -1,9 +1,7 @@
 use std::{
     fs::File,
-    io::{Read, Write},
+    io::{Write, BufReader},
 };
-
-use bincode::{deserialize, serialize};
 use eframe::{egui, epaint::Vec2};
 use internationalization::t;
 use log::{debug, error};
@@ -100,10 +98,16 @@ impl BookWindow {
                         ui.separator()
                     });
 
+
                     ui.vertical_centered_justified(|ui| {
                         self.get_exercise(self.selected)
                             .image
                             .show_max_size(ui, Vec2::new(600.0, 500.0));
+
+                        // Add expandable empty space
+                        ui.allocate_space(egui::Vec2::new(0.0, (500.0-self.get_exercise(self.selected)
+                        .image.height() as f32)/3.5));
+
 
                         ui.horizontal(|ui| {
                             if ui
@@ -149,7 +153,7 @@ impl BookWindow {
             .save_file();
 
         if let Some(f) = file_path {
-            let data = serialize(&self.exercises).unwrap();
+            let data = bincode::serialize(&self.exercises).unwrap();
             let mut file = File::create(&f).unwrap();
             file.write_all(&data).unwrap();
             debug!("Workbook saved at {:?}", f);
@@ -162,27 +166,30 @@ impl BookWindow {
         let path = std::env::current_dir().unwrap();
 
         let file_path = rfd::FileDialog::new()
-            .add_filter("Turing Machine Workbook", &["wb"])
+            .add_filter("TuringMachine Workbook", &["wb"])
             .set_directory(&path)
-            .save_file();
+            .pick_files();
 
-        if let Some(f) = file_path {
-            let data = match File::open(&f) {
-                Ok(mut file) => {
-                    let mut data = Vec::new();
-                    file.read_to_end(&mut data).unwrap();
-                    data
+        match file_path {
+            Some(f) => {
+                let file = File::open(&f[0]).expect("File not found");
+                let reader = BufReader::new(file);
+        
+                match bincode::deserialize_from(reader) {
+                    Ok(exercises) => {
+                        debug!("Workbook loaded from {:?}", f[0]);
+                        Some(exercises)
+                    },
+                    Err(e) => {
+                        error!("Cannot load workbook: {}", e);
+                        None
+                    }
                 }
-                Err(_) => {
-                    error!("Cannot open workbook at {:?}", f);
-                    return None;
-                }
-            };
-
-            return deserialize(&data).unwrap();
-        } else {
-            error!("Cannot load workbook");
-            return None;
+            },
+            None => {
+                debug!("The path is not valid");
+                None
+            }
         }
     }
 }

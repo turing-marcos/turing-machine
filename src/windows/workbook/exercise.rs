@@ -1,14 +1,13 @@
 use egui_extras::RetainedImage;
 use serde::{
     self,
-    de::{self, MapAccess, Visitor},
-    Deserialize, Deserializer, Serialize,
+    de::{Visitor, SeqAccess, Error as SerdeError},
+    Deserialize, Deserializer, Serialize, Serializer, ser::SerializeStruct,
 };
+use serde_bytes::ByteBuf;
 use std::fmt;
 
-#[derive(Serialize)]
 pub struct Exercise {
-    #[serde(skip_serializing)]
     pub image: RetainedImage,
     original_image: Vec<u8>,
     pub title: String,
@@ -26,6 +25,31 @@ impl Exercise {
     }
 }
 
+impl Serialize for Exercise {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("Exercise", 4)?;
+
+        // Ensure title is valid UTF-8
+        let title = match String::from_utf8(self.title.clone().into_bytes()) {
+            Ok(valid_title) => valid_title,
+            Err(_) => {
+                // Handle the case where the title is not valid UTF-8, e.g., by replacing invalid sequences with � (U+FFFD)
+                String::from_utf8_lossy(&self.title.as_bytes()).to_string()
+            }
+        };
+
+        state.serialize_field("title", &title)?;
+        state.serialize_field("original_image", &self.original_image)?;
+        state.serialize_field("code", &self.code)?;
+
+        state.end()
+    }
+}
+
+
 impl<'de> Deserialize<'de> for Exercise {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -37,49 +61,59 @@ impl<'de> Deserialize<'de> for Exercise {
             type Value = Exercise;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("struct Exercise")
+                formatter.write_str("an Exercise in binary format")
             }
 
-            fn visit_map<V>(self, mut map: V) -> Result<Exercise, V::Error>
+            fn visit_seq<A>(self, mut seq: A) -> Result<Exercise, A::Error>
             where
-                V: MapAccess<'de>,
+                A: SeqAccess<'de>,
             {
-                let mut image_data: Option<Vec<u8>> = None;
-                let mut title = None;
-                let mut code = None;
+                let title: String = seq
+                    .next_element()?
+                    .ok_or_else(|| A::Error::invalid_length(0, &self))?;
+                let original_image: ByteBuf = seq
+                    .next_element()?
+                    .ok_or_else(|| A::Error::invalid_length(1, &self))?;
+                let code: String = seq
+                    .next_element()?
+                    .ok_or_else(|| A::Error::invalid_length(2, &self))?;
 
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        "image_data" => {
-                            image_data = Some(map.next_value()?);
-                        }
-                        "title" => {
-                            title = Some(map.next_value()?);
-                        }
-                        "code" => {
-                            code = Some(map.next_value()?);
-                        }
-                        _ => (),
-                    }
-                }
-
-                let image_data =
-                    image_data.ok_or_else(|| de::Error::missing_field("image_data"))?;
-                let title = title.ok_or_else(|| de::Error::missing_field("title"))?;
-                let code = code.ok_or_else(|| de::Error::missing_field("code"))?;
-
-                let image = RetainedImage::from_image_bytes(&title, &image_data).unwrap();
-
-                Ok(Exercise {
-                    image,
-                    original_image: image_data,
-                    title,
-                    code,
-                })
+                Ok(Exercise::new(&title, &original_image.into_vec(), code))
             }
         }
 
-        const FIELDS: &[&str] = &["image_data", "title", "code"];
-        deserializer.deserialize_struct("Exercise", FIELDS, ExerciseVisitor)
+        deserializer.deserialize_tuple(3, ExerciseVisitor)
     }
+}
+
+// Custom deserializer for the tuple (String, Vec<Exercise>)
+fn deserialize_tuple<'de, D>(deserializer: D) -> Result<(String, Vec<Exercise>), D::Error>
+where
+    D: Deserializer<'de>,
+{
+    struct TupleVisitor;
+
+    impl<'de> Visitor<'de> for TupleVisitor {
+        type Value = (String, Vec<Exercise>);
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a tuple (String, Vec<Exercise>) in binary format")
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<(String, Vec<Exercise>), A::Error>
+        where
+            A: SeqAccess<'de>,
+        {
+            let key: String = seq
+                .next_element()?
+                .ok_or_else(|| A::Error::invalid_length(0, &self))?;
+            let value: Vec<Exercise> = seq
+                .next_element()?
+                .ok_or_else(|| A::Error::invalid_length(1, &self))?;
+
+            Ok((key, value))
+        }
+    }
+
+    deserializer.deserialize_tuple(2, TupleVisitor)
 }
