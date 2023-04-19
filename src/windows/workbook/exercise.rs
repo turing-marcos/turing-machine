@@ -1,14 +1,15 @@
 use egui_extras::RetainedImage;
 use serde::{
     self,
-    de::{Visitor, SeqAccess, Error as SerdeError},
-    Deserialize, Deserializer, Serialize, Serializer, ser::SerializeStruct,
+    de::{Error as SerdeError, SeqAccess, Visitor},
+    ser::SerializeStruct,
+    Deserialize, Deserializer, Serialize, Serializer,
 };
 use serde_bytes::ByteBuf;
 use std::fmt;
 
 pub struct Exercise {
-    pub image: RetainedImage,
+    pub image: Option<RetainedImage>,
     original_image: Vec<u8>,
     pub title: String,
     pub code: String,
@@ -18,20 +19,19 @@ impl Exercise {
     pub fn new(title: &str, img: Option<&[u8]>, code: String) -> Self {
         if let Some(img_bytes) = img {
             Self {
-                image: RetainedImage::from_image_bytes(title, img_bytes).unwrap(),
+                image: Some(RetainedImage::from_image_bytes(title, img_bytes).unwrap()),
                 original_image: img_bytes.to_vec(),
                 title: String::from(title),
                 code: String::from(code),
             }
-        }else{
+        } else {
             Self {
-                image: RetainedImage::from_image_bytes(title, &[]).unwrap(),
+                image: None,
                 original_image: vec![],
                 title: String::from(title),
                 code: String::from(code),
             }
         }
-        
     }
 }
 
@@ -58,7 +58,6 @@ impl Serialize for Exercise {
         state.end()
     }
 }
-
 
 impl<'de> Deserialize<'de> for Exercise {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -88,7 +87,11 @@ impl<'de> Deserialize<'de> for Exercise {
                     .next_element()?
                     .ok_or_else(|| A::Error::invalid_length(2, &self))?;
 
-                Ok(Exercise::new(&title, Some(&original_image.into_vec()), code))
+                Ok(Exercise::new(
+                    &title,
+                    Some(&original_image.into_vec()),
+                    code,
+                ))
             }
         }
 

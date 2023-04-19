@@ -6,7 +6,10 @@ use std::{
 };
 
 use crate::{
-    windows::{AboutWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow, WorkbookWindow, WorkbookEditorWindow},
+    windows::{
+        AboutWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow, WorkbookEditorWindow,
+        WorkbookWindow,
+    },
     TuringWidget,
 };
 use eframe;
@@ -662,8 +665,9 @@ impl MyApp {
                         self.book_window = Some(Box::new(WorkbookWindow::new(&self.get_lang())));
                     }
 
-                    if ui.button("Workbook editor").clicked(){
-                        self.workbook_editor_window = Some(Box::new(WorkbookEditorWindow::new(&self.get_lang())));
+                    if ui.button("Workbook editor").clicked() {
+                        self.workbook_editor_window =
+                            Some(Box::new(WorkbookEditorWindow::new(&self.get_lang())));
                     }
 
                     ui.menu_button(t!("menu.language", lang), |ui| {

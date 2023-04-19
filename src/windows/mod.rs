@@ -10,7 +10,7 @@ pub use about_window::AboutWindow;
 pub use debug_window::DebugWindow;
 pub use error_window::ErrorWindow;
 pub use infinite_loop_window::InfiniteLoopWindow;
-pub use workbook::{WorkbookWindow, WorkbookEditorWindow};
+pub use workbook::{WorkbookEditorWindow, WorkbookWindow};
 
 pub trait SecondaryWindow {
     fn set_lang(&mut self, lang: &str);

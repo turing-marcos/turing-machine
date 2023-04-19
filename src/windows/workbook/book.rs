@@ -1,11 +1,11 @@
-use std::{
-    fs::File,
-    io::{Write, BufReader},
-};
 use eframe::egui;
 use internationalization::t;
 use log::{debug, error};
 use serde::{self, Deserialize, Serialize};
+use std::{
+    fs::File,
+    io::{BufReader, Write},
+};
 
 use super::{exercise::Exercise, MAX_IMG_SIZE};
 
@@ -98,16 +98,16 @@ impl BookWindow {
                         ui.separator()
                     });
 
-
                     ui.vertical_centered_justified(|ui| {
-                        self.get_exercise(self.selected)
-                            .image
-                            .show_max_size(ui, MAX_IMG_SIZE);
+                        if let Some(img) = &self.get_exercise(self.selected).image {
+                            img.show_max_size(ui, MAX_IMG_SIZE);
 
-                        // Add expandable empty space
-                        ui.allocate_space(egui::Vec2::new(0.0, (MAX_IMG_SIZE.y-self.get_exercise(self.selected)
-                        .image.height() as f32)/3.5));
-
+                            // Add expandable empty space
+                            ui.allocate_space(egui::Vec2::new(
+                                0.0,
+                                (MAX_IMG_SIZE.y - img.height() as f32) / 3.5,
+                            ));
+                        }
 
                         ui.horizontal(|ui| {
                             if ui
@@ -174,18 +174,18 @@ impl BookWindow {
             Some(f) => {
                 let file = File::open(&f[0]).expect("File not found");
                 let reader = BufReader::new(file);
-        
+
                 match bincode::deserialize_from(reader) {
                     Ok(exercises) => {
                         debug!("Workbook loaded from {:?}", f[0]);
                         Some(exercises)
-                    },
+                    }
                     Err(e) => {
                         error!("Cannot load workbook: {}", e);
                         None
                     }
                 }
-            },
+            }
             None => {
                 debug!("The path is not valid");
                 None
