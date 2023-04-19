@@ -27,8 +27,8 @@ impl WorkbookEditorWindow {
     pub fn show(&mut self, ctx: &egui::Context) -> bool {
         let mut active = true;
 
-        egui::Window::new("Workbook") //TODO: t!("title.debug", self.lang))
-            .id(egui::Id::new("exercises_window"))
+        egui::Window::new("Workbook editor") //TODO: t!("title.debug", self.lang))
+            .id(egui::Id::new("editor_window"))
             .resizable(true)
             .open(&mut active)
             .show(ctx, |ui| {
@@ -37,8 +37,8 @@ impl WorkbookEditorWindow {
                         ui.heading("Catalog"); //t!("title.exercises", self.lang));
 
                         egui::ScrollArea::vertical().show(ui, |ui| {
-                            for (section, (title, exercises)) in self.exercises.iter().enumerate() {
-                                ui.collapsing(title, |ui| {
+                            for (section, (title, exercises)) in self.exercises.iter_mut().enumerate() {
+                                ui.collapsing(title.clone(), |ui| {
                                     for (i, exercise) in exercises.iter().enumerate() {
                                         if ui
                                             .add_enabled(
@@ -51,60 +51,46 @@ impl WorkbookEditorWindow {
                                             self.selected.1 = i;
                                         }
                                     }
+
+                                    if ui.button("Add Exercise").clicked() {
+                                        exercises.push(Exercise::new(
+                                            "New Exercise",
+                                            None,
+                                            String::new(),
+                                        ));
+                                    }
                                 });
                             }
 
                             ui.separator();
 
                             if ui.button("Add Chapter").clicked() {
+                                self.selected = (self.exercises.len(), 0);
+
                                 self.exercises.push((
                                     "New Chapter".to_string(),
                                     vec![Exercise::new(
                                         "New Exercise",
                                         None,
-                                        String::from(include_str!("../../../assets/ui/exercise1/code.tm")),
+                                        String::new(),
                                     )],
                                 ));
                             }
                         });
                     });
 
-                    ui.add(|ui: &mut egui::Ui| {
-                        ui.set_min_height(350.0); // Set the minimum height to fill the available space
-                        ui.separator()
-                    });
-
-
                     ui.vertical_centered_justified(|ui| {
-                        self.get_exercise(self.selected)
-                            .image
+                        if let Some(ex) = self.get_exercise(self.selected).as_mut()  {
+                            ex.image
                             .show_max_size(ui, MAX_IMG_SIZE);
 
-                        // Add expandable empty space
-                        ui.allocate_space(egui::Vec2::new(0.0, (MAX_IMG_SIZE.y-self.get_exercise(self.selected)
-                        .image.height() as f32)/3.5));
+                            ui.separator();
+                            
+                            let code = ex.code.clone();
+                            ui.code(&code);
 
-
-                        ui.horizontal(|ui| {
-                            if ui
-                                .add_enabled(self.selected.1 > 0, egui::Button::new("Previous"))
-                                .clicked()
-                            {
-                                self.selected.1 -= 1;
-                            }
-
-                            ui.add_space(ui.available_width() - 50.0);
-
-                            if ui
-                                .add_enabled(
-                                    self.selected.1 < self.exercises[self.selected.0].1.len() - 1,
-                                    egui::Button::new("Next"),
-                                )
-                                .clicked()
-                            {
-                                self.selected.1 += 1;
-                            }
-                        });
+                            ex.code = code.clone();
+                        }
                     });
                 });
             });
@@ -112,7 +98,14 @@ impl WorkbookEditorWindow {
             active
         }
         
-        fn get_exercise(&self, i: (usize, usize)) -> &Exercise {
-            &self.exercises[i.0].1[i.1]
+        fn get_exercise(&mut self, i: (usize, usize)) -> Option<&mut Exercise> {
+            if i.0 >= self.exercises.len() {
+                return None;
+            }
+            if i.1 >= self.exercises[i.0].1.len() {
+                return None;
+            }
+
+            Some(&mut self.exercises[i.0].1[i.1])
         }
     }
