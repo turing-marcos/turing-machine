@@ -15,13 +15,23 @@ pub struct Exercise {
 }
 
 impl Exercise {
-    pub fn new(title: &str, img: &[u8], code: String) -> Self {
-        Self {
-            image: RetainedImage::from_image_bytes(title, img).unwrap(),
-            original_image: img.to_vec(),
-            title: String::from(title),
-            code: String::from(code),
+    pub fn new(title: &str, img: Option<&[u8]>, code: String) -> Self {
+        if let Some(img_bytes) = img {
+            Self {
+                image: RetainedImage::from_image_bytes(title, img_bytes).unwrap(),
+                original_image: img_bytes.to_vec(),
+                title: String::from(title),
+                code: String::from(code),
+            }
+        }else{
+            Self {
+                image: RetainedImage::from_image_bytes(title, &[]).unwrap(),
+                original_image: vec![],
+                title: String::from(title),
+                code: String::from(code),
+            }
         }
+        
     }
 }
 
@@ -78,7 +88,7 @@ impl<'de> Deserialize<'de> for Exercise {
                     .next_element()?
                     .ok_or_else(|| A::Error::invalid_length(2, &self))?;
 
-                Ok(Exercise::new(&title, &original_image.into_vec(), code))
+                Ok(Exercise::new(&title, Some(&original_image.into_vec()), code))
             }
         }
 

@@ -7,9 +7,7 @@ use internationalization::t;
 use log::{debug, error};
 use serde::{self, Deserialize, Serialize};
 
-use super::exercise::Exercise;
-
-const MAX_IMG_SIZE: egui::Vec2 = egui::Vec2::new(600.0, 500.0);
+use super::{exercise::Exercise, MAX_IMG_SIZE};
 
 #[derive(Serialize, Deserialize)]
 pub struct BookWindow {
@@ -26,12 +24,12 @@ impl BookWindow {
                 vec![
                     Exercise::new(
                         "Exercise 1",
-                        include_bytes!("../../../assets/ui/exercise1/cover.png"),
+                        Some(include_bytes!("../../../assets/ui/exercise1/cover.png")),
                         String::from(include_str!("../../../assets/ui/exercise1/code.tm")),
                     ),
                     Exercise::new(
                         "Exercise 2",
-                        include_bytes!("../../../assets/ui/exercise2/cover.png"),
+                        Some(include_bytes!("../../../assets/ui/exercise2/cover.png")),
                         String::from(include_str!("../../../assets/ui/exercise2/code.tm")),
                     ),
                 ],

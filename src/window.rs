@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{
-    windows::{AboutWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow, WorkbookWindow},
+    windows::{AboutWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow, WorkbookWindow, WorkbookEditorWindow},
     TuringWidget,
 };
 use eframe;
@@ -42,10 +42,14 @@ pub struct MyApp {
     code: String,
     error: Option<pest::error::Error<Rule>>,
     tm: TuringWidget,
+
+    // Windows
     about_window: Option<Box<AboutWindow>>,
     debug_window: Option<Box<DebugWindow>>,
     infinite_loop_window: Option<Box<InfiniteLoopWindow>>,
     book_window: Option<Box<WorkbookWindow>>,
+    workbook_editor_window: Option<Box<WorkbookEditorWindow>>,
+
     lang: Language,
 
     file: Option<PathBuf>,
@@ -92,6 +96,8 @@ impl MyApp {
             debug_window: None,
             infinite_loop_window: None,
             book_window: None,
+            workbook_editor_window: None,
+
             lang: Language::English,
 
             file: file.clone(),
@@ -589,6 +595,12 @@ impl MyApp {
                 self.book_window = None;
             }
         }
+
+        if let Some(editor) = self.workbook_editor_window.as_mut() {
+            if !editor.show(ctx) {
+                self.workbook_editor_window = None;
+            }
+        }
     }
 
     /// Draws the top panel containing the menu with options for file handling, debugger, exercises, language, and about information.
@@ -648,6 +660,10 @@ impl MyApp {
 
                     if ui.button("Exercises").clicked() {
                         self.book_window = Some(Box::new(WorkbookWindow::new(&self.get_lang())));
+                    }
+
+                    if ui.button("Workbook editor").clicked(){
+                        self.workbook_editor_window = Some(Box::new(WorkbookEditorWindow::new(&self.get_lang())));
                     }
 
                     ui.menu_button(t!("menu.language", lang), |ui| {
