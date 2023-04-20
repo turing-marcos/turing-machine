@@ -1,3 +1,4 @@
+use eframe::epaint::ColorImage;
 use egui_extras::RetainedImage;
 use serde::{
     self,
@@ -5,33 +6,45 @@ use serde::{
     ser::SerializeStruct,
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use serde_bytes::ByteBuf;
 use std::fmt;
 
 pub struct Exercise {
     pub image: Option<RetainedImage>,
-    original_image: Vec<u8>,
+    original_image: Option<(usize, usize, Vec<u8>)>,
     pub title: String,
     pub code: String,
 }
 
 impl Exercise {
-    pub fn new(title: &str, img: Option<&[u8]>, code: String) -> Self {
-        if let Some(img_bytes) = img {
+    pub fn new(title: &str, image: Option<ColorImage>, code: String) -> Self {
+        if let Some(img) = image {
             Self {
-                image: Some(RetainedImage::from_image_bytes(title, img_bytes).unwrap()),
-                original_image: img_bytes.to_vec(),
+                image: Some(RetainedImage::from_color_image(title, img.clone())),
+                original_image: Some((
+                    img.width(),
+                    img.height(),
+                    img.pixels.iter().map(|p| p.to_array()).flatten().collect(),
+                )),
                 title: String::from(title),
                 code: String::from(code),
             }
         } else {
             Self {
                 image: None,
-                original_image: vec![],
+                original_image: None,
                 title: String::from(title),
                 code: String::from(code),
             }
         }
+    }
+
+    pub fn set_cover(&mut self, img: ColorImage) {
+        self.image = Some(RetainedImage::from_color_image(&self.title, img.clone()));
+        self.original_image = Some((
+            img.width(),
+            img.height(),
+            img.pixels.iter().map(|p| p.to_array()).flatten().collect(),
+        ));
     }
 }
 
@@ -52,7 +65,9 @@ impl Serialize for Exercise {
         };
 
         state.serialize_field("title", &title)?;
-        state.serialize_field("original_image", &self.original_image)?;
+        if let Some(img) = &self.original_image {
+            state.serialize_field("original_image", img)?;
+        }
         state.serialize_field("code", &self.code)?;
 
         state.end()
@@ -80,7 +95,7 @@ impl<'de> Deserialize<'de> for Exercise {
                 let title: String = seq
                     .next_element()?
                     .ok_or_else(|| A::Error::invalid_length(0, &self))?;
-                let original_image: ByteBuf = seq
+                let original_image: (usize, usize, Vec<u8>) = seq
                     .next_element()?
                     .ok_or_else(|| A::Error::invalid_length(1, &self))?;
                 let code: String = seq
@@ -89,7 +104,10 @@ impl<'de> Deserialize<'de> for Exercise {
 
                 Ok(Exercise::new(
                     &title,
-                    Some(&original_image.into_vec()),
+                    Some(ColorImage::from_rgba_unmultiplied(
+                        [original_image.0 as usize, original_image.1 as usize],
+                        &original_image.2,
+                    )),
                     code,
                 ))
             }
@@ -100,6 +118,7 @@ impl<'de> Deserialize<'de> for Exercise {
 }
 
 // Custom deserializer for the tuple (String, Vec<Exercise>)
+#[allow(dead_code)]
 fn deserialize_tuple<'de, D>(deserializer: D) -> Result<(String, Vec<Exercise>), D::Error>
 where
     D: Deserializer<'de>,

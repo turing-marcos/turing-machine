@@ -1,13 +1,9 @@
 use eframe::egui;
-use internationalization::t;
-use log::{debug, error};
 use serde::{self, Deserialize, Serialize};
-use std::{
-    fs::File,
-    io::{BufReader, Write},
-};
 
-use super::{exercise::Exercise, MAX_IMG_SIZE};
+use crate::windows::workbook::raw_data_to_image;
+
+use super::{exercise::Exercise, load_workbook, MAX_IMG_SIZE};
 
 #[derive(Serialize, Deserialize)]
 pub struct BookWindow {
@@ -24,12 +20,18 @@ impl BookWindow {
                 vec![
                     Exercise::new(
                         "Exercise 1",
-                        Some(include_bytes!("../../../assets/ui/exercise1/cover.png")),
+                        Some(raw_data_to_image(
+                            (703, 309),
+                            include_bytes!("../../../assets/ui/exercise1/cover.png"),
+                        )),
                         String::from(include_str!("../../../assets/ui/exercise1/code.tm")),
                     ),
                     Exercise::new(
                         "Exercise 2",
-                        Some(include_bytes!("../../../assets/ui/exercise2/cover.png")),
+                        Some(raw_data_to_image(
+                            (574, 228),
+                            include_bytes!("../../../assets/ui/exercise2/cover.png"),
+                        )),
                         String::from(include_str!("../../../assets/ui/exercise2/code.tm")),
                     ),
                 ],
@@ -80,13 +82,8 @@ impl BookWindow {
                             }
                         });
 
-                        if ui.button("Save workbook").clicked() {
-                            self.save_workbook();
-                        }
-
                         if ui.button("Load workbook").clicked() {
-                            let new_exercises = BookWindow::load_workbook();
-                            if let Some(new_exercises) = new_exercises {
+                            if let Some(new_exercises) = load_workbook() {
                                 self.exercises = new_exercises;
                                 self.selected = (0, 0);
                             }
@@ -142,54 +139,5 @@ impl BookWindow {
 
     fn get_exercise(&self, i: (usize, usize)) -> &Exercise {
         &self.exercises[i.0].1[i.1]
-    }
-
-    pub fn save_workbook(&self) {
-        let path = std::env::current_dir().unwrap();
-
-        let file_path = rfd::FileDialog::new()
-            .add_filter("Turing Machine Workbook", &["wb"])
-            .set_directory(&path)
-            .save_file();
-
-        if let Some(f) = file_path {
-            let data = bincode::serialize(&self.exercises).unwrap();
-            let mut file = File::create(&f).unwrap();
-            file.write_all(&data).unwrap();
-            debug!("Workbook saved at {:?}", f);
-        } else {
-            error!("Cannot save workbook");
-        }
-    }
-
-    pub fn load_workbook() -> Option<Vec<(String, Vec<Exercise>)>> {
-        let path = std::env::current_dir().unwrap();
-
-        let file_path = rfd::FileDialog::new()
-            .add_filter("TuringMachine Workbook", &["wb"])
-            .set_directory(&path)
-            .pick_files();
-
-        match file_path {
-            Some(f) => {
-                let file = File::open(&f[0]).expect("File not found");
-                let reader = BufReader::new(file);
-
-                match bincode::deserialize_from(reader) {
-                    Ok(exercises) => {
-                        debug!("Workbook loaded from {:?}", f[0]);
-                        Some(exercises)
-                    }
-                    Err(e) => {
-                        error!("Cannot load workbook: {}", e);
-                        None
-                    }
-                }
-            }
-            None => {
-                debug!("The path is not valid");
-                None
-            }
-        }
     }
 }

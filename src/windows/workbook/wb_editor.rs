@@ -1,6 +1,6 @@
-use eframe::{egui, emath::Align};
+use eframe::egui;
 
-use super::{exercise::Exercise, MAX_IMG_SIZE};
+use super::{exercise::Exercise, load_image, save_workbook, MAX_IMG_SIZE};
 
 pub struct WorkbookEditorWindow {
     lang: String,
@@ -24,7 +24,7 @@ impl WorkbookEditorWindow {
     }
 
     pub fn show(&mut self, ctx: &egui::Context) -> bool {
-        ctx.set_debug_on_hover(true);
+        // ctx.set_debug_on_hover(true);
         let mut active = true;
 
         egui::Window::new("Workbook editor") //TODO: t!("title.debug", self.lang))
@@ -100,7 +100,7 @@ impl WorkbookEditorWindow {
                                 ui.separator();
                             }
 
-                            if let Some(ex) = self.get_exercise(self.selected).as_mut() {
+                            if let Some(ex) = self.get_exercise(self.selected) {
                                 ui.add(
                                     egui::TextEdit::singleline(&mut ex.title)
                                         .hint_text("Exercise title")
@@ -111,7 +111,6 @@ impl WorkbookEditorWindow {
                                 if let Some(img) = &ex.image {
                                     img.show_max_size(ui, MAX_IMG_SIZE);
                                 } else {
-                                    // TODO: Draw a rectangle of size MAX_IMG_SIZE with a background color of 0.5
                                     let rect = egui::Rect::from_min_size(
                                         ui.cursor().left_top(),
                                         MAX_IMG_SIZE,
@@ -128,7 +127,10 @@ impl WorkbookEditorWindow {
                                     ui.horizontal(|ui| {
                                         ui.add_space(15.0);
                                         if ui.button("Add image").clicked() {
-                                            // TODO: Add image
+                                            match load_image() {
+                                                Some(img) => ex.set_cover(img),
+                                                None => {}
+                                            }
                                         }
                                     });
                                 }
@@ -156,7 +158,7 @@ impl WorkbookEditorWindow {
 
                     ui.horizontal(|ui| {
                         if ui.button("Save workbook").clicked() {
-                            println!("TODO: Save workbook");
+                            save_workbook(&self.chapters);
                         }
                     });
                 });

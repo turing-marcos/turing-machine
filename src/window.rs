@@ -523,12 +523,11 @@ impl MyApp {
             let res = rfd::FileDialog::new()
                 .add_filter("TuringMachine", &["tm"])
                 .set_directory(&path)
-                .pick_files();
+                .pick_file();
 
             match res {
                 Some(file) => {
-                    let unparsed_file =
-                        std::fs::read_to_string(&file[0]).expect("cannot read file");
+                    let unparsed_file = std::fs::read_to_string(&file).expect("cannot read file");
                     self.tm = match self.tm.restart(&unparsed_file) {
                         Ok(t) => {
                             self.error = None;
