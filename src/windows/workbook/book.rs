@@ -1,23 +1,11 @@
-use eframe::{egui, epaint::Vec2};
-use egui_extras::RetainedImage;
-use internationalization::t;
+use eframe::egui;
+use serde::{self, Deserialize, Serialize};
 
-struct Exercise {
-    image: RetainedImage,
-    title: String,
-    code: String,
-}
+use crate::windows::workbook::raw_data_to_image;
 
-impl Exercise {
-    pub fn new(title: &str, img: &[u8], code: String) -> Self {
-        Self {
-            image: RetainedImage::from_image_bytes(title, img).unwrap(),
-            title: String::from(title),
-            code: String::from(code),
-        }
-    }
-}
+use super::{exercise::Exercise, load_workbook, MAX_IMG_SIZE};
 
+#[derive(Serialize, Deserialize)]
 pub struct BookWindow {
     lang: String,
     exercises: Vec<(String, Vec<Exercise>)>,
@@ -32,17 +20,23 @@ impl BookWindow {
                 vec![
                     Exercise::new(
                         "Exercise 1",
-                        include_bytes!("../../assets/ui/exercise1/cover.png"),
-                        String::from(include_str!("../../assets/ui/exercise1/code.tm")),
+                        Some(raw_data_to_image(
+                            (703, 309),
+                            include_bytes!("../../../assets/ui/exercise1/cover.png"),
+                        )),
+                        String::from(include_str!("../../../assets/ui/exercise1/code.tm")),
                     ),
                     Exercise::new(
                         "Exercise 2",
-                        include_bytes!("../../assets/ui/exercise2/cover.png"),
-                        String::from(include_str!("../../assets/ui/exercise2/code.tm")),
+                        Some(raw_data_to_image(
+                            (574, 228),
+                            include_bytes!("../../../assets/ui/exercise2/cover.png"),
+                        )),
+                        String::from(include_str!("../../../assets/ui/exercise2/code.tm")),
                     ),
                 ],
             ),
-            ("Chapter 2".to_string(), vec![]),
+            //("Chapter 2".to_string(), vec![]),
         ];
 
         Self {
@@ -87,6 +81,13 @@ impl BookWindow {
                                 });
                             }
                         });
+
+                        if ui.button("Load workbook").clicked() {
+                            if let Some(new_exercises) = load_workbook() {
+                                self.exercises = new_exercises;
+                                self.selected = (0, 0);
+                            }
+                        }
                     });
 
                     ui.add(|ui: &mut egui::Ui| {
@@ -95,9 +96,15 @@ impl BookWindow {
                     });
 
                     ui.vertical_centered_justified(|ui| {
-                        self.get_exercise(self.selected)
-                            .image
-                            .show_max_size(ui, Vec2::new(600.0, 500.0));
+                        if let Some(img) = &self.get_exercise(self.selected).image {
+                            img.show_max_size(ui, MAX_IMG_SIZE);
+
+                            // Add expandable empty space
+                            ui.allocate_space(egui::Vec2::new(
+                                0.0,
+                                (MAX_IMG_SIZE.y - img.height() as f32) / 3.5,
+                            ));
+                        }
 
                         ui.horizontal(|ui| {
                             if ui

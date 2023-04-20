@@ -1,3 +1,5 @@
 /target
 **/*.sh
 **/dist/*
+.vscode/
+**/*.wb

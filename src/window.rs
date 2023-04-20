@@ -6,7 +6,10 @@ use std::{
 };
 
 use crate::{
-    windows::{AboutWindow, BookWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow},
+    windows::{
+        AboutWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow, WorkbookEditorWindow,
+        WorkbookWindow,
+    },
     TuringWidget,
 };
 use eframe;
@@ -42,10 +45,14 @@ pub struct MyApp {
     code: String,
     error: Option<pest::error::Error<Rule>>,
     tm: TuringWidget,
+
+    // Windows
     about_window: Option<Box<AboutWindow>>,
     debug_window: Option<Box<DebugWindow>>,
     infinite_loop_window: Option<Box<InfiniteLoopWindow>>,
-    book_window: Option<Box<BookWindow>>,
+    book_window: Option<Box<WorkbookWindow>>,
+    workbook_editor_window: Option<Box<WorkbookEditorWindow>>,
+
     lang: Language,
 
     file: Option<PathBuf>,
@@ -92,6 +99,8 @@ impl MyApp {
             debug_window: None,
             infinite_loop_window: None,
             book_window: None,
+            workbook_editor_window: None,
+
             lang: Language::English,
 
             file: file.clone(),
@@ -514,12 +523,11 @@ impl MyApp {
             let res = rfd::FileDialog::new()
                 .add_filter("TuringMachine", &["tm"])
                 .set_directory(&path)
-                .pick_files();
+                .pick_file();
 
             match res {
                 Some(file) => {
-                    let unparsed_file =
-                        std::fs::read_to_string(&file[0]).expect("cannot read file");
+                    let unparsed_file = std::fs::read_to_string(&file).expect("cannot read file");
                     self.tm = match self.tm.restart(&unparsed_file) {
                         Ok(t) => {
                             self.error = None;
@@ -589,6 +597,12 @@ impl MyApp {
                 self.book_window = None;
             }
         }
+
+        if let Some(editor) = self.workbook_editor_window.as_mut() {
+            if !editor.show(ctx) {
+                self.workbook_editor_window = None;
+            }
+        }
     }
 
     /// Draws the top panel containing the menu with options for file handling, debugger, exercises, language, and about information.
@@ -647,7 +661,12 @@ impl MyApp {
                     });
 
                     if ui.button("Exercises").clicked() {
-                        self.book_window = Some(Box::new(BookWindow::new(&self.get_lang())));
+                        self.book_window = Some(Box::new(WorkbookWindow::new(&self.get_lang())));
+                    }
+
+                    if ui.button("Workbook editor").clicked() {
+                        self.workbook_editor_window =
+                            Some(Box::new(WorkbookEditorWindow::new(&self.get_lang())));
                     }
 
                     ui.menu_button(t!("menu.language", lang), |ui| {
