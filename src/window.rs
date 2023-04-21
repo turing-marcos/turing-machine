@@ -660,13 +660,21 @@ impl MyApp {
                         }
                     });
 
-                    if ui.button("Exercises").clicked() {
-                        self.book_window = Some(Box::new(WorkbookWindow::new(&self.get_lang())));
-                    }
+                    if cfg!(feature = "teacher") {
+                        ui.menu_button("Exercises", |ui| {
+                            if ui.button("Exercises").clicked() {
+                                self.book_window = Some(Box::new(WorkbookWindow::new(&self.get_lang())));
+                            }
 
-                    if ui.button("Workbook editor").clicked() {
-                        self.workbook_editor_window =
-                            Some(Box::new(WorkbookEditorWindow::new(&self.get_lang())));
+                            if ui.button("Workbook editor").clicked() {
+                                self.workbook_editor_window =
+                                    Some(Box::new(WorkbookEditorWindow::new(&self.get_lang())));
+                            }
+                        });
+                    }else{
+                        if ui.button("Exercises").clicked() {
+                            self.book_window = Some(Box::new(WorkbookWindow::new(&self.get_lang())));
+                        }
                     }
 
                     ui.menu_button(t!("menu.language", lang), |ui| {

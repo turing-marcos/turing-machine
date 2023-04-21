@@ -43,3 +43,12 @@ futures = "0.3"
 
 [profile.release]
 opt-level = 2 # fast and small wasm
+
+
+[features]
+# no features by default
+default = []
+
+# Add feature "foo" here, then you can use it. 
+# Our "foo" feature depends on nothing else.
+teacher = []
