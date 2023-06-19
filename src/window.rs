@@ -452,6 +452,7 @@ impl MyApp {
             debug_window: None,
             infinite_loop_window: None,
             book_window: None,
+            workbook_editor_window: None,
             lang: self.lang.clone(),
 
             file: self.file.clone(),
@@ -663,7 +664,8 @@ impl MyApp {
                     if cfg!(feature = "teacher") {
                         ui.menu_button("Exercises", |ui| {
                             if ui.button("Exercises").clicked() {
-                                self.book_window = Some(Box::new(WorkbookWindow::new(&self.get_lang())));
+                                self.book_window =
+                                    Some(Box::new(WorkbookWindow::new(&self.get_lang())));
                             }
 
                             if ui.button("Workbook editor").clicked() {
@@ -671,9 +673,10 @@ impl MyApp {
                                     Some(Box::new(WorkbookEditorWindow::new(&self.get_lang())));
                             }
                         });
-                    }else{
+                    } else {
                         if ui.button("Exercises").clicked() {
-                            self.book_window = Some(Box::new(WorkbookWindow::new(&self.get_lang())));
+                            self.book_window =
+                                Some(Box::new(WorkbookWindow::new(&self.get_lang())));
                         }
                     }
 

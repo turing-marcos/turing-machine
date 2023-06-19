@@ -70,13 +70,14 @@ fn main() {
 
     let web_options = eframe::WebOptions::default();
     wasm_bindgen_futures::spawn_local(async {
-        eframe::start_web(
-            "the_canvas_id", // hardcode it
-            web_options,
-            Box::new(|cc| Box::new(MyApp::new(&None, cc).unwrap())),
-        )
-        .await
-        .expect("failed to start eframe");
+        eframe::WebRunner::new()
+            .start(
+                "TuringMachineCanvas", // hardcode it
+                web_options,
+                Box::new(|cc| Box::new(MyApp::new(&None, cc).unwrap())),
+            )
+            .await
+            .expect("failed to start eframe");
     });
 }
 
