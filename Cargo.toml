@@ -13,7 +13,7 @@ license = "GPL-2.0"
 clap = { version = "^4.1", features = ["derive"] }
 pest = "^2.4"
 pest_derive = "^2.4"
-eframe = "^0.22"
+eframe = {version = "^0.22", features = ["wayland"]}
 rfd = "^0.11"
 egui_extras = {version = "^0.22", features = ["image"]}
 image = { version = "^0.24", default-features = false, features = ["jpeg", "png"] }
@@ -53,6 +53,3 @@ default = []
 # Add feature "foo" here, then you can use it. 
 # Our "foo" feature depends on nothing else.
 teacher = []
-
-[rust-analyzer.cargo]
-target = "wasm32-unknown-unknown"
