@@ -1,7 +1,7 @@
 {01110111100}; //(x, y)
 
-F = {f};
 I={ q0 };
+F = {f};
 
 //Search for the separator
 (q0, 1, 1, R, q0);
@@ -32,6 +32,3 @@ I={ q0 };
 //Find all the ones and delete them
 (q6, 1, 0, R, q6);
 (q6, 0, 0, H, f);
-
-(f, 0, 0, H, f);
-(f, 1, 1, H, f);

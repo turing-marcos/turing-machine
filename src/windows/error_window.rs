@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
-use crate::turing::Rule;
 use eframe;
 use eframe::egui::{self, RichText};
 use eframe::epaint::Color32;
+use turing_lib::Rule;
 
 pub struct ErrorWindow {
     error: pest::error::Error<Rule>,
-    file: PathBuf,
+    file: Option<PathBuf>,
     line_msg: String,
     expected_msg: String,
     error_pos: usize,
@@ -16,7 +16,7 @@ pub struct ErrorWindow {
 impl ErrorWindow {
     pub fn new(
         error: pest::error::Error<Rule>,
-        file: PathBuf,
+        file: Option<PathBuf>,
         cc: &eframe::CreationContext<'_>,
     ) -> Self {
         let mut st = (*egui::Context::default().style()).clone();
@@ -58,13 +58,18 @@ impl eframe::App for ErrorWindow {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical_centered_justified(|ui| {
-                ui.label(
-                    RichText::new(format!(
+
+                let text = match self.file {
+                    Some(ref file) => format!(
                         "Syntax error on file {:?}",
-                        self.file
-                            .file_name()
+                        file.file_name()
                             .unwrap_or(std::ffi::OsStr::new("User input"))
-                    ))
+                    ),
+                    None => "Syntax error".to_string(),
+                };
+
+                ui.label(
+                    RichText::new(text)
                     .color(Color32::LIGHT_RED)
                     .size(30.0)
                     .underline(),

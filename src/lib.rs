@@ -1,4 +1,3 @@
-pub mod turing;
 mod turing_widget;
 mod window;
 pub mod windows;

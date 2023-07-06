@@ -23,6 +23,10 @@
         "en": "Open File",
         "es": "Abrir Archivo"
     },
+    "btn.save_file": {
+        "en": "Save File",
+        "es": "Guardar Archivo"
+    },
     "btn.compile": {
         "en": "Compile and run code",
         "es": "Compilar y ejecutar código"
@@ -54,6 +58,10 @@
     "lbl.current_output": {
         "en": "Current output: $out",
         "es": "Salida actual: $out"
+    },
+    "lbl.undefined": {
+        "en": "undefined output",
+        "es": "salida indefinida"
     },
     "lbl.pause": {
         "en": "Pause",
