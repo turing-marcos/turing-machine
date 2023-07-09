@@ -1,16 +1,18 @@
 use eframe::egui;
 
-use super::{exercise::Exercise, load_image, save_workbook, MAX_IMG_SIZE};
+use super::{
+    exercise::Exercise, load_image, save_workbook, Workbook, WorkbookChapter, MAX_IMG_SIZE,
+};
 
 pub struct WorkbookEditorWindow {
     lang: String,
-    chapters: Vec<(String, Vec<Exercise>)>,
+    chapters: Workbook,
     selected: (usize, usize),
 }
 
 impl WorkbookEditorWindow {
     pub fn new(lang: &str) -> Self {
-        let exercises: Vec<(String, Vec<Exercise>)> = vec![];
+        let exercises: Workbook = vec![];
 
         Self {
             lang: String::from(lang),
@@ -167,7 +169,7 @@ impl WorkbookEditorWindow {
         active
     }
 
-    fn new_chapter(chapters_len: usize, exercises_len: usize) -> (String, Vec<Exercise>) {
+    fn new_chapter(chapters_len: usize, exercises_len: usize) -> WorkbookChapter {
         (
             format!("New Chapter {}", chapters_len + 1),
             vec![WorkbookEditorWindow::new_exercise(exercises_len)],

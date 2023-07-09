@@ -857,8 +857,11 @@ impl MyApp {
                             ui.label(t!("lbl.resumed", lang));
                         }
                         let b = ui.button(text);
-                        
-                        if (b.clicked() || ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Space)))
+
+                        if (b.clicked()
+                            || ui.input_mut(|i| {
+                                i.consume_key(egui::Modifiers::NONE, egui::Key::Space)
+                            }))
                             && !editor_focused
                         {
                             if self.tm.finished() {
@@ -896,19 +899,33 @@ impl eframe::App for MyApp {
 
         ctx.input_mut(|i| {
             // Check for keyboard shortcuts
-            if i.consume_shortcut(&egui::KeyboardShortcut::new(egui::Modifiers::COMMAND, egui::Key::S)){
+            if i.consume_shortcut(&egui::KeyboardShortcut::new(
+                egui::Modifiers::COMMAND,
+                egui::Key::S,
+            )) {
                 // Ctrl+S
                 debug!("Saving...");
                 self.save_file();
-            } else if i.consume_shortcut(&egui::KeyboardShortcut::new(egui::Modifiers::COMMAND, egui::Key::O)) {
+            } else if i.consume_shortcut(&egui::KeyboardShortcut::new(
+                egui::Modifiers::COMMAND,
+                egui::Key::O,
+            )) {
                 // Ctrl+O
                 debug!("Opening...");
                 self.load_file();
-            } else if i.modifiers.shift && i.consume_shortcut(&egui::KeyboardShortcut::new(egui::Modifiers::CTRL, egui::Key::S)) {
+            } else if i.modifiers.shift
+                && i.consume_shortcut(&egui::KeyboardShortcut::new(
+                    egui::Modifiers::CTRL,
+                    egui::Key::S,
+                ))
+            {
                 // Ctrl+Shift+S
                 debug!("Saving as...");
                 self.save_file_as();
-            } else if i.consume_shortcut(&egui::KeyboardShortcut::new(egui::Modifiers::COMMAND, egui::Key::R)) {
+            } else if i.consume_shortcut(&egui::KeyboardShortcut::new(
+                egui::Modifiers::COMMAND,
+                egui::Key::R,
+            )) {
                 // Ctrl+R
                 debug!("Restarting...");
                 self.tm = self.tm.restart(&self.code).unwrap();
