@@ -2,6 +2,8 @@ mod book;
 mod exercise;
 mod wb_editor;
 
+use std::io::Read;
+
 pub use book::BookWindow as WorkbookWindow;
 pub use wb_editor::WorkbookEditorWindow;
 
@@ -13,7 +15,7 @@ use eframe::epaint::ColorImage;
 #[cfg(not(target_arch = "wasm32"))]
 use {
     rfd,
-    std::{fs::File, io::BufReader, io::Write, path::PathBuf},
+    std::{fs::File, io::Write, path::PathBuf},
     log::{debug, error}
 };
 
@@ -194,7 +196,9 @@ pub fn save_workbook(exercises: &Vec<(String, Vec<Exercise>)>) {
             .set_directory(&path)
             .save_file();
 
-        if let Some(f) = file_path {
+        if let Some(mut f) = file_path {
+            f.set_extension("wb");
+
             let data = bincode::serialize(&exercises).unwrap();
             let mut file = File::create(&f).unwrap();
             file.write_all(&data).unwrap();
@@ -248,10 +252,13 @@ pub fn load_workbook() -> Option<Vec<(String, Vec<Exercise>)>> {
 
         match file_path {
             Some(f) => {
-                let file = File::open(&f[0]).expect("File not found");
-                let reader = BufReader::new(file);
+                let mut file = File::open(&f[0]).expect("File not found");
+                let mut reader: Vec<u8> = Vec::new();
+                file.read_to_end(&mut reader).expect("Could not read file");
 
-                match bincode::deserialize_from(reader) {
+
+
+                match bincode::deserialize(&reader) {
                     Ok(exercises) => {
                         debug!("Workbook loaded from {:?}", f[0]);
                         Some(exercises)
