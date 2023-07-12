@@ -12,15 +12,15 @@ use eframe::epaint::ColorImage;
 
 #[cfg(not(target_arch = "wasm32"))]
 use {
+    log::{debug, error},
     rfd,
     std::{fs::File, io::BufReader, io::Write, path::PathBuf},
-    log::{debug, error}
 };
 
 #[cfg(target_arch = "wasm32")]
 use {
-    js_sys, web_sys, wasm_bindgen::prelude::*, wasm_bindgen::JsCast, 
-    base64::engine::general_purpose::STANDARD_NO_PAD as base64,
+    base64::engine::general_purpose::STANDARD_NO_PAD as base64, js_sys, wasm_bindgen::prelude::*,
+    wasm_bindgen::JsCast, web_sys,
 };
 
 const MAX_IMG_SIZE: egui::Vec2 = egui::Vec2::new(600.0, 250.0);
@@ -68,7 +68,7 @@ fn load_image() -> Option<ColorImage> {
     {
         /*
         FIXME: Not working
-         
+
         let window = web_sys::window().expect("Failed to get window");
         let document = window.document().expect("Failed to get document");
         let input = document
@@ -176,7 +176,7 @@ pub fn save_workbook(exercises: &Vec<(String, Vec<Exercise>)>) {
     {
         /*
         FIXME: Not working
-         
+
         let data = bincode::serialize(&exercises).unwrap();
         let data_url = format!(
             "data:application/octet-stream;base64,{}",
@@ -210,7 +210,7 @@ pub fn load_workbook() -> Option<Vec<(String, Vec<Exercise>)>> {
     {
         /*
         FIXME: Not working
-         
+
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
         let input = document
