@@ -7,7 +7,6 @@ use {
     env_logger,
     log::{error, trace},
     std::{fs, io, path::PathBuf},
-    turing_lib::Rule,
     turing_lib::TuringMachine,
     turing_machine::windows::ErrorWindow,
 };
@@ -48,15 +47,6 @@ pub struct Cli {
 
     #[clap(flatten)]
     verbose: clap_verbosity_flag::Verbosity,
-
-    #[clap(
-        long,
-        short,
-        default_value_t = false,
-        help = "Activate the visual debug mode (only available in the GUI mode).",
-        conflicts_with = "cli"
-    )]
-    debug: bool,
 }
 
 // when compiling to web using trunk.
@@ -99,7 +89,9 @@ fn main() {
             std::process::exit(1);
         }
     } else {
-        run_machine_gui(args.file, args.debug);
+        run_machine_gui(
+            args.file
+        );
     }
 }
 
@@ -121,11 +113,14 @@ fn load_icon(path: &str) -> Option<eframe::IconData> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn run_machine_gui(file: Option<PathBuf>, debug: bool) {
+fn run_machine_gui(file: Option<PathBuf>) {
+    use eframe::egui;
+
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
         hardware_acceleration: eframe::HardwareAcceleration::Preferred,
         icon_data: load_icon("assets/icon.png"),
+        initial_window_size: Some(egui::vec2(900.0, 700.0)),
         ..Default::default()
     };
 
@@ -136,45 +131,22 @@ fn run_machine_gui(file: Option<PathBuf>, debug: bool) {
         None => std::ffi::OsStr::new("Example 1"),
     };
 
-    eframe::run_native(
+    match eframe::run_native(
         &format!("Turing Machine: {:?}", file_name),
         options,
         Box::new(move |cc| {
-            cc.egui_ctx.set_debug_on_hover(debug);
-            Box::new(match MyApp::new(&file, cc) {
-                Ok(w) => w,
-                Err(e) => {
-                    handle_error(e, file);
-                    std::process::exit(1);
-                }
-            })
+            match MyApp::new(&file, cc) {
+                Ok(w) => Box::new(w),
+                Err(e) => Box::new(ErrorWindow::new(e, file, cc)),
+            }
         }),
-    )
-    .unwrap();
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn handle_error(e: pest::error::Error<Rule>, file: Option<PathBuf>) {
-    let options = eframe::NativeOptions {
-        drag_and_drop_support: true,
-        hardware_acceleration: eframe::HardwareAcceleration::Preferred,
-        icon_data: load_icon("assets/icon.png"),
-        ..Default::default()
+    ) {
+        Ok(_) => (),
+        Err(e) => {
+            error!("Error running eframe: {}", e);
+            std::process::exit(1);
+        }
     };
-
-    let file_name = match &file {
-        Some(file_some) => file_some
-            .file_name()
-            .unwrap_or(std::ffi::OsStr::new("User input")),
-        None => std::ffi::OsStr::new("Example 1"),
-    };
-
-    eframe::run_native(
-        &format!("Turing Machine: {:?}", file_name),
-        options,
-        Box::new(|cc| Box::new(ErrorWindow::new(e, file, cc))),
-    )
-    .unwrap();
 }
 
 #[cfg(not(target_arch = "wasm32"))]
