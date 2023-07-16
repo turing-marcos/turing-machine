@@ -4,7 +4,7 @@ use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, 
 use internationalization::t;
 
 use log::warn;
-use turing_lib::{TuringMachine, TuringOutput, CompilerError};
+use turing_lib::{CompilerError, TuringMachine, TuringOutput};
 
 const STROKE_WIDTH: f32 = 3f32;
 
@@ -61,7 +61,7 @@ impl TuringWidget {
                     warn!("Compiler warning: {:?}", w);
                 }
                 t
-            },
+            }
             Err(e) => return Err(e),
         };
 

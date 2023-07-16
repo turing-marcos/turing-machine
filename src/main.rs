@@ -89,9 +89,7 @@ fn main() {
             std::process::exit(1);
         }
     } else {
-        run_machine_gui(
-            args.file
-        );
+        run_machine_gui(args.file);
     }
 }
 
@@ -134,11 +132,9 @@ fn run_machine_gui(file: Option<PathBuf>) {
     match eframe::run_native(
         &format!("Turing Machine: {:?}", file_name),
         options,
-        Box::new(move |cc| {
-            match MyApp::new(&file, cc) {
-                Ok(w) => Box::new(w),
-                Err(e) => Box::new(ErrorWindow::new(e, file, cc)),
-            }
+        Box::new(move |cc| match MyApp::new(&file, cc) {
+            Ok(w) => Box::new(w),
+            Err(e) => Box::new(ErrorWindow::new(e, file, cc)),
         }),
     ) {
         Ok(_) => (),
@@ -161,7 +157,7 @@ fn run_machine_cli(file: PathBuf, interactive: bool) {
             }
 
             t
-        },
+        }
         Err(e) => {
             TuringMachine::handle_error(e);
             std::process::exit(1);

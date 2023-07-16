@@ -28,7 +28,10 @@ impl ErrorWindow {
         let position: ErrorPosition = error.position();
 
         let line_msg = match position.end {
-            Some(end) => format!("From line {}:{} to {}:{}. Found:", position.start.0, position.start.1, end.0, end.1),
+            Some(end) => format!(
+                "From line {}:{} to {}:{}. Found:",
+                position.start.0, position.start.1, end.0, end.1
+            ),
             None => format!("At line {}:{} Found:", position.start.0, position.start.1),
         };
 

@@ -17,8 +17,8 @@ use eframe::egui::{self, Id, RichText, TextEdit, Ui};
 use eframe::epaint::Color32;
 use internationalization::t;
 use log::{debug, error, info, trace, warn};
-use turing_lib::{TuringMachine, CompilerError};
 use turing_lib::TuringOutput;
+use turing_lib::{CompilerError, TuringMachine};
 
 #[cfg(target_arch = "wasm32")]
 use {
@@ -82,10 +82,10 @@ impl MyApp {
                 for w in warnings {
                     warn!("\tCompiler warning: {:?}", w);
                 }
-                
+
                 trace!("Turing machine created successfully");
                 t
-            },
+            }
             Err(e) => {
                 return Err(e);
             }
@@ -153,15 +153,26 @@ impl MyApp {
 
                         ui.horizontal(|ui| {
                             let position = error.position();
+
                             ui.label(
                                 RichText::new(format!(
                                     "{:~>width1$}{:^<width2$}{:~<width3$}",
                                     "~",
                                     "^",
                                     "~",
+                                    // Length from the start of the line to the error
                                     width1 = position.start.1,
-                                    width2 = position.end.unwrap_or((0, position.start.1 +1)).1 - position.start.1,
-                                    width3 = error.code().len() - position.end.unwrap_or((0, position.start.1 +1)).1
+                                    // Length of the error
+                                    width2 = position.end.unwrap_or((0, position.start.1 + 1)).1
+                                        - position.start.1,
+                                    // Length from the end of the error to the end of the line
+                                    width3 = error
+                                        .code()
+                                        .len()
+                                        .checked_sub(
+                                            position.end.unwrap_or((0, position.start.1 + 1)).1
+                                        )
+                                        .unwrap_or(0)
                                 ))
                                 .color(Color32::RED)
                                 .size(20.0),
@@ -177,7 +188,6 @@ impl MyApp {
                 });
         });
     }
-                        
 
     /// This function processes the Turing machine's controls, handling UI updates and animations
     /// for stepping through the machine's operations. It enables or disables the UI elements based on the
