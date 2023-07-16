@@ -17,8 +17,8 @@ use eframe::egui::{self, Id, RichText, TextEdit, Ui};
 use eframe::epaint::Color32;
 use internationalization::t;
 use log::{debug, error, info, trace, warn};
-use turing_lib::TuringMachine;
-use turing_lib::{Rule, TuringOutput};
+use turing_lib::{TuringMachine, CompilerError};
+use turing_lib::TuringOutput;
 
 #[cfg(target_arch = "wasm32")]
 use {
@@ -43,7 +43,7 @@ pub enum Language {
 
 pub struct MyApp {
     code: String,
-    error: Option<pest::error::Error<Rule>>,
+    error: Option<CompilerError>,
     tm: TuringWidget,
 
     // Windows
@@ -64,7 +64,7 @@ impl MyApp {
     pub fn new(
         file: &Option<PathBuf>,
         cc: &eframe::CreationContext<'_>,
-    ) -> Result<Self, pest::error::Error<Rule>> {
+    ) -> Result<Self, CompilerError> {
         let code = match file {
             Some(ref f) => {
                 trace!("File provided: {:?}", file);
@@ -78,7 +78,14 @@ impl MyApp {
         };
 
         let tm = match TuringMachine::new(&code) {
-            Ok(t) => t,
+            Ok((t, warnings)) => {
+                for w in warnings {
+                    warn!("\tCompiler warning: {:?}", w);
+                }
+                
+                trace!("Turing machine created successfully");
+                t
+            },
             Err(e) => {
                 return Err(e);
             }
@@ -128,66 +135,47 @@ impl MyApp {
     /// where the error occurred, the erroneous input, and a message describing the expected input or
     /// the reason for the error. The panel uses different text colors and sizes to improve readability
     /// and highlight the most important information.
-    fn handle_error(_ui: &mut Ui, ctx: &egui::Context, error: &pest::error::Error<Rule>) {
-        let (error_pos, line_msg) = match error.line_col {
-            pest::error::LineColLocation::Pos((line, col)) => {
-                (col, format!("Line {}, column {}: ", line, col))
-            }
-            pest::error::LineColLocation::Span((line1, col1), (line2, col2)) => (
-                col1,
-                format!("From line {}:{} to {}:{}. Found:", line1, col1, line2, col2),
-            ),
-        };
-
-        let expected_msg = match &error.variant {
-            pest::error::ErrorVariant::ParsingError {
-                positives,
-                negatives,
-            } => {
-                if negatives.is_empty() {
-                    format!("Expected one of: {:?}. \nFound nothing", positives)
-                } else {
-                    format!("Expected one of: {:?}. \nFound {:?}", positives, negatives)
-                }
-            }
-
-            pest::error::ErrorVariant::CustomError { message } => message.clone(),
-        };
-
+    fn handle_error(_ui: &mut Ui, ctx: &egui::Context, error: &CompilerError) {
         egui::TopBottomPanel::bottom("error").show(ctx, |ui| {
             egui::Frame::none()
                 .fill(Color32::DARK_GRAY)
                 .inner_margin(egui::style::Margin::same(10.0))
                 .outer_margin(egui::style::Margin::same(0.0))
                 .show(ui, |ui: &mut egui::Ui| {
-                    ui.vertical_centered_justified(|ui| {
-                        ui.label(RichText::new(line_msg).size(15.0).color(Color32::YELLOW));
+                    match error {
+                        CompilerError::SyntaxError{ position, message, code, expected, found} => {
+                            ui.vertical_centered_justified(|ui| {
+                                ui.label(RichText::new(message).size(15.0).color(Color32::YELLOW));
 
-                        ui.horizontal(|ui| {
-                            ui.label(
-                                RichText::new(format!("{}", error.line()))
-                                    .color(Color32::WHITE)
-                                    .size(20.0),
-                            );
-                        });
+                                ui.horizontal(|ui| {
+                                    ui.label(
+                                        RichText::new(format!("{}", code))
+                                            .color(Color32::WHITE)
+                                            .size(20.0),
+                                    );
+                                });
 
-                        ui.horizontal(|ui| {
-                            ui.label(
-                                RichText::new(format!("{: ^width$}", "^", width = error_pos + 1))
-                                    .color(Color32::DARK_RED)
-                                    .size(20.0),
-                            );
+                                ui.horizontal(|ui| {
+                                    ui.label(
+                                        RichText::new(format!("{: ^width$}", "^", width = position.start.1 + 1))
+                                            .color(Color32::DARK_RED)
+                                            .size(20.0),
+                                    );
 
-                            ui.label(
-                                RichText::new(&expected_msg)
-                                    .color(Color32::YELLOW)
-                                    .size(20.0),
-                            );
-                        });
-                    });
+                                    ui.label(
+                                        RichText::new(&format!("Expected {:?}, found {:?}", expected, found))
+                                            .color(Color32::YELLOW)
+                                            .size(20.0),
+                                    );
+                                });
+                            });
+                        },
+                        _ => {}
+                    }
                 });
         });
     }
+                        
 
     /// This function processes the Turing machine's controls, handling UI updates and animations
     /// for stepping through the machine's operations. It enables or disables the UI elements based on the

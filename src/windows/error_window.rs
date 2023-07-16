@@ -3,19 +3,19 @@ use std::path::PathBuf;
 use eframe;
 use eframe::egui::{self, RichText};
 use eframe::epaint::Color32;
-use turing_lib::Rule;
+use turing_lib::{CompilerError, ErrorPosition};
 
 pub struct ErrorWindow {
-    error: pest::error::Error<Rule>,
+    error: CompilerError,
     file: Option<PathBuf>,
     line_msg: String,
     expected_msg: String,
-    error_pos: usize,
+    error_pos: ErrorPosition,
 }
 
 impl ErrorWindow {
     pub fn new(
-        error: pest::error::Error<Rule>,
+        error: CompilerError,
         file: Option<PathBuf>,
         cc: &eframe::CreationContext<'_>,
     ) -> Self {
@@ -26,22 +26,16 @@ impl ErrorWindow {
         st.spacing.item_spacing = egui::Vec2::new(10.0, 10.0);
         cc.egui_ctx.set_style(st);
 
-        let (error_pos, line_msg) = match error.line_col {
-            pest::error::LineColLocation::Pos((line, col)) => {
-                (col, format!("Line {}, column {}: ", line, col))
-            }
-            pest::error::LineColLocation::Span((line1, col1), (line2, col2)) => (
-                col1,
-                format!("From line {}:{} to {}:{}. Found:", line1, col1, line2, col2),
-            ),
+        let position: ErrorPosition = error.get_position();
+
+        let line_msg = match position.end {
+            Some(end) => format!("From line {}:{} to {}:{}. Found:", position.start.0, position.start.1, end.0, end.1),
+            None => format!("At line {}:{} Found:", position.start.0, position.start.1),
         };
 
-        let expected_msg = match &error.variant {
-            pest::error::ErrorVariant::ParsingError {
-                positives,
-                negatives,
-            } => format!("Expected {:?}, found {:?}", positives, negatives),
-            pest::error::ErrorVariant::CustomError { message } => message.clone(),
+        let expected_msg = match &error {
+            CompilerError::SyntaxError { expected, found, .. } => format!("Expected {:?}, found {:?}", expected, found),
+            CompilerError::FileRuleError { error } => String::from(error.message()),
         };
 
         Self {
@@ -49,7 +43,7 @@ impl ErrorWindow {
             file,
             line_msg,
             expected_msg,
-            error_pos,
+            error_pos: position,
         }
     }
 }
@@ -108,7 +102,7 @@ impl eframe::App for ErrorWindow {
                                         RichText::new(format!(
                                             "{: ^width$}",
                                             "^",
-                                            width = self.error_pos + 1
+                                            width = self.error_pos.start.1 + 1
                                         ))
                                         .color(Color32::RED)
                                         .size(20.0),

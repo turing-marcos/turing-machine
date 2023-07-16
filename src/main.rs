@@ -155,7 +155,13 @@ fn run_machine_cli(file: PathBuf, interactive: bool) {
 
     let u_code = fs::read_to_string(&file).expect("cannot read file");
     let mut tm = match TuringMachine::new(&u_code) {
-        Ok(t) => t,
+        Ok((t, warnings)) => {
+            for w in warnings {
+                println!("\tWarning: {:?}", w);
+            }
+
+            t
+        },
         Err(e) => {
             TuringMachine::handle_error(e);
             std::process::exit(1);
