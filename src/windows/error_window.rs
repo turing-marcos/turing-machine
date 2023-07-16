@@ -10,7 +10,6 @@ pub struct ErrorWindow {
     file: Option<PathBuf>,
     line_msg: String,
     expected_msg: String,
-    error_pos: ErrorPosition,
 }
 
 impl ErrorWindow {
@@ -26,24 +25,20 @@ impl ErrorWindow {
         st.spacing.item_spacing = egui::Vec2::new(10.0, 10.0);
         cc.egui_ctx.set_style(st);
 
-        let position: ErrorPosition = error.get_position();
+        let position: ErrorPosition = error.position();
 
         let line_msg = match position.end {
             Some(end) => format!("From line {}:{} to {}:{}. Found:", position.start.0, position.start.1, end.0, end.1),
             None => format!("At line {}:{} Found:", position.start.0, position.start.1),
         };
 
-        let expected_msg = match &error {
-            CompilerError::SyntaxError { expected, found, .. } => format!("Expected {:?}, found {:?}", expected, found),
-            CompilerError::FileRuleError { error } => String::from(error.message()),
-        };
+        let expected_msg = error.get_message_expected();
 
         Self {
             error,
             file,
             line_msg,
             expected_msg,
-            error_pos: position,
         }
     }
 }
@@ -86,23 +81,28 @@ impl eframe::App for ErrorWindow {
                 egui::ScrollArea::horizontal().show(ui, |ui| {
                     ui.vertical_centered_justified(|ui| {
                         egui::Frame::none()
-                            .fill(Color32::DARK_GRAY)
+                            .fill(Color32::BLACK)
                             .inner_margin(egui::style::Margin::same(10.0))
                             .show(ui, |ui: &mut egui::Ui| {
                                 ui.horizontal(|ui| {
                                     ui.label(
-                                        RichText::new(format!("{}", self.error.line()))
+                                        RichText::new(format!("{}", self.error.code()))
                                             .color(Color32::WHITE)
                                             .size(20.0),
                                     );
                                 });
 
                                 ui.horizontal(|ui| {
+                                    let position = self.error.position();
                                     ui.label(
                                         RichText::new(format!(
-                                            "{: ^width$}",
+                                            "{:~>width1$}{:^<width2$}{:~<width3$}",
+                                            "~",
                                             "^",
-                                            width = self.error_pos.start.1 + 1
+                                            "~",
+                                            width1 = position.start.1,
+                                            width2 = position.end.unwrap_or((0, position.start.1 +1)).1 - position.start.1,
+                                            width3 = self.error.code().len() - position.end.unwrap_or((0, position.start.1 +1)).1
                                         ))
                                         .color(Color32::RED)
                                         .size(20.0),

@@ -138,40 +138,42 @@ impl MyApp {
     fn handle_error(_ui: &mut Ui, ctx: &egui::Context, error: &CompilerError) {
         egui::TopBottomPanel::bottom("error").show(ctx, |ui| {
             egui::Frame::none()
-                .fill(Color32::DARK_GRAY)
+                .fill(Color32::BLACK)
                 .inner_margin(egui::style::Margin::same(10.0))
                 .outer_margin(egui::style::Margin::same(0.0))
                 .show(ui, |ui: &mut egui::Ui| {
-                    match error {
-                        CompilerError::SyntaxError{ position, message, code, expected, found} => {
-                            ui.vertical_centered_justified(|ui| {
-                                ui.label(RichText::new(message).size(15.0).color(Color32::YELLOW));
+                    ui.vertical_centered_justified(|ui| {
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                RichText::new(format!("{}", error.code()))
+                                    .color(Color32::WHITE)
+                                    .size(20.0),
+                            );
+                        });
 
-                                ui.horizontal(|ui| {
-                                    ui.label(
-                                        RichText::new(format!("{}", code))
-                                            .color(Color32::WHITE)
-                                            .size(20.0),
-                                    );
-                                });
+                        ui.horizontal(|ui| {
+                            let position = error.position();
+                            ui.label(
+                                RichText::new(format!(
+                                    "{:~>width1$}{:^<width2$}{:~<width3$}",
+                                    "~",
+                                    "^",
+                                    "~",
+                                    width1 = position.start.1,
+                                    width2 = position.end.unwrap_or((0, position.start.1 +1)).1 - position.start.1,
+                                    width3 = error.code().len() - position.end.unwrap_or((0, position.start.1 +1)).1
+                                ))
+                                .color(Color32::RED)
+                                .size(20.0),
+                            );
 
-                                ui.horizontal(|ui| {
-                                    ui.label(
-                                        RichText::new(format!("{: ^width$}", "^", width = position.start.1 + 1))
-                                            .color(Color32::DARK_RED)
-                                            .size(20.0),
-                                    );
-
-                                    ui.label(
-                                        RichText::new(&format!("Expected {:?}, found {:?}", expected, found))
-                                            .color(Color32::YELLOW)
-                                            .size(20.0),
-                                    );
-                                });
-                            });
-                        },
-                        _ => {}
-                    }
+                            ui.label(
+                                RichText::new(error.get_message_expected())
+                                    .color(Color32::DARK_RED)
+                                    .size(20.0),
+                            );
+                        });
+                    });
                 });
         });
     }
