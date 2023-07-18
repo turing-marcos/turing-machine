@@ -4,7 +4,7 @@ use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, 
 use internationalization::t;
 
 use log::warn;
-use turing_lib::{CompilerError, TuringMachine, TuringOutput};
+use turing_lib::{CompilerError, CompilerWarning, Library, TuringMachine, TuringOutput};
 
 const STROKE_WIDTH: f32 = 3f32;
 
@@ -24,12 +24,13 @@ pub struct TuringWidget {
     tri_stroke: Stroke,
     tri_size: f32,
     tm: TuringMachine,
+    warnings: Vec<CompilerWarning>,
     pub lang: String,
 }
 
 impl TuringWidget {
     /// Creates a new TuringWidget from a TuringMachine
-    pub fn new(tm: TuringMachine) -> Self {
+    pub fn new(tm: TuringMachine, warnings: Vec<CompilerWarning>) -> Self {
         let tri_color = Color32::from_rgb(148, 73, 141);
         let tri_stroke_wid: f32 = 10.0;
         let tri_stroke = Stroke::new(tri_stroke_wid, tri_color);
@@ -49,18 +50,19 @@ impl TuringWidget {
             tri_stroke,
             tri_size,
             tm,
+            warnings,
             lang: "en".to_string(),
         }
     }
 
     /// Restarts the turing machine with the given code
     pub fn restart(&self, code: &str) -> Result<Self, CompilerError> {
-        let tm = match TuringMachine::new(code) {
+        let (tm, warnings) = match TuringMachine::new(code) {
             Ok((t, warnings)) => {
-                for w in warnings {
+                for w in &warnings {
                     warn!("Compiler warning: {:?}", w);
                 }
-                t
+                (t, warnings)
             }
             Err(e) => return Err(e),
         };
@@ -79,6 +81,7 @@ impl TuringWidget {
             tri_stroke: self.tri_stroke,
             tri_size: self.tri_size,
             tm,
+            warnings,
             lang: self.lang.clone(),
         })
     }
@@ -118,6 +121,20 @@ impl TuringWidget {
     /// Returns the current code
     pub fn code(&self) -> &str {
         &self.tm.code
+    }
+
+    /// Returns the current warnings
+    pub fn warnings(&self) -> &Vec<CompilerWarning> {
+        &self.warnings
+    }
+
+    /// Returns the composed libraries
+    pub fn libraries(&self) -> &Vec<Library> {
+        &self.tm.composed_libs
+    }
+
+    pub fn uses_libraries(&self) -> bool {
+        !self.tm.composed_libs.is_empty()
     }
 
     /// Returns the current values of the tape converted to strings

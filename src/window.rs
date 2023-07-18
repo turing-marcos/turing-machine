@@ -7,8 +7,8 @@ use std::{
 
 use crate::{
     windows::{
-        AboutWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow, WorkbookEditorWindow,
-        WorkbookWindow,
+        AboutWindow, CompositionHelpWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow,
+        WorkbookEditorWindow, WorkbookWindow,
     },
     TuringWidget,
 };
@@ -52,6 +52,7 @@ pub struct MyApp {
     infinite_loop_window: Option<Box<InfiniteLoopWindow>>,
     book_window: Option<Box<WorkbookWindow>>,
     workbook_editor_window: Option<Box<WorkbookEditorWindow>>,
+    composition_help_window: Option<Box<CompositionHelpWindow>>,
 
     lang: Language,
 
@@ -77,14 +78,14 @@ impl MyApp {
             }
         };
 
-        let tm = match TuringMachine::new(&code) {
+        let (tm, warnings) = match TuringMachine::new(&code) {
             Ok((t, warnings)) => {
-                for w in warnings {
+                for w in &warnings {
                     warn!("\tCompiler warning: {:?}", w);
                 }
 
                 trace!("Turing machine created successfully");
-                t
+                (t, warnings)
             }
             Err(e) => {
                 return Err(e);
@@ -101,12 +102,13 @@ impl MyApp {
         Ok(Self {
             code: String::from(&tm.code),
             error: None,
-            tm: TuringWidget::new(tm),
+            tm: TuringWidget::new(tm, warnings),
             about_window: None,
             debug_window: None,
             infinite_loop_window: None,
             book_window: None,
             workbook_editor_window: None,
+            composition_help_window: None,
 
             lang: Language::English,
 
@@ -611,6 +613,12 @@ impl MyApp {
                 self.workbook_editor_window = None;
             }
         }
+
+        if let Some(composition) = &self.composition_help_window {
+            if !composition.show(ctx) {
+                self.composition_help_window = None;
+            }
+        }
     }
 
     /// Draws the top panel containing the menu with options for file handling, debugger, exercises, language, and about information.
@@ -768,6 +776,36 @@ impl MyApp {
                                 self.tm.clone()
                             }
                         };
+                    }
+
+                    if self.tm.uses_libraries() {
+                        ui.separator();
+
+                        ui.vertical(|ui| {
+                            for lib in self.tm.libraries() {
+                                ui.collapsing(String::from(lib.name.clone()), |ui| {
+                                    ui.vertical_centered_justified(|ui| {
+                                        ui.horizontal(|ui| {
+                                            ui.label("<More info about the library>")
+                                            // TODO: Translate
+                                        });
+                                    });
+                                })
+                                .header_response
+                                .on_hover_text_at_pointer(lib.description.clone());
+                            }
+                        });
+
+                        ui.separator();
+                    }
+
+                    if ui
+                        .button("Show available libraries for composition")
+                        .clicked()
+                    {
+                        // TODO: Translate
+                        self.composition_help_window =
+                            Some(Box::new(CompositionHelpWindow::new(&self.get_lang())));
                     }
 
                     egui::ScrollArea::vertical().show(ui, |my_ui: &mut Ui| {
