@@ -795,20 +795,9 @@ impl MyApp {
                                 .on_hover_text_at_pointer(lib.description.clone());
                             }
                         });
-
-                        ui.separator();
                     }
 
-                    if ui
-                        .button("Show available libraries for composition")
-                        .clicked()
-                    {
-                        // TODO: Translate
-                        self.composition_help_window =
-                            Some(Box::new(CompositionHelpWindow::new(&self.get_lang())));
-                    }
-
-                    egui::ScrollArea::vertical().show(ui, |my_ui: &mut Ui| {
+                    egui::ScrollArea::vertical().max_height(ui.available_height()-50.0).show(ui, |my_ui: &mut Ui| {
                         let editor = TextEdit::multiline(&mut self.code)
                             .code_editor()
                             .desired_width(0.0);
@@ -822,6 +811,15 @@ impl MyApp {
 
                         *editor_focused = res.has_focus().clone();
                     });
+
+                    if ui
+                        .button("Show available libraries for composition")
+                        .clicked()
+                    {
+                        // TODO: Translate
+                        self.composition_help_window =
+                            Some(Box::new(CompositionHelpWindow::new(&self.get_lang())));
+                    }
 
                     if self.saved_feedback.is_some() {
                         debug!("Drawing saved feedback popup");

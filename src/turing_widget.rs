@@ -3,7 +3,7 @@ use eframe::emath::Align2;
 use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, Vec2};
 use internationalization::t;
 
-use log::warn;
+use log::{warn, error};
 use turing_lib::{CompilerError, CompilerWarning, Library, TuringMachine, TuringOutput};
 
 const STROKE_WIDTH: f32 = 3f32;
@@ -230,23 +230,37 @@ impl Widget for TuringWidget {
                 Color32::BLACK,
             );
 
-            if let Some(txt) = self.tm.get_current_instruction() {
-                ui.painter().text(
-                    center + Vec2::new(0.0, self.tri_size + 100.0),
-                    Align2::CENTER_CENTER,
-                    &txt,
-                    self.font_id.clone(),
-                    Color32::GRAY,
-                );
-            } else if self.tm.is_undefined() {
-                ui.painter().text(
-                    center + Vec2::new(0.0, self.tri_size + 100.0),
-                    Align2::CENTER_CENTER,
-                    t!("err.undefined.state", self.lang),
-                    self.font_id.clone(),
-                    Color32::LIGHT_RED,
-                );
-                self.paused = true;
+            match self.tm.get_current_instruction() {
+                Some(ins) => {
+                    ui.painter().text(
+                        center + Vec2::new(0.0, self.tri_size + 100.0),
+                        Align2::CENTER_CENTER,
+                        &ins,
+                        self.font_id.clone(),
+                        Color32::GRAY,
+                    );
+                },
+                None => {
+                    if self.tm.is_undefined() {
+                        ui.painter().text(
+                            center + Vec2::new(0.0, self.tri_size + 100.0),
+                            Align2::CENTER_CENTER,
+                            t!("err.undefined.state", self.lang),
+                            self.font_id.clone(),
+                            Color32::LIGHT_RED,
+                        );
+                        self.paused = true;
+                    } else if self.tm.is_infinite_loop(self.threshold_inf_loop) {
+                        ui.painter().text(
+                            center + Vec2::new(0.0, self.tri_size + 100.0),
+                            Align2::CENTER_CENTER,
+                            "Infinite loop", //t!("err.infinite.loop", self.lang), // TODO: Translation
+                            self.font_id.clone(),
+                            Color32::LIGHT_RED,
+                        );
+                        self.paused = true;
+                    }
+                }
             };
 
             if self.tm.finished() {
