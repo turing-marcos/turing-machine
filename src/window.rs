@@ -784,35 +784,46 @@ impl MyApp {
                     if self.tm.uses_libraries() {
                         ui.separator();
 
-                        egui::ScrollArea::vertical().id_source("Library help scroll area").max_height(ui.available_height()/2.0).show(ui, |ui| {
-                            for lib in self.tm.libraries() {
-                                ui.collapsing(String::from(lib.name.clone()), |ui| {
-                                    egui::ScrollArea::horizontal().show(ui, |ui| {
-                                        ui.horizontal(|ui| {
-                                            ui.label("Initial state:"); // TODO: Translate
-                                            ui.label(
-                                                egui::RichText::new(lib.initial_state.clone())
+                        egui::ScrollArea::vertical()
+                            .id_source("Library help scroll area")
+                            .max_height(ui.available_height() / 2.0)
+                            .show(ui, |ui| {
+                                for lib in self.tm.libraries() {
+                                    ui.collapsing(String::from(lib.name.clone()), |ui| {
+                                        egui::ScrollArea::horizontal().show(ui, |ui| {
+                                            ui.horizontal(|ui| {
+                                                ui.label("Initial state:"); // TODO: Translate
+                                                ui.label(
+                                                    egui::RichText::new(lib.initial_state.clone())
+                                                        .strong(),
+                                                );
+                                            });
+                                            ui.add_space(5.0);
+
+                                            ui.horizontal(|ui| {
+                                                ui.label("Final state:"); // TODO: Translate
+                                                ui.label(
+                                                    egui::RichText::new(lib.final_state.clone())
+                                                        .strong(),
+                                                );
+                                            });
+                                            ui.add_space(5.0);
+
+                                            ui.horizontal(|ui| {
+                                                ui.label("Used states:"); // TODO: Translate
+                                                ui.label(
+                                                    egui::RichText::new(
+                                                        &lib.used_states.join(", "),
+                                                    )
                                                     .strong(),
-                                            ); 
+                                                );
+                                            });
                                         });
-                                        ui.add_space(5.0);
-
-                                        ui.horizontal(|ui|{
-                                            ui.label("Final state:"); // TODO: Translate
-                                            ui.label(egui::RichText::new(lib.final_state.clone()).strong());
-                                        });
-                                        ui.add_space(5.0);
-
-                                        ui.horizontal(|ui|{
-                                            ui.label("Used states:"); // TODO: Translate
-                                            ui.label(egui::RichText::new(&lib.used_states.join(", ")).strong()); 
-                                        });
-                                    });
-                                })
-                                .header_response
-                                .on_hover_text_at_pointer(lib.description.clone());
-                            }
-                        });
+                                    })
+                                    .header_response
+                                    .on_hover_text_at_pointer(lib.description.clone());
+                                }
+                            });
                     }
 
                     egui::ScrollArea::vertical()

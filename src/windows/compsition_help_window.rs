@@ -86,9 +86,12 @@ impl SecondaryWindow for CompositionHelpWindow {
                                 });
 
                                 row.col(|ui| {
-                                    egui::ScrollArea::horizontal().auto_shrink([true, true]).id_source(String::from(lib.name.clone()) + "_scroll").show(ui, |ui| {
-                                        ui.label(lib.used_states.join(", ").clone()); // (String::from(lib.name.clone()) + "_used_states")
-                                    });
+                                    egui::ScrollArea::horizontal()
+                                        .auto_shrink([true, true])
+                                        .id_source(String::from(lib.name.clone()) + "_scroll")
+                                        .show(ui, |ui| {
+                                            ui.label(lib.used_states.join(", ").clone());
+                                        });
                                 });
                             });
                         }

@@ -3,7 +3,7 @@ use eframe::emath::Align2;
 use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, Vec2};
 use internationalization::t;
 
-use log::{warn, error};
+use log::warn;
 use turing_lib::{CompilerError, CompilerWarning, Library, TuringMachine, TuringOutput};
 
 const STROKE_WIDTH: f32 = 3f32;
@@ -239,7 +239,7 @@ impl Widget for TuringWidget {
                         self.font_id.clone(),
                         Color32::GRAY,
                     );
-                },
+                }
                 None => {
                     if self.tm.is_undefined() {
                         ui.painter().text(
