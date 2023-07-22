@@ -3,18 +3,18 @@ use serde::{self, Deserialize, Serialize};
 
 use crate::windows::workbook::raw_data_to_image;
 
-use super::{exercise::Exercise, load_workbook, MAX_IMG_SIZE};
+use super::{exercise::Exercise, load_workbook, Workbook, MAX_IMG_SIZE};
 
 #[derive(Serialize, Deserialize)]
 pub struct BookWindow {
     lang: String,
-    exercises: Vec<(String, Vec<Exercise>)>,
+    exercises: Workbook,
     selected: (usize, usize),
 }
 
 impl BookWindow {
     pub fn new(lang: &str) -> Self {
-        let exercises: Vec<(String, Vec<Exercise>)> = vec![
+        let exercises: Workbook = vec![
             (
                 "Chapter 1".to_string(),
                 vec![
@@ -96,7 +96,7 @@ impl BookWindow {
                     });
 
                     ui.vertical_centered_justified(|ui| {
-                        if let Some(img) = &self.get_exercise(self.selected).image {
+                        if let Some(img) = self.get_exercise(self.selected).get_cover() {
                             img.show_max_size(ui, MAX_IMG_SIZE);
 
                             // Add expandable empty space
@@ -137,7 +137,7 @@ impl BookWindow {
         (active, code)
     }
 
-    fn get_exercise(&self, i: (usize, usize)) -> &Exercise {
-        &self.exercises[i.0].1[i.1]
+    fn get_exercise(&mut self, i: (usize, usize)) -> &mut Exercise {
+        &mut self.exercises[i.0].1[i.1]
     }
 }

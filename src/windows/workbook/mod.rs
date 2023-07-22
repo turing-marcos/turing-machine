@@ -2,6 +2,8 @@ mod book;
 mod exercise;
 mod wb_editor;
 
+use std::io::Read;
+
 pub use book::BookWindow as WorkbookWindow;
 pub use wb_editor::WorkbookEditorWindow;
 
@@ -10,11 +12,14 @@ use eframe::egui;
 use self::exercise::Exercise;
 use eframe::epaint::ColorImage;
 
+type WorkbookChapter = (String, Vec<Exercise>);
+type Workbook = Vec<WorkbookChapter>;
+
 #[cfg(not(target_arch = "wasm32"))]
 use {
     log::{debug, error},
     rfd,
-    std::{fs::File, io::BufReader, io::Write, path::PathBuf},
+    std::{fs::File, io::Write, path::PathBuf},
 };
 
 #[cfg(target_arch = "wasm32")]
@@ -171,7 +176,7 @@ fn image_to_raw_data(color_image: &ColorImage) -> (usize, usize, Vec<u8>) {
     (size[0], size[1], raw_data.to_vec())
 }
 
-pub fn save_workbook(exercises: &Vec<(String, Vec<Exercise>)>) {
+pub fn save_workbook(exercises: &Workbook) {
     #[cfg(target_arch = "wasm32")]
     {
         /*
@@ -194,18 +199,23 @@ pub fn save_workbook(exercises: &Vec<(String, Vec<Exercise>)>) {
             .set_directory(&path)
             .save_file();
 
-        if let Some(f) = file_path {
+        if let Some(mut f) = file_path {
+            f.set_extension("wb");
+
             let data = bincode::serialize(&exercises).unwrap();
             let mut file = File::create(&f).unwrap();
             file.write_all(&data).unwrap();
+
             debug!("Workbook saved at {:?}", f);
+
+            drop(file);
         } else {
             error!("Cannot save workbook");
         }
     }
 }
 
-pub fn load_workbook() -> Option<Vec<(String, Vec<Exercise>)>> {
+pub fn load_workbook() -> Option<Workbook> {
     #[cfg(target_arch = "wasm32")]
     {
         /*
@@ -244,16 +254,19 @@ pub fn load_workbook() -> Option<Vec<(String, Vec<Exercise>)>> {
         let file_path = rfd::FileDialog::new()
             .add_filter("TuringMachine Workbook", &["wb"])
             .set_directory(&path)
-            .pick_files();
+            .pick_file();
 
         match file_path {
             Some(f) => {
-                let file = File::open(&f[0]).expect("File not found");
-                let reader = BufReader::new(file);
+                let mut file = File::open(&f).expect("File not found");
+                let mut reader: Vec<u8> = Vec::new();
+                file.read_to_end(&mut reader).expect("Could not read file");
 
-                match bincode::deserialize_from(reader) {
+                debug!("Read {} bytes", reader.len());
+
+                match bincode::deserialize::<Workbook>(&reader) {
                     Ok(exercises) => {
-                        debug!("Workbook loaded from {:?}", f[0]);
+                        debug!("Workbook loaded from {:?}", &f);
                         Some(exercises)
                     }
                     Err(e) => {
