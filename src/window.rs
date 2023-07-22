@@ -765,7 +765,10 @@ impl MyApp {
                         }
                     });
 
-                    if ui.button(egui::RichText::new(t!("btn.compile", lang)).strong()).clicked() {
+                    if ui
+                        .button(egui::RichText::new(t!("btn.compile", lang)).strong())
+                        .clicked()
+                    {
                         self.tm = match self.tm.restart(&self.code) {
                             Ok(t) => {
                                 self.error = None;
@@ -781,13 +784,28 @@ impl MyApp {
                     if self.tm.uses_libraries() {
                         ui.separator();
 
-                        ui.vertical(|ui| {
+                        egui::ScrollArea::vertical().id_source("Library help scroll area").max_height(ui.available_height()/2.0).show(ui, |ui| {
                             for lib in self.tm.libraries() {
                                 ui.collapsing(String::from(lib.name.clone()), |ui| {
-                                    ui.vertical_centered_justified(|ui| {
+                                    egui::ScrollArea::horizontal().show(ui, |ui| {
                                         ui.horizontal(|ui| {
-                                            ui.label("<More info about the library>")
-                                            // TODO: Translate
+                                            ui.label("Initial state:"); // TODO: Translate
+                                            ui.label(
+                                                egui::RichText::new(lib.initial_state.clone())
+                                                    .strong(),
+                                            ); 
+                                        });
+                                        ui.add_space(5.0);
+
+                                        ui.horizontal(|ui|{
+                                            ui.label("Final state:"); // TODO: Translate
+                                            ui.label(egui::RichText::new(lib.final_state.clone()).strong());
+                                        });
+                                        ui.add_space(5.0);
+
+                                        ui.horizontal(|ui|{
+                                            ui.label("Used states:"); // TODO: Translate
+                                            ui.label(egui::RichText::new(&lib.used_states.join(", ")).strong()); 
                                         });
                                     });
                                 })
@@ -797,20 +815,22 @@ impl MyApp {
                         });
                     }
 
-                    egui::ScrollArea::vertical().max_height(ui.available_height()-50.0).show(ui, |my_ui: &mut Ui| {
-                        let editor = TextEdit::multiline(&mut self.code)
-                            .code_editor()
-                            .desired_width(0.0);
+                    egui::ScrollArea::vertical()
+                        .max_height(ui.available_height() - 50.0)
+                        .show(ui, |my_ui: &mut Ui| {
+                            let editor = TextEdit::multiline(&mut self.code)
+                                .code_editor()
+                                .desired_width(0.0);
 
-                        let res = my_ui.add(editor);
+                            let res = my_ui.add(editor);
 
-                        if self.autosave && res.lost_focus() {
-                            debug!("Saving file");
-                            self.saved_feedback = self.auto_save_file();
-                        }
+                            if self.autosave && res.lost_focus() {
+                                debug!("Saving file");
+                                self.saved_feedback = self.auto_save_file();
+                            }
 
-                        *editor_focused = res.has_focus().clone();
-                    });
+                            *editor_focused = res.has_focus().clone();
+                        });
 
                     if ui
                         .button("Show available libraries for composition")
