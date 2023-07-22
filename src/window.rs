@@ -765,7 +765,7 @@ impl MyApp {
                         }
                     });
 
-                    if ui.button(t!("btn.compile", lang)).clicked() {
+                    if ui.button(egui::RichText::new(t!("btn.compile", lang)).strong()).clicked() {
                         self.tm = match self.tm.restart(&self.code) {
                             Ok(t) => {
                                 self.error = None;
