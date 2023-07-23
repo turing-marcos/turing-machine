@@ -8,11 +8,13 @@
 - Compilation flag for teachers' workbok editor
 - Keyboard shortcuts for saving and opening files
 - Auto save when a file is chosen (#20)
+- Tooltips for the controls
 
 ### Fixed
 - Fixed bug serializing/deserializing workbooks
 - Fixed missing extension when saving workbooks
 - Slightly improved keyboard event handling
+- Title staying with the old value when compiling a new program that gives a compilation error
 
 ### Changed
 - Updated dependencies
