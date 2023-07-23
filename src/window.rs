@@ -7,8 +7,8 @@ use std::{
 
 use crate::{
     windows::{
-        AboutWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow, WorkbookEditorWindow,
-        WorkbookWindow,
+        AboutWindow, CompositionHelpWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow,
+        WorkbookEditorWindow, WorkbookWindow,
     },
     TuringWidget,
 };
@@ -17,8 +17,8 @@ use eframe::egui::{self, Id, RichText, TextEdit, Ui};
 use eframe::epaint::Color32;
 use internationalization::t;
 use log::{debug, error, info, trace, warn};
-use turing_lib::TuringMachine;
-use turing_lib::{Rule, TuringOutput};
+use turing_lib::TuringOutput;
+use turing_lib::{CompilerError, TuringMachine};
 
 #[cfg(target_arch = "wasm32")]
 use {
@@ -43,7 +43,7 @@ pub enum Language {
 
 pub struct MyApp {
     code: String,
-    error: Option<pest::error::Error<Rule>>,
+    error: Option<CompilerError>,
     tm: TuringWidget,
 
     // Windows
@@ -52,6 +52,7 @@ pub struct MyApp {
     infinite_loop_window: Option<Box<InfiniteLoopWindow>>,
     book_window: Option<Box<WorkbookWindow>>,
     workbook_editor_window: Option<Box<WorkbookEditorWindow>>,
+    composition_help_window: Option<Box<CompositionHelpWindow>>,
 
     lang: Language,
 
@@ -64,7 +65,7 @@ impl MyApp {
     pub fn new(
         file: &Option<PathBuf>,
         cc: &eframe::CreationContext<'_>,
-    ) -> Result<Self, pest::error::Error<Rule>> {
+    ) -> Result<Self, CompilerError> {
         let code = match file {
             Some(ref f) => {
                 trace!("File provided: {:?}", file);
@@ -77,8 +78,15 @@ impl MyApp {
             }
         };
 
-        let tm = match TuringMachine::new(&code) {
-            Ok(t) => t,
+        let (tm, warnings) = match TuringMachine::new(&code) {
+            Ok((t, warnings)) => {
+                for w in &warnings {
+                    warn!("\tCompiler warning: {:?}", w);
+                }
+
+                trace!("Turing machine created successfully");
+                (t, warnings)
+            }
             Err(e) => {
                 return Err(e);
             }
@@ -94,12 +102,13 @@ impl MyApp {
         Ok(Self {
             code: String::from(&tm.code),
             error: None,
-            tm: TuringWidget::new(tm),
+            tm: TuringWidget::new(tm, warnings),
             about_window: None,
             debug_window: None,
             infinite_loop_window: None,
             book_window: None,
             workbook_editor_window: None,
+            composition_help_window: None,
 
             lang: Language::English,
 
@@ -128,51 +137,51 @@ impl MyApp {
     /// where the error occurred, the erroneous input, and a message describing the expected input or
     /// the reason for the error. The panel uses different text colors and sizes to improve readability
     /// and highlight the most important information.
-    fn handle_error(_ui: &mut Ui, ctx: &egui::Context, error: &pest::error::Error<Rule>) {
-        let (error_pos, line_msg) = match error.line_col {
-            pest::error::LineColLocation::Pos((line, col)) => {
-                (col, format!("Line {}, column {}: ", line, col))
-            }
-            pest::error::LineColLocation::Span((line1, col1), (line2, col2)) => (
-                col1,
-                format!("From line {}:{} to {}:{}. Found:", line1, col1, line2, col2),
-            ),
-        };
-
-        let expected_msg = match &error.variant {
-            pest::error::ErrorVariant::ParsingError {
-                positives,
-                negatives,
-            } => format!("Expected {:?}, found {:?}", positives, negatives),
-            pest::error::ErrorVariant::CustomError { message } => message.clone(),
-        };
-
+    fn handle_error(_ui: &mut Ui, ctx: &egui::Context, error: &CompilerError) {
         egui::TopBottomPanel::bottom("error").show(ctx, |ui| {
             egui::Frame::none()
-                .fill(Color32::DARK_GRAY)
+                .fill(Color32::BLACK)
                 .inner_margin(egui::style::Margin::same(10.0))
                 .outer_margin(egui::style::Margin::same(0.0))
                 .show(ui, |ui: &mut egui::Ui| {
                     ui.vertical_centered_justified(|ui| {
-                        ui.label(RichText::new(line_msg).size(15.0).color(Color32::YELLOW));
-
                         ui.horizontal(|ui| {
                             ui.label(
-                                RichText::new(format!("{}", error.line()))
+                                RichText::new(format!("{}", error.code()))
                                     .color(Color32::WHITE)
                                     .size(20.0),
                             );
                         });
 
                         ui.horizontal(|ui| {
+                            let position = error.position();
+
                             ui.label(
-                                RichText::new(format!("{: ^width$}", "^", width = error_pos + 1))
-                                    .color(Color32::RED)
-                                    .size(20.0),
+                                RichText::new(format!(
+                                    "{:~>width1$}{:^<width2$}{:~<width3$}",
+                                    "~",
+                                    "^",
+                                    "~",
+                                    // Length from the start of the line to the error
+                                    width1 = position.start.1,
+                                    // Length of the error
+                                    width2 = position.end.unwrap_or((0, position.start.1 + 1)).1
+                                        - position.start.1,
+                                    // Length from the end of the error to the end of the line
+                                    width3 = error
+                                        .code()
+                                        .len()
+                                        .checked_sub(
+                                            position.end.unwrap_or((0, position.start.1 + 1)).1
+                                        )
+                                        .unwrap_or(0)
+                                ))
+                                .color(Color32::RED)
+                                .size(20.0),
                             );
 
                             ui.label(
-                                RichText::new(&expected_msg)
+                                RichText::new(error.get_message_expected())
                                     .color(Color32::DARK_RED)
                                     .size(20.0),
                             );
@@ -604,6 +613,12 @@ impl MyApp {
                 self.workbook_editor_window = None;
             }
         }
+
+        if let Some(composition) = &self.composition_help_window {
+            if !composition.show(ctx) {
+                self.composition_help_window = None;
+            }
+        }
     }
 
     /// Draws the top panel containing the menu with options for file handling, debugger, exercises, language, and about information.
@@ -750,7 +765,10 @@ impl MyApp {
                         }
                     });
 
-                    if ui.button(t!("btn.compile", lang)).clicked() {
+                    if ui
+                        .button(egui::RichText::new(t!("btn.compile", lang)).strong())
+                        .clicked()
+                    {
                         self.tm = match self.tm.restart(&self.code) {
                             Ok(t) => {
                                 self.error = None;
@@ -763,20 +781,76 @@ impl MyApp {
                         };
                     }
 
-                    egui::ScrollArea::vertical().show(ui, |my_ui: &mut Ui| {
-                        let editor = TextEdit::multiline(&mut self.code)
-                            .code_editor()
-                            .desired_width(0.0);
+                    if self.tm.uses_libraries() {
+                        ui.separator();
 
-                        let res = my_ui.add(editor);
+                        egui::ScrollArea::vertical()
+                            .id_source("Library help scroll area")
+                            .max_height(ui.available_height() / 2.0)
+                            .show(ui, |ui| {
+                                for lib in self.tm.libraries() {
+                                    ui.collapsing(String::from(lib.name.clone()), |ui| {
+                                        egui::ScrollArea::horizontal().show(ui, |ui| {
+                                            ui.horizontal(|ui| {
+                                                ui.label("Initial state:"); // TODO: Translate
+                                                ui.label(
+                                                    egui::RichText::new(lib.initial_state.clone())
+                                                        .strong(),
+                                                );
+                                            });
+                                            ui.add_space(5.0);
 
-                        if self.autosave && res.lost_focus() {
-                            debug!("Saving file");
-                            self.saved_feedback = self.auto_save_file();
-                        }
+                                            ui.horizontal(|ui| {
+                                                ui.label("Final state:"); // TODO: Translate
+                                                ui.label(
+                                                    egui::RichText::new(lib.final_state.clone())
+                                                        .strong(),
+                                                );
+                                            });
+                                            ui.add_space(5.0);
 
-                        *editor_focused = res.has_focus().clone();
-                    });
+                                            ui.horizontal(|ui| {
+                                                ui.label("Used states:"); // TODO: Translate
+                                                ui.label(
+                                                    egui::RichText::new(
+                                                        &lib.used_states.join(", "),
+                                                    )
+                                                    .strong(),
+                                                );
+                                            });
+                                        });
+                                    })
+                                    .header_response
+                                    .on_hover_text_at_pointer(lib.description.clone());
+                                }
+                            });
+                    }
+
+                    egui::ScrollArea::vertical()
+                        .max_height(ui.available_height() - 50.0)
+                        .show(ui, |my_ui: &mut Ui| {
+                            let editor = TextEdit::multiline(&mut self.code)
+                                .code_editor()
+                                .desired_width(0.0);
+
+                            let res = my_ui.add(editor);
+
+                            if self.autosave && res.lost_focus() {
+                                debug!("Saving file");
+                                self.saved_feedback = self.auto_save_file();
+                            }
+
+                            *editor_focused = res.has_focus().clone();
+                        });
+
+                    if ui
+                        .button("Show available libraries for composition")
+                        .clicked()
+                    {
+                        // TODO: Translate
+                        self.composition_help_window =
+                            Some(Box::new(CompositionHelpWindow::new(&self.get_lang())));
+                    }
 
                     if self.saved_feedback.is_some() {
                         debug!("Drawing saved feedback popup");
@@ -881,6 +955,8 @@ impl MyApp {
                             }
                         }
                     });
+
+                    self.tm.lang = self.get_lang();
                     ui.add(self.tm.clone());
 
                     if let Some(e) = &self.error {
