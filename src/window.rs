@@ -474,7 +474,8 @@ impl MyApp {
             saved_feedback: None,
         }
     }
-
+    
+    #[cfg(target_family = "wasm")]
     async fn load_file_async() -> Option<String> {
         let file = rfd::AsyncFileDialog::new().pick_file().await;
 
