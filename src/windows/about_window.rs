@@ -32,6 +32,7 @@ impl SecondaryWindow for AboutWindow {
         let mut active = true;
 
         Window::new("About")
+            .id(egui::Id::new("about_window"))
             .open(&mut active)
             .collapsible(false)
             .resizable(false)

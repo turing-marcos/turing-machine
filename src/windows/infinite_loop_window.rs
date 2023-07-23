@@ -2,7 +2,7 @@ use super::SecondaryWindow;
 use eframe::egui::{self, RichText, Window};
 use internationalization::t;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InfiniteLoopWindow {
     lang: String,
 }
@@ -24,6 +24,7 @@ impl SecondaryWindow for InfiniteLoopWindow {
         let mut active = true;
 
         Window::new("Oops!")
+            .id(egui::Id::new("infinite_window"))
             .open(&mut active)
             .collapsible(false)
             .resizable(false)

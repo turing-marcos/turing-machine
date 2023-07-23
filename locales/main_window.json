@@ -23,6 +23,10 @@
         "en": "Open File",
         "es": "Abrir Archivo"
     },
+    "btn.save_file": {
+        "en": "Save File",
+        "es": "Guardar Archivo"
+    },
     "btn.compile": {
         "en": "Compile and run code",
         "es": "Compilar y ejecutar código"
@@ -90,6 +94,10 @@
     "lang.es": {
         "en": "Spanish",
         "es": "Español"
+    },
+    "err.undefined.state": {
+        "en": "The machine is in an undefined state",
+        "es": "La máquina está en un estado indefinido"
     }
 }
   
