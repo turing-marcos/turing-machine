@@ -54,12 +54,8 @@ impl SecondaryWindow for DebugWindow {
             .open(&mut active)
             .default_pos(self.position)
             .show(ctx, |ui| {
-                if self.tape_value.is_none() || self.tape_values.is_none() {
-                    ui.label(t!("debug.lbl.no_values", self.lang));
-                } else {
-                    let tape_values = self.tape_values.clone().unwrap();
-                    let tape_value = self.tape_value.clone().unwrap();
-
+                if let (Some(tape_values), Some(tape_value)) =
+                    (&self.tape_values, &self.tape_value) {
                     TableBuilder::new(ui)
                         .auto_shrink([true, true])
                         .striped(true)
@@ -98,6 +94,8 @@ impl SecondaryWindow for DebugWindow {
                                 });
                             });
                         });
+                } else {
+                    ui.label(t!("debug.lbl.no_values", self.lang));
                 }
             });
 
