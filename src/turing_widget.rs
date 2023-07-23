@@ -162,9 +162,9 @@ impl TuringWidget {
     }
 }
 
-impl Widget for TuringWidget {
+impl Widget for &mut TuringWidget {
     /// Paints the Turing machine
-    fn ui(mut self, ui: &mut eframe::egui::Ui) -> eframe::egui::Response {
+    fn ui(self, ui: &mut eframe::egui::Ui) -> eframe::egui::Response {
         if ui.is_rect_visible(ui.cursor()) {
             let stroke = Stroke::new(self.stroke_width, Color32::BLACK);
             let rounding = Rounding::same(10f32);
