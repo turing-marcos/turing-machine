@@ -25,6 +25,7 @@ pub struct TuringWidget {
     tri_size: f32,
     tm: TuringMachine,
     warnings: Vec<CompilerWarning>,
+    errors: Option<CompilerError>,
     pub lang: String,
 }
 
@@ -51,20 +52,27 @@ impl TuringWidget {
             tri_size,
             tm,
             warnings,
+            errors: None,
             lang: "en".to_string(),
         }
     }
 
     /// Restarts the turing machine with the given code
-    pub fn restart(&self, code: &str) -> Result<Self, CompilerError> {
+    pub fn restart(&mut self, code: &str) -> Result<Self, CompilerError> {
         let (tm, warnings) = match TuringMachine::new(code) {
             Ok((t, warnings)) => {
                 for w in &warnings {
                     warn!("Compiler warning: {:?}", w);
                 }
+
+                self.errors = None;
+
                 (t, warnings)
             }
-            Err(e) => return Err(e),
+            Err(e) => {
+                self.errors = Some(e.clone());
+                return Err(e)
+            },
         };
 
         Ok(Self {
@@ -82,6 +90,7 @@ impl TuringWidget {
             tri_size: self.tri_size,
             tm,
             warnings,
+            errors: None,
             lang: self.lang.clone(),
         })
     }
@@ -114,8 +123,12 @@ impl TuringWidget {
 
     /// Returns the description of the Turing machine if it exists
     /// (i.e. the triple comment at the top of the code)
-    pub fn description(&self) -> Option<String> {
-        self.tm.description.clone()
+    pub fn description(&self) -> Option<&String> {
+        if self.errors.is_some() {
+            return None;
+        }
+
+        self.tm.description.as_ref()
     }
 
     /// Returns the current code
@@ -162,9 +175,9 @@ impl TuringWidget {
     }
 }
 
-impl Widget for TuringWidget {
+impl Widget for &mut TuringWidget {
     /// Paints the Turing machine
-    fn ui(mut self, ui: &mut eframe::egui::Ui) -> eframe::egui::Response {
+    fn ui(self, ui: &mut eframe::egui::Ui) -> eframe::egui::Response {
         if ui.is_rect_visible(ui.cursor()) {
             let stroke = Stroke::new(self.stroke_width, Color32::BLACK);
             let rounding = Rounding::same(10f32);

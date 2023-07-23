@@ -213,7 +213,8 @@ impl MyApp {
     ) -> bool {
         ui.add_enabled_ui(!editor_focused, |ui| {
             if self.tm.offset != 0.0 {
-                ui.add_enabled(false, |ui: &mut Ui| ui.button(t!("lbl.machine.step", lang)));
+                ui.add_enabled(false, |ui: &mut Ui| ui.button(t!("lbl.machine.step", lang)))
+                    .on_hover_text_at_pointer("Execute one single step of the Turing machine"); // TODO: Translate
 
                 if self.tm.offset.abs() < 0.01 {
                     self.tm.offset = 0.0;
@@ -229,6 +230,8 @@ impl MyApp {
             } else if (ui
                 .add_enabled(self.tm.paused, |ui: &mut Ui| {
                     ui.button(t!("lbl.machine.step", lang))
+                        .on_hover_text_at_pointer("Execute one single step of the Turing machine")
+                    // TODO: Translate
                 })
                 .clicked()
                 || ui.input(|i| i.key_pressed(egui::Key::ArrowRight))
@@ -659,37 +662,33 @@ impl MyApp {
                         });
                     });
 
-                    ui.menu_button(t!("menu.debugger", lang), |ui| {
-                        let mut debug_enabled = self.debug_window.is_some();
-                        ui.checkbox(&mut debug_enabled, t!("menu.debugger.activate", lang));
-                        if debug_enabled {
-                            if self.debug_window.is_none() {
-                                self.debug_window = Some(Box::new(DebugWindow::new(
-                                    &lang,
-                                    Some(self.tm.tape_values()),
-                                    Some(self.tm.tape_value()),
-                                    Some(egui::Pos2::new(0.0, 100.0)),
-                                )));
-                            }
-                        } else {
-                            self.debug_window = None;
+                    if ui.button(t!("menu.debugger", lang)).clicked() {
+                        if self.debug_window.is_none() {
+                            self.debug_window = Some(Box::new(DebugWindow::new(
+                                &lang,
+                                Some(self.tm.tape_values()),
+                                Some(self.tm.tape_value()),
+                                Some(egui::Pos2::new(0.0, 100.0)),
+                            )));
                         }
-                    });
+                    }
 
                     if cfg!(feature = "teacher") {
                         ui.menu_button("Exercises", |ui| {
-                            if ui.button("Exercises").clicked() {
+                            if ui.button("Exercises").clicked() && self.book_window.is_none() {
                                 self.book_window =
                                     Some(Box::new(WorkbookWindow::new(&self.get_lang())));
                             }
 
-                            if ui.button("Workbook editor").clicked() {
+                            if ui.button("Workbook editor").clicked()
+                                && self.workbook_editor_window.is_none()
+                            {
                                 self.workbook_editor_window =
                                     Some(Box::new(WorkbookEditorWindow::new(&self.get_lang())));
                             }
                         });
                     } else {
-                        if ui.button("Exercises").clicked() {
+                        if ui.button("Exercises").clicked() && self.book_window.is_none() {
                             self.book_window =
                                 Some(Box::new(WorkbookWindow::new(&self.get_lang())));
                         }
@@ -888,18 +887,18 @@ impl MyApp {
                         ui.add(
                             egui::Slider::new(&mut self.tm.tape_rect_size, 25.0..=300.0)
                                 .suffix(" px")
-                                .text(t!("lbl.tape.size", lang)),
-                        );
+                                .text(t!("lbl.tape.size", lang))
+                        ).on_hover_text_at_pointer("The size of the squares and text of the drawing of the tape."); // TODO: Translate
                         ui.add(
                             egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
                                 .suffix(t!("lbl.seconds", lang))
                                 .text(t!("lbl.tape.speed", lang)),
-                        );
+                        ).on_hover_text_at_pointer("The duration of the animation of the tape. When a step is executed, the tape will move to the next position in this amount of time."); // TODO: Translate
                         ui.add(
                             egui::Slider::new(&mut self.tm.threshold_inf_loop, 10..=2000)
                                 .suffix(t!("lbl.iterations", lang))
                                 .text(t!("lbl.tape.inf_loop", lang)),
-                        );
+                        ).on_hover_text_at_pointer("The maximum number of iterations that the Turing machine can execute before assuming that it is an infinite loop."); // TODO: Translate
                     });
 
                     ui.separator();
@@ -930,7 +929,7 @@ impl MyApp {
                         } else {
                             ui.label(t!("lbl.resumed", lang));
                         }
-                        let b = ui.button(text);
+                        let b = ui.button(text).on_hover_text_at_pointer("Play/pause the execution of the machine. If the execution has finished, pressing \"play\" will reset the machine.\nThe shortcut is the spacebar."); // TODO: Translate
 
                         if (b.clicked()
                             || ui.input_mut(|i| {
@@ -957,7 +956,7 @@ impl MyApp {
                     });
 
                     self.tm.lang = self.get_lang();
-                    ui.add(self.tm.clone());
+                    ui.add(&mut self.tm);
 
                     if let Some(e) = &self.error {
                         Self::handle_error(ui, ctx, e);
