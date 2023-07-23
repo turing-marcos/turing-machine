@@ -11,3 +11,56 @@ pub struct CompositionLibrary {
     pub final_state: String,
     pub code: String,
 }
+
+#[cfg(target_family = "wasm")]
+use wasm_bindgen::prelude::*;
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+extern "C" {
+    // Use `js_namespace` here to bind `console.log(..)` instead of just
+    // `log(..)`
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+
+    // The `console.log` is quite polymorphic, so we can bind it with multiple
+    // signatures. Note that we need to use `js_name` to ensure we always call
+    // `log` in JS.
+    #[wasm_bindgen(js_namespace = console, js_name = log)]
+    fn log_u32(a: u32);
+
+    // Multiple arguments too!
+    #[wasm_bindgen(js_namespace = console, js_name = log)]
+    fn log_many(a: &str, b: &str);
+
+    // Use `js_namespace` here to bind `console.err(..)` instead of just
+    // `log(..)`
+    #[wasm_bindgen(js_namespace = console)]
+    fn err(s: &str);
+
+    // The `console.log` is quite polymorphic, so we can bind it with multiple
+    // signatures. Note that we need to use `js_name` to ensure we always call
+    // `log` in JS.
+    #[wasm_bindgen(js_namespace = console, js_name = err)]
+    fn err_u32(a: u32);
+
+    // Multiple arguments too!
+    #[wasm_bindgen(js_namespace = console, js_name = err)]
+    fn err_many(a: &str, b: &str);
+}
+
+#[cfg(target_family = "wasm")]
+#[macro_export]
+macro_rules! console_log {
+    // Note that this is using the `log` function imported above during
+    // `bare_bones`
+    ($($t:tt)*) => (crate::log(&format_args!($($t)*).to_string()))
+}
+
+#[cfg(target_family = "wasm")]
+#[macro_export]
+macro_rules! console_err {
+    // Note that this is using the `err` function imported above during
+    // `bare_bones`
+    ($($t:tt)*) => (crate::err(&format_args!($($t)*).to_string()))
+}
