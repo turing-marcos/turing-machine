@@ -71,8 +71,8 @@ impl TuringWidget {
             }
             Err(e) => {
                 self.errors = Some(e.clone());
-                return Err(e)
-            },
+                return Err(e);
+            }
         };
 
         Ok(Self {

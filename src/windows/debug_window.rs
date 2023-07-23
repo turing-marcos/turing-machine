@@ -54,8 +54,8 @@ impl SecondaryWindow for DebugWindow {
             .open(&mut active)
             .default_pos(self.position)
             .show(ctx, |ui| {
-                if let (Some(tape_values), Some(tape_value)) =
-                    (&self.tape_values, &self.tape_value) {
+                if let (Some(tape_values), Some(tape_value)) = (&self.tape_values, &self.tape_value)
+                {
                     TableBuilder::new(ui)
                         .auto_shrink([true, true])
                         .striped(true)
