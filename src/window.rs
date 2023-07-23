@@ -659,37 +659,31 @@ impl MyApp {
                         });
                     });
 
-                    ui.menu_button(t!("menu.debugger", lang), |ui| {
-                        let mut debug_enabled = self.debug_window.is_some();
-                        ui.checkbox(&mut debug_enabled, t!("menu.debugger.activate", lang));
-                        if debug_enabled {
-                            if self.debug_window.is_none() {
-                                self.debug_window = Some(Box::new(DebugWindow::new(
-                                    &lang,
-                                    Some(self.tm.tape_values()),
-                                    Some(self.tm.tape_value()),
-                                    Some(egui::Pos2::new(0.0, 100.0)),
-                                )));
-                            }
-                        } else {
-                            self.debug_window = None;
+                    if ui.button(t!("menu.debugger", lang)).clicked() {
+                        if self.debug_window.is_none() {
+                            self.debug_window = Some(Box::new(DebugWindow::new(
+                                &lang,
+                                Some(self.tm.tape_values()),
+                                Some(self.tm.tape_value()),
+                                Some(egui::Pos2::new(0.0, 100.0)),
+                            )));
                         }
-                    });
+                    }
 
                     if cfg!(feature = "teacher") {
                         ui.menu_button("Exercises", |ui| {
-                            if ui.button("Exercises").clicked() {
+                            if ui.button("Exercises").clicked() && self.book_window.is_none() {
                                 self.book_window =
                                     Some(Box::new(WorkbookWindow::new(&self.get_lang())));
                             }
 
-                            if ui.button("Workbook editor").clicked() {
+                            if ui.button("Workbook editor").clicked() && self.workbook_editor_window.is_none() {
                                 self.workbook_editor_window =
                                     Some(Box::new(WorkbookEditorWindow::new(&self.get_lang())));
                             }
                         });
                     } else {
-                        if ui.button("Exercises").clicked() {
+                        if ui.button("Exercises").clicked() && self.book_window.is_none() {
                             self.book_window =
                                 Some(Box::new(WorkbookWindow::new(&self.get_lang())));
                         }
