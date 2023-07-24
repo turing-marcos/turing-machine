@@ -767,154 +767,162 @@ impl MyApp {
         lang: &str,
         editor_focused: &mut bool,
     ) -> f32 {
-        egui::SidePanel::left("left")
-            .show(ctx, |ui| {
-                ui.vertical_centered_justified(|ui| {
-                    ui.add_space(10.0);
+        let contents = |ui: &mut egui::Ui| {
+            ui.vertical_centered_justified(|ui| {
+                ui.add_space(10.0);
 
-                    ui.horizontal(|ui| {
-                        let spacer = 10.0;
-
-                        if ui
-                            .add(egui::Button::new(t!("btn.open_file", lang)).min_size(
-                                ui.available_size() / 2.0 - egui::Vec2::new(spacer / 2.0, 0.0),
-                            ))
-                            .clicked()
-                        {
-                            #[cfg(target_family = "wasm")]
-                            {
-                                // Call the function load file with `&mut self` and await it on the main thread
-                                let shared_self = Arc::new(Mutex::new(self.clone_for_load_file()));
-                                let shared_self_clone = Arc::clone(&shared_self);
-                                let future = async move {
-                                    let mut shared_self = shared_self_clone.lock().unwrap();
-                                    shared_self.load_file().await;
-                                };
-                                wasm_bindgen_futures::spawn_local(future);
-                                // Wait for the result
-                                let shared_self = shared_self.lock().unwrap();
-                                self.tm = shared_self.tm.clone();
-                                self.code = shared_self.code.clone();
-
-                                console_log!("Retrieved code: {}", self.code);
-
-                                self.error = shared_self.error.clone();
-                                self.file = shared_self.file.clone();
-                            }
-
-                            #[cfg(not(target_family = "wasm"))]
-                            self.load_file();
-                        }
-
-                        ui.add_space(spacer);
-
-                        if ui
-                            .add(
-                                egui::Button::new(t!("btn.save_file", lang))
-                                    .min_size(ui.available_size()),
-                            )
-                            .clicked()
-                        {
-                            self.save_file();
-                        }
-                    });
+                ui.horizontal(|ui| {
+                    let spacer = 10.0;
 
                     if ui
-                        .button(egui::RichText::new(t!("btn.compile", lang)).strong())
+                        .add(egui::Button::new(t!("btn.open_file", lang)).min_size(
+                            ui.available_size() / 2.0 - egui::Vec2::new(spacer / 2.0, 0.0),
+                        ))
                         .clicked()
                     {
-                        self.tm = match self.tm.restart(&self.code) {
-                            Ok(t) => {
-                                self.error = None;
-                                t
-                            }
-                            Err(e) => {
-                                self.error = Some(e);
-                                self.tm.clone()
-                            }
-                        };
+                        #[cfg(target_family = "wasm")]
+                        {
+                            // Call the function load file with `&mut self` and await it on the main thread
+                            let shared_self = Arc::new(Mutex::new(self.clone_for_load_file()));
+                            let shared_self_clone = Arc::clone(&shared_self);
+                            let future = async move {
+                                let mut shared_self = shared_self_clone.lock().unwrap();
+                                shared_self.load_file().await;
+                            };
+                            wasm_bindgen_futures::spawn_local(future);
+                            // Wait for the result
+                            let shared_self = shared_self.lock().unwrap();
+                            self.tm = shared_self.tm.clone();
+                            self.code = shared_self.code.clone();
+
+                            console_log!("Retrieved code: {}", self.code);
+
+                            self.error = shared_self.error.clone();
+                            self.file = shared_self.file.clone();
+                        }
+
+                        #[cfg(not(target_family = "wasm"))]
+                        self.load_file();
                     }
 
-                    if self.tm.uses_libraries() {
-                        ui.separator();
+                    ui.add_space(spacer);
 
-                        egui::ScrollArea::vertical()
-                            .id_source("Library help scroll area")
-                            .max_height(ui.available_height() / 2.0)
-                            .show(ui, |ui| {
-                                for lib in self.tm.libraries() {
-                                    ui.collapsing(String::from(lib.name.clone()), |ui| {
-                                        egui::ScrollArea::horizontal().show(ui, |ui| {
-                                            ui.horizontal(|ui| {
-                                                ui.label("Initial state:"); // TODO: Translate
-                                                ui.label(
-                                                    egui::RichText::new(lib.initial_state.clone())
-                                                        .strong(),
-                                                );
-                                            });
-                                            ui.add_space(5.0);
-
-                                            ui.horizontal(|ui| {
-                                                ui.label("Final state:"); // TODO: Translate
-                                                ui.label(
-                                                    egui::RichText::new(lib.final_state.clone())
-                                                        .strong(),
-                                                );
-                                            });
-                                            ui.add_space(5.0);
-
-                                            ui.horizontal(|ui| {
-                                                ui.label("Used states:"); // TODO: Translate
-                                                ui.label(
-                                                    egui::RichText::new(
-                                                        &lib.used_states.join(", "),
-                                                    )
-                                                    .strong(),
-                                                );
-                                            });
-                                        });
-                                    })
-                                    .header_response
-                                    .on_hover_text_at_pointer(lib.description.clone());
-                                }
-                            });
+                    if ui
+                        .add(
+                            egui::Button::new(t!("btn.save_file", lang))
+                                .min_size(ui.available_size()),
+                        )
+                        .clicked()
+                    {
+                        self.save_file();
                     }
+                });
+
+                if ui
+                    .button(egui::RichText::new(t!("btn.compile", lang)).strong())
+                    .clicked()
+                {
+                    self.tm = match self.tm.restart(&self.code) {
+                        Ok(t) => {
+                            self.error = None;
+                            t
+                        }
+                        Err(e) => {
+                            self.error = Some(e);
+                            self.tm.clone()
+                        }
+                    };
+                }
+
+                if self.tm.uses_libraries() {
+                    ui.separator();
 
                     egui::ScrollArea::vertical()
-                        .max_height(ui.available_height() - 50.0)
-                        .show(ui, |my_ui: &mut Ui| {
-                            let editor = TextEdit::multiline(&mut self.code)
-                                .code_editor()
-                                .desired_width(0.0);
+                        .id_source("Library help scroll area")
+                        .max_height(ui.available_height() / 2.0)
+                        .show(ui, |ui| {
+                            for lib in self.tm.libraries() {
+                                ui.collapsing(String::from(lib.name.clone()), |ui| {
+                                    egui::ScrollArea::horizontal().show(ui, |ui| {
+                                        ui.horizontal(|ui| {
+                                            ui.label("Initial state:"); // TODO: Translate
+                                            ui.label(
+                                                egui::RichText::new(lib.initial_state.clone())
+                                                    .strong(),
+                                            );
+                                        });
+                                        ui.add_space(5.0);
 
-                            let res = my_ui.add(editor);
+                                        ui.horizontal(|ui| {
+                                            ui.label("Final state:"); // TODO: Translate
+                                            ui.label(
+                                                egui::RichText::new(lib.final_state.clone())
+                                                    .strong(),
+                                            );
+                                        });
+                                        ui.add_space(5.0);
 
-                            if self.autosave && res.lost_focus() {
-                                debug!("Saving file");
-                                self.saved_feedback = self.auto_save_file();
+                                        ui.horizontal(|ui| {
+                                            ui.label("Used states:"); // TODO: Translate
+                                            ui.label(
+                                                egui::RichText::new(&lib.used_states.join(", "))
+                                                    .strong(),
+                                            );
+                                        });
+                                    });
+                                })
+                                .header_response
+                                .on_hover_text_at_pointer(lib.description.clone());
                             }
-
-                            *editor_focused = res.has_focus().clone();
                         });
+                }
 
-                    if ui
-                        .button("Show available libraries for composition")
-                        .clicked()
-                    {
-                        // TODO: Translate
-                        self.composition_help_window =
-                            Some(Box::new(CompositionHelpWindow::new(&self.get_lang())));
-                    }
+                egui::ScrollArea::vertical()
+                    .max_height(ui.available_height() - 50.0)
+                    .show(ui, |my_ui: &mut Ui| {
+                        let editor = TextEdit::multiline(&mut self.code)
+                            .code_editor()
+                            .desired_width(0.0);
 
-                    if self.saved_feedback.is_some() {
-                        debug!("Drawing saved feedback popup");
-                        self.draw_saved_feedback_popup(ui, ctx);
-                    }
-                })
+                        let res = my_ui.add(editor);
+
+                        if self.autosave && res.lost_focus() {
+                            debug!("Saving file");
+                            self.saved_feedback = self.auto_save_file();
+                        }
+
+                        *editor_focused = res.has_focus().clone();
+                    });
+
+                if ui
+                    .button("Show available libraries for composition")
+                    .clicked()
+                {
+                    // TODO: Translate
+                    self.composition_help_window =
+                        Some(Box::new(CompositionHelpWindow::new(&self.get_lang())));
+                }
+
+                if self.saved_feedback.is_some() {
+                    debug!("Drawing saved feedback popup");
+                    self.draw_saved_feedback_popup(ui, ctx);
+                }
             })
-            .response
-            .rect
-            .right()
+        };
+
+        if ctx.available_rect().width() < 500.0 {
+            egui::Window::new("Code panel")
+                .collapsible(true)
+                .default_pos(egui::pos2(0.0, 50.0))
+                .show(ctx, contents);
+            return 0.0;
+        } else {
+            egui::SidePanel::left("left")
+                .show(ctx, contents)
+                .response
+                .rect
+                .right()
+        }
     }
 
     /// Draws the central panel containing the Turing machine description, sliders for tape size, animation speed,
