@@ -28,6 +28,11 @@ use {
 };
 
 const DEFAULT_CODE: &str = include_str!("../Examples/Example1.tm");
+const MOBILE_THRESHOLD: f32 = 500.0;
+
+pub fn is_mobile(ctx: &egui::Context) -> bool {
+    ctx.screen_rect().width() < MOBILE_THRESHOLD
+}
 
 // Import the saveFile function
 //#[cfg(target_arch = "wasm32")]
@@ -643,107 +648,109 @@ impl MyApp {
     /// * lang - A string representing the language used for displaying text in the UI
     fn draw_top_panel(&mut self, ctx: &egui::Context, lang: &str) {
         egui::TopBottomPanel::top("header")
-            .default_height(35.0)
+            .default_height(if is_mobile(ctx) { 50.0 } else { 35.0 })
             .show(ctx, |ui| {
-                ui.horizontal_centered(|ui| {
-                    ui.menu_button("File", |ui| {
-                        if ui
-                            .add(egui::Button::new("Open").shortcut_text("Ctrl + O"))
-                            .clicked()
-                        {
-                            #[cfg(target_family = "wasm")]
+                egui::ScrollArea::horizontal().max_width(ctx.screen_rect().width()).show(ui, |ui| {
+                    ui.horizontal_centered(|ui| {
+                        ui.menu_button("File", |ui| {
+                            if ui
+                                .add(egui::Button::new("Open").shortcut_text("Ctrl + O"))
+                                .clicked()
                             {
-                                // Call the function load file with `&mut self` and await it on the main thread
-                                let shared_self = Arc::new(Mutex::new(self.clone_for_load_file()));
-                                let shared_self_clone = Arc::clone(&shared_self);
-                                let future = async move {
-                                    let mut shared_self = shared_self_clone.lock().unwrap();
-                                    shared_self.load_file().await;
-                                };
-                                wasm_bindgen_futures::spawn_local(future);
-                                // Wait for the result
-                                let shared_self = shared_self.lock().unwrap();
-                                self.tm = shared_self.tm.clone();
-                                self.code = shared_self.code.clone();
+                                #[cfg(target_family = "wasm")]
+                                {
+                                    // Call the function load file with `&mut self` and await it on the main thread
+                                    let shared_self = Arc::new(Mutex::new(self.clone_for_load_file()));
+                                    let shared_self_clone = Arc::clone(&shared_self);
+                                    let future = async move {
+                                        let mut shared_self = shared_self_clone.lock().unwrap();
+                                        shared_self.load_file().await;
+                                    };
+                                    wasm_bindgen_futures::spawn_local(future);
+                                    // Wait for the result
+                                    let shared_self = shared_self.lock().unwrap();
+                                    self.tm = shared_self.tm.clone();
+                                    self.code = shared_self.code.clone();
 
-                                console_log!("Retrieved code: {}", self.code);
+                                    console_log!("Retrieved code: {}", self.code);
 
-                                self.error = shared_self.error.clone();
-                                self.file = shared_self.file.clone();
+                                    self.error = shared_self.error.clone();
+                                    self.file = shared_self.file.clone();
+                                }
+
+                                #[cfg(not(target_family = "wasm"))]
+                                self.load_file();
                             }
 
-                            #[cfg(not(target_family = "wasm"))]
-                            self.load_file();
-                        }
+                            if ui
+                                .add(egui::Button::new("Save").shortcut_text("Ctrl + S"))
+                                .clicked()
+                            {
+                                self.save_file();
+                            }
 
-                        if ui
-                            .add(egui::Button::new("Save").shortcut_text("Ctrl + S"))
-                            .clicked()
-                        {
-                            self.save_file();
-                        }
+                            if ui
+                                .add(egui::Button::new("Save as...").shortcut_text("Ctrl + Shift + S"))
+                                .clicked()
+                            {
+                                self.save_file_as();
+                            }
 
-                        if ui
-                            .add(egui::Button::new("Save as...").shortcut_text("Ctrl + Shift + S"))
-                            .clicked()
-                        {
-                            self.save_file_as();
-                        }
-
-                        ui.add_enabled_ui(self.file.is_some(), |ui| {
-                            ui.checkbox(&mut self.autosave, "Autosave")
+                            ui.add_enabled_ui(self.file.is_some(), |ui| {
+                                ui.checkbox(&mut self.autosave, "Autosave")
+                            });
                         });
-                    });
 
-                    if ui.button(t!("menu.debugger", lang)).clicked() {
-                        if self.debug_window.is_none() {
-                            self.debug_window = Some(Box::new(DebugWindow::new(
-                                &lang,
-                                Some(self.tm.tape_values()),
-                                Some(self.tm.tape_value()),
-                                Some(egui::Pos2::new(0.0, 100.0)),
-                            )));
+                        if ui.button(t!("menu.debugger", lang)).clicked() {
+                            if self.debug_window.is_none() {
+                                self.debug_window = Some(Box::new(DebugWindow::new(
+                                    &lang,
+                                    Some(self.tm.tape_values()),
+                                    Some(self.tm.tape_value()),
+                                    Some(egui::Pos2::new(0.0, 100.0)),
+                                )));
+                            }
                         }
-                    }
 
-                    if cfg!(feature = "teacher") {
-                        ui.menu_button("Exercises", |ui| {
+                        if cfg!(feature = "teacher") {
+                            ui.menu_button("Exercises", |ui| {
+                                if ui.button("Exercises").clicked() && self.book_window.is_none() {
+                                    self.book_window =
+                                        Some(Box::new(WorkbookWindow::new(&self.get_lang())));
+                                }
+
+                                if ui.button("Workbook editor").clicked()
+                                    && self.workbook_editor_window.is_none()
+                                {
+                                    self.workbook_editor_window =
+                                        Some(Box::new(WorkbookEditorWindow::new(&self.get_lang())));
+                                }
+                            });
+                        } else {
                             if ui.button("Exercises").clicked() && self.book_window.is_none() {
                                 self.book_window =
                                     Some(Box::new(WorkbookWindow::new(&self.get_lang())));
                             }
+                        }
 
-                            if ui.button("Workbook editor").clicked()
-                                && self.workbook_editor_window.is_none()
-                            {
-                                self.workbook_editor_window =
-                                    Some(Box::new(WorkbookEditorWindow::new(&self.get_lang())));
+                        ui.menu_button(t!("menu.language", lang), |ui| {
+                            ui.radio_value(&mut self.lang, Language::English, t!("lang.en", lang));
+                            ui.radio_value(&mut self.lang, Language::Spanish, t!("lang.es", lang));
+                        });
+
+                        ui.menu_button(t!("menu.about", lang), |ui| {
+                            if ui.button(t!("menu.about", lang)).clicked() {
+                                self.about_window = Some(Box::new(AboutWindow::new(
+                                    &lang,
+                                    Some(egui::Pos2::new(150.0, 100.0)),
+                                )));
+                            }
+
+                            if ui.link(t!("menu.repository", lang)).clicked() {
+                                webbrowser::open("https://github.com/margual56/turing-machine-2.0")
+                                    .unwrap();
                             }
                         });
-                    } else {
-                        if ui.button("Exercises").clicked() && self.book_window.is_none() {
-                            self.book_window =
-                                Some(Box::new(WorkbookWindow::new(&self.get_lang())));
-                        }
-                    }
-
-                    ui.menu_button(t!("menu.language", lang), |ui| {
-                        ui.radio_value(&mut self.lang, Language::English, t!("lang.en", lang));
-                        ui.radio_value(&mut self.lang, Language::Spanish, t!("lang.es", lang));
-                    });
-
-                    ui.menu_button(t!("menu.about", lang), |ui| {
-                        if ui.button(t!("menu.about", lang)).clicked() {
-                            self.about_window = Some(Box::new(AboutWindow::new(
-                                &lang,
-                                Some(egui::Pos2::new(150.0, 100.0)),
-                            )));
-                        }
-
-                        if ui.link(t!("menu.repository", lang)).clicked() {
-                            webbrowser::open("https://github.com/margual56/turing-machine-2.0")
-                                .unwrap();
-                        }
                     });
                 });
             });
@@ -910,10 +917,11 @@ impl MyApp {
             })
         };
 
-        if ctx.available_rect().width() < 500.0 {
+        if is_mobile(ctx) {
             egui::Window::new("Code panel")
                 .collapsible(true)
-                .default_pos(egui::pos2(0.0, 50.0))
+                .default_pos(egui::pos2(0.0, 0.0))
+                .constrain(true)
                 .show(ctx, contents);
             return 0.0;
         } else {
@@ -947,21 +955,31 @@ impl MyApp {
                             );
                         }
 
-                        ui.add(
-                            egui::Slider::new(&mut self.tm.tape_rect_size, 25.0..=300.0)
-                                .suffix(" px")
-                                .text(t!("lbl.tape.size", lang))
-                        ).on_hover_text_at_pointer("The size of the squares and text of the drawing of the tape."); // TODO: Translate
-                        ui.add(
-                            egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
-                                .suffix(t!("lbl.seconds", lang))
-                                .text(t!("lbl.tape.speed", lang)),
-                        ).on_hover_text_at_pointer("The duration of the animation of the tape. When a step is executed, the tape will move to the next position in this amount of time."); // TODO: Translate
-                        ui.add(
-                            egui::Slider::new(&mut self.tm.threshold_inf_loop, 10..=2000)
-                                .suffix(t!("lbl.iterations", lang))
-                                .text(t!("lbl.tape.inf_loop", lang)),
-                        ).on_hover_text_at_pointer("The maximum number of iterations that the Turing machine can execute before assuming that it is an infinite loop."); // TODO: Translate
+                        let mut sliders = |ui: &mut egui::Ui| {
+                            ui.add(
+                                egui::Slider::new(&mut self.tm.tape_rect_size, 25.0..=300.0)
+                                    .suffix(" px")
+                                    .text(t!("lbl.tape.size", lang))
+                            ).on_hover_text_at_pointer("The size of the squares and text of the drawing of the tape."); // TODO: Translate
+                            ui.add(
+                                egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
+                                    .suffix(t!("lbl.seconds", lang))
+                                    .text(t!("lbl.tape.speed", lang)),
+                            ).on_hover_text_at_pointer("The duration of the animation of the tape. When a step is executed, the tape will move to the next position in this amount of time."); // TODO: Translate
+                            ui.add(
+                                egui::Slider::new(&mut self.tm.threshold_inf_loop, 10..=2000)
+                                    .suffix(t!("lbl.iterations", lang))
+                                    .text(t!("lbl.tape.inf_loop", lang)),
+                            ).on_hover_text_at_pointer("The maximum number of iterations that the Turing machine can execute before assuming that it is an infinite loop."); // TODO: Translate
+                        };
+
+                        if is_mobile(ctx) {
+                            ui.collapsing("Sliders", |ui| {
+                                egui::ScrollArea::horizontal().max_width(ctx.screen_rect().width()).show(ui, sliders);
+                            }); // TODO: Translate
+                        } else {
+                            sliders(ui);
+                        }
                     });
 
                     ui.separator();
@@ -992,30 +1010,47 @@ impl MyApp {
                         } else {
                             ui.label(t!("lbl.resumed", lang));
                         }
-                        let b = ui.button(text).on_hover_text_at_pointer("Play/pause the execution of the machine. If the execution has finished, pressing \"play\" will reset the machine.\nThe shortcut is the spacebar."); // TODO: Translate
 
-                        if (b.clicked()
-                            || ui.input_mut(|i| {
-                                i.consume_key(egui::Modifiers::NONE, egui::Key::Space)
-                            }))
-                            && !editor_focused
-                        {
-                            if self.tm.finished() {
-                                self.tm = self.tm.restart(&self.code).unwrap();
-                            } else {
-                                self.tm.paused = !self.tm.paused;
-                            }
-                        }
 
-                        if self.process_turing_controls(ui, &ctx, editor_focused, &lang) {
-                            ctx.request_repaint();
-                            if self.tm.is_inf_loop() {
-                                warn!("Infinite loop detected!");
-                                self.infinite_loop_window =
-                                    Some(Box::new(InfiniteLoopWindow::new(&self.get_lang())));
-                                self.tm.paused = true;
+                        let controls = |ui: &mut egui::Ui| {
+                            let b = ui.button(text).on_hover_text_at_pointer("Play/pause the execution of the machine. If the execution has finished, pressing \"play\" will reset the machine.\nThe shortcut is the spacebar."); // TODO: Translate
+
+                            if (b.clicked()
+                                || ui.input_mut(|i| {
+                                    i.consume_key(egui::Modifiers::NONE, egui::Key::Space)
+                                }))
+                                && !editor_focused
+                            {
+                                if self.tm.finished() {
+                                    self.tm = self.tm.restart(&self.code).unwrap();
+                                } else {
+                                    self.tm.paused = !self.tm.paused;
+                                }
                             }
+
+                            if self.process_turing_controls(ui, &ctx, editor_focused, &lang) {
+                                ctx.request_repaint();
+                                if self.tm.is_inf_loop() {
+                                    warn!("Infinite loop detected!");
+                                    self.infinite_loop_window =
+                                        Some(Box::new(InfiniteLoopWindow::new(&self.get_lang())));
+                                    self.tm.paused = true;
+                                }
+                            }
+                        };
+
+                        if is_mobile(ctx){
+                            ui.vertical_centered_justified(|ui| {
+                                let width = ui.available_width();
+                                ui.horizontal(|ui| {
+                                    ui.add_space(width*0.25);
+                                    controls(ui);
+                                });
+                            });
+                        }else{
+                            controls(ui);
                         }
+                        
                     });
 
                     self.tm.lang = self.get_lang();
