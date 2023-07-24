@@ -183,18 +183,23 @@ impl Widget for &mut TuringWidget {
     fn ui(self, ui: &mut eframe::egui::Ui) -> eframe::egui::Response {
         let mut font_id = self.font_id.clone();
         let mut stroke_width = self.stroke_width;
+        let mut tri_size = self.tri_size;
 
         if is_mobile(ui.ctx()) {
             font_id.size = FONT_SIZE / 2.0;
             stroke_width /= 2.0;
+            tri_size /= 1.5;
         }
 
         if ui.is_rect_visible(ui.cursor()) {
             let stroke = Stroke::new(stroke_width, Color32::BLACK);
             let rounding = Rounding::same(10f32);
             let size = Vec2::new(self.tape_rect_size, self.tape_rect_size);
-            let center =
-                ui.cursor().center_top() + Vec2::new(0.0, self.tape_rect_size / 2.0 + if is_mobile(ui.ctx()) { 25.0 } else { 50.0 });
+            let center = ui.cursor().center_top()
+                + Vec2::new(
+                    if is_mobile(ui.ctx()) { -ui.available_width()/2.0 + ui.ctx().screen_rect().width()/2.0 } else { 0.0 },
+                    self.tape_rect_size / 2.0 + if is_mobile(ui.ctx()) { 25.0 } else { 50.0 },
+                );
 
             let pos = center + Vec2::new((self.offset as f32) * size.x, 0.0);
 
@@ -224,20 +229,22 @@ impl Widget for &mut TuringWidget {
                 }
             }
 
+            let height = if is_mobile(ui.ctx()) { 1.2 } else { 1.0 };
+
             let c1: Pos2 = center
                 + Vec2::new(
-                    self.tri_size / 1.75 - self.tri_stroke_wid * 2.0,
-                    self.tri_size,
+                    height * tri_size / 1.75 - self.tri_stroke_wid * 2.0,
+                    height * tri_size,
                 );
             let c2: Pos2 = center
                 + Vec2::new(
-                    -self.tri_size / 1.75 + self.tri_stroke_wid * 2.0,
-                    self.tri_size,
+                    -height * tri_size / 1.75 + self.tri_stroke_wid * 2.0,
+                    height * tri_size,
                 );
             let c3: Pos2 = center + Vec2::new(0.0, self.tape_rect_size / 3.0);
 
-            let circle_rad = self.tri_size / 2.0;
-            let circle_center = center + Vec2::new(0.0, self.tri_size + 25.0);
+            let circle_rad = tri_size / 2.0 + if is_mobile(ui.ctx()) { 0.0 } else { 0.5 };
+            let circle_center = center + Vec2::new(0.0, tri_size + 25.0);
 
             ui.painter().line_segment([c2, c3], self.tri_stroke);
             ui.painter().line_segment([c3, c1], self.tri_stroke);
