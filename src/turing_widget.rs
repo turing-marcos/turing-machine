@@ -197,7 +197,11 @@ impl Widget for &mut TuringWidget {
             let size = Vec2::new(self.tape_rect_size, self.tape_rect_size);
             let center = ui.cursor().center_top()
                 + Vec2::new(
-                    if is_mobile(ui.ctx()) { -ui.available_width()/2.0 + ui.ctx().screen_rect().width()/2.0 } else { 0.0 },
+                    if is_mobile(ui.ctx()) {
+                        -ui.available_width() / 2.0 + ui.ctx().screen_rect().width() / 2.0
+                    } else {
+                        0.0
+                    },
                     self.tape_rect_size / 2.0 + if is_mobile(ui.ctx()) { 25.0 } else { 50.0 },
                 );
 
