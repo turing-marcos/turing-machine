@@ -43,8 +43,10 @@ js-sys = "^0.3"
 base64 = "^0.21"
 
 [profile.release]
-opt-level = 2 # fast and small wasm
-
+panic = 'abort'     # Do not perform backtrace for panic on release builds.
+opt-level = 'z'     # Optimize for size
+codegen-units = 1   # Perform optimizations on all codegen units.
+lto = true          # Perform link-time optimizations (slower build time)
 
 [features]
 # no features by default

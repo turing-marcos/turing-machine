@@ -68,16 +68,16 @@
         "es": "Pausar"
     },
     "lbl.paused": {
-        "en":"The application is paused.\nTo unpause it, press the spacebar or this button:",
-        "es":"La aplicación está pausada.\nPara reanudarla, presione la barra espaciadora o este botón:"
+        "en":"The application is paused.",
+        "es":"La aplicación está pausada."
     },
     "lbl.resume": {
         "en": "Resume",
         "es": "Reanudar"
     },
     "lbl.resumed": {
-        "en": "The simulation is running.\nTo pause it, press the spacebar or this button:",
-        "es": "La simulación está activa.\nPara pausarla, presione la barra espaciadora o este botón:"
+        "en": "The simulation is running.",
+        "es": "La simulación está activa.:"
     },
     "lbl.restart": {
         "en": "Restart",
