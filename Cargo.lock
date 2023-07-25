@@ -3082,9 +3082,9 @@ checksum = "a464a4b34948a5f67fddd2b823c62d9d92e44be75058b99939eae6c5b6960b33"
 
 [[package]]
 name = "turing-lib"
-version = "2.1.2"
+version = "2.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48258b10e87b4b62349284bc81aa93ea08d1a67252499b146db10a8b954c84a7"
+checksum = "a299abbb88bfe08446427f19f116a56c29a298460c59a313e951471017c30d2c"
 dependencies = [
  "env_logger",
  "log",

@@ -104,7 +104,7 @@ impl TuringWidget {
         self.tm.step();
         self.offset = self.tm.tape_position as f32 - prev as f32;
 
-        if self.tm.finished()
+        if self.finished()
             || self.tm.is_undefined()
             || self.tm.is_infinite_loop(self.threshold_inf_loop)
         {
@@ -112,6 +112,21 @@ impl TuringWidget {
         }
 
         return self.offset;
+    }
+
+    /// Returns whether the turing machine is in a final state, the current state is the same as the previous state and the current instruction is HALT
+    pub fn finished(&self) -> bool {
+        self.tm.finished()
+            && self.tm.previous_state.clone().unwrap_or_default() == self.tm.current_state
+            && match self.tm.get_current_instruction() {
+                Some(ins) => {
+                    println!("{:?}", ins);
+                    ins.movement == turing_lib::Movement::HALT
+                        && ins.from_value == ins.to_value
+                        && ins.from_state == ins.to_state
+                }
+                None => true,
+            }
     }
 
     /// Returns the current tape value
@@ -160,11 +175,6 @@ impl TuringWidget {
             .iter()
             .map(|v| v.to_string())
             .collect::<Vec<String>>()
-    }
-
-    /// Returns whether the Turing machine has finished
-    pub fn finished(&self) -> bool {
-        self.tm.finished()
     }
 
     /// Reset the frequencies of the Turing machine
@@ -306,7 +316,10 @@ impl Widget for &mut TuringWidget {
                     font_id,
                     Color32::LIGHT_GREEN,
                 );
-                self.paused = true;
+
+                if self.finished() {
+                    self.paused = true;
+                }
             }
         }
 
