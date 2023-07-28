@@ -43,14 +43,16 @@ impl SecondaryWindow for CompositionHelpWindow {
                     .header(20.0, |mut header| {
                         header.col(|ui| {
                             ui.label(
-                                RichText::new(t!("lbl.composition.name", self.lang)) 
-                                    .heading(),
+                                RichText::new(t!("lbl.composition.name", self.lang)).heading(),
                             )
                             .on_hover_text_at_pointer(t!("tooltip.composition.name", self.lang));
                         });
 
                         header.col(|ui| {
-                            ui.label(RichText::new(t!("lbl.composition.description", self.lang)).heading());
+                            ui.label(
+                                RichText::new(t!("lbl.composition.description", self.lang))
+                                    .heading(),
+                            );
                         });
 
                         header.col(|ui| {

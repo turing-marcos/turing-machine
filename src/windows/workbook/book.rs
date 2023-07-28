@@ -1,4 +1,5 @@
 use eframe::egui;
+use internationalization::t;
 use serde::{self, Deserialize, Serialize};
 
 use crate::windows::workbook::raw_data_to_image;
@@ -54,7 +55,7 @@ impl BookWindow {
         let mut active = true;
         let mut code = None;
 
-        egui::Window::new("Workbook") //TODO: t!("title.debug", self.lang))
+        egui::Window::new(t!("title.workbook", self.lang))
             .id(egui::Id::new("exercises_window"))
             .resizable(false)
             .open(&mut active)

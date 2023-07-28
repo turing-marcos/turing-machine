@@ -919,10 +919,7 @@ impl MyApp {
                         *editor_focused = res.has_focus().clone();
                     });
 
-                if ui
-                    .button(t!("btn.libraries", lang))
-                    .clicked()
-                {
+                if ui.button(t!("btn.libraries", lang)).clicked() {
                     self.composition_help_window =
                         Some(Box::new(CompositionHelpWindow::new(&self.get_lang())));
                 }
@@ -976,23 +973,28 @@ impl MyApp {
                             ui.add(
                                 egui::Slider::new(&mut self.tm.tape_rect_size, 25.0..=300.0)
                                     .suffix(" px")
-                                    .text(t!("lbl.tape.size", lang))
-                            ).on_hover_text_at_pointer(t!("tooltip.tape.size", lang));
+                                    .text(t!("lbl.tape.size", lang)),
+                            )
+                            .on_hover_text_at_pointer(t!("tooltip.tape.size", lang));
                             ui.add(
                                 egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
                                     .suffix(t!("lbl.seconds", lang))
                                     .text(t!("lbl.tape.speed", lang)),
-                            ).on_hover_text_at_pointer(t!("tooltip.tape.duration", lang));
+                            )
+                            .on_hover_text_at_pointer(t!("tooltip.tape.duration", lang));
                             ui.add(
                                 egui::Slider::new(&mut self.tm.threshold_inf_loop, 10..=2000)
                                     .suffix(t!("lbl.iterations", lang))
                                     .text(t!("lbl.tape.inf_loop", lang)),
-                            ).on_hover_text_at_pointer(t!("tooltip.tape.iterations", lang));
+                            )
+                            .on_hover_text_at_pointer(t!("tooltip.tape.iterations", lang));
                         };
 
                         if is_mobile(ctx) {
                             ui.collapsing(t!("header.sliders", lang), |ui| {
-                                egui::ScrollArea::horizontal().max_width(ctx.screen_rect().width()).show(ui, sliders);
+                                egui::ScrollArea::horizontal()
+                                    .max_width(ctx.screen_rect().width())
+                                    .show(ui, sliders);
                             });
                         } else {
                             sliders(ui);
@@ -1030,11 +1032,15 @@ impl MyApp {
 
                         ui.vertical_centered_justified(|ui| {
                             let width = ui.available_width();
-                            ui.columns(3, |columns| { // Try to vertically center the horizontal layout
+                            ui.columns(3, |columns| {
+                                // Try to vertically center the horizontal layout
                                 columns[1].horizontal(|ui| {
-                                    ui.add_space(width*0.175 - 95.0); // These are magic numbers (eyeballed)
+                                    ui.add_space(width * 0.175 - 95.0); // These are magic numbers (eyeballed)
 
-                                    let b = ui.button(text).on_hover_text_at_pointer(t!("tooltip.button.playpause", lang));
+                                    let b = ui.button(text).on_hover_text_at_pointer(t!(
+                                        "tooltip.button.playpause",
+                                        lang
+                                    ));
 
                                     if (b.clicked()
                                         || ui.input_mut(|i| {
@@ -1049,12 +1055,14 @@ impl MyApp {
                                         }
                                     }
 
-                                    if self.process_turing_controls(ui, &ctx, editor_focused, &lang) {
+                                    if self.process_turing_controls(ui, &ctx, editor_focused, &lang)
+                                    {
                                         ctx.request_repaint();
                                         if self.tm.is_inf_loop() {
                                             warn!("Infinite loop detected!");
-                                            self.infinite_loop_window =
-                                                Some(Box::new(InfiniteLoopWindow::new(&self.get_lang())));
+                                            self.infinite_loop_window = Some(Box::new(
+                                                InfiniteLoopWindow::new(&self.get_lang()),
+                                            ));
                                             self.tm.paused = true;
                                         }
                                     }
