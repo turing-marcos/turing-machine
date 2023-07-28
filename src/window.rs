@@ -220,7 +220,7 @@ impl MyApp {
         ui.add_enabled_ui(!editor_focused, |ui| {
             if self.tm.offset != 0.0 {
                 ui.add_enabled(false, |ui: &mut Ui| ui.button(t!("lbl.machine.step", lang)))
-                    .on_hover_text_at_pointer("Execute one single step of the Turing machine"); // TODO: Translate
+                    .on_hover_text_at_pointer(t!("tooltip.main.step", lang));
 
                 if self.tm.offset.abs() < 0.01 {
                     self.tm.offset = 0.0;
@@ -236,8 +236,7 @@ impl MyApp {
             } else if (ui
                 .add_enabled(self.tm.paused, |ui: &mut Ui| {
                     ui.button(t!("lbl.machine.step", lang))
-                        .on_hover_text_at_pointer("Execute one single step of the Turing machine")
-                    // TODO: Translate
+                        .on_hover_text_at_pointer(t!("tooltip.main.step", lang))
                 })
                 .clicked()
                 || ui.input(|i| i.key_pressed(egui::Key::ArrowRight))
@@ -871,7 +870,7 @@ impl MyApp {
                                 ui.collapsing(String::from(lib.name.clone()), |ui| {
                                     egui::ScrollArea::horizontal().show(ui, |ui| {
                                         ui.horizontal(|ui| {
-                                            ui.label("Initial state:"); // TODO: Translate
+                                            ui.label(t!("lbl.step.initial", lang) + ":");
                                             ui.label(
                                                 egui::RichText::new(lib.initial_state.clone())
                                                     .strong(),
@@ -880,7 +879,7 @@ impl MyApp {
                                         ui.add_space(5.0);
 
                                         ui.horizontal(|ui| {
-                                            ui.label("Final state:"); // TODO: Translate
+                                            ui.label(t!("lbl.step.final", lang) + ":");
                                             ui.label(
                                                 egui::RichText::new(lib.final_state.clone())
                                                     .strong(),
@@ -889,7 +888,7 @@ impl MyApp {
                                         ui.add_space(5.0);
 
                                         ui.horizontal(|ui| {
-                                            ui.label("Used states:"); // TODO: Translate
+                                            ui.label(t!("lbl.steps.used", lang) + ":");
                                             ui.label(
                                                 egui::RichText::new(&lib.used_states.join(", "))
                                                     .strong(),

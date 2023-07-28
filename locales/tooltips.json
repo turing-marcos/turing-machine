@@ -1,0 +1,6 @@
+{
+    "tooltip.main.step": {
+        "en": "Execute one single step of the Turing machine",
+        "es": "Ejecuta un solo paso de la máquina de Turing"
+    }
+}

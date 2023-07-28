@@ -87,6 +87,18 @@
         "en": "The program has finished.\nTo restart it, press this button:",
         "es": "El programa ha terminado.\nPara reiniciarlo, presione este botón:"
     },
+    "lbl.state.initial": {
+        "en": "Initial state",
+        "es": "Estado inicial"
+    },
+    "lbl.state.final": {
+        "en": "Final state",
+        "es": "Estado final"
+    },
+    "lbl.state.used": {
+        "en": "Used states",
+        "es": "Estados usados"
+    },
     "lang.en": {
         "en": "English",
         "es": "Inglés"
