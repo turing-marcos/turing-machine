@@ -3,6 +3,10 @@
         "en": "Workbook",
         "es": "Cuaderno"
     },
+    "title.workbook.editor": {
+        "en": "Workbook Editor",
+        "es": "Editor de cuadernos"
+    },
     "heading.workbook.catalog": {
         "en": "Workbook Catalog",
         "es": "Catálogo de Cuadernos"
@@ -22,5 +26,33 @@
     "btn.workbook.use": {
         "en": "Use this exercise",
         "es": "Usar este ejercicio"
+    },
+    "btn.editor.add_exercise": {
+        "en": "Add exercise",
+        "es": "Añadir ejercicio"
+    },
+    "btn.editor.add_chapter": {
+        "en": "Add chapter",
+        "es": "Añadir capítulo"
+    },
+    "btn.editor.add_image": {
+        "en": "Add image",
+        "es": "Añadir imagen"
+    },
+    "btn.editor.save_workbook": {
+        "en": "Save workbook",
+        "es": "Guardar cuaderno"
+    },
+    "lbl.editor.exercise_code": {
+        "en": "Exercise code",
+        "es": "Código del ejercicio"
+    },
+    "lbl.editor.new_chapter": {
+        "en": "New chapter",
+        "es": "Nuevo capítulo"
+    },
+    "lbl.editor.new_exercise": {
+        "en": "New exercise",
+        "es": "Nuevo ejercicio"
     }
 }

@@ -22,5 +22,9 @@
     "tooltip.composition.name": {
         "en": "The name to write to import it",
         "es": "El nombre a escribir para importarla"
+    },
+    "tooltip.editor.chapter_title": {
+        "en": "Chapter title",
+        "es": "Título del capítulo"
     }
 }
