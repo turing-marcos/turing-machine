@@ -870,7 +870,7 @@ impl MyApp {
                                 ui.collapsing(String::from(lib.name.clone()), |ui| {
                                     egui::ScrollArea::horizontal().show(ui, |ui| {
                                         ui.horizontal(|ui| {
-                                            ui.label(t!("lbl.step.initial", lang) + ":");
+                                            ui.label(t!("lbl.state.initial", lang) + ":");
                                             ui.label(
                                                 egui::RichText::new(lib.initial_state.clone())
                                                     .strong(),
@@ -879,7 +879,7 @@ impl MyApp {
                                         ui.add_space(5.0);
 
                                         ui.horizontal(|ui| {
-                                            ui.label(t!("lbl.step.final", lang) + ":");
+                                            ui.label(t!("lbl.state.final", lang) + ":");
                                             ui.label(
                                                 egui::RichText::new(lib.final_state.clone())
                                                     .strong(),
@@ -888,7 +888,7 @@ impl MyApp {
                                         ui.add_space(5.0);
 
                                         ui.horizontal(|ui| {
-                                            ui.label(t!("lbl.steps.used", lang) + ":");
+                                            ui.label(t!("lbl.state.used", lang) + ":");
                                             ui.label(
                                                 egui::RichText::new(&lib.used_states.join(", "))
                                                     .strong(),
@@ -920,10 +920,9 @@ impl MyApp {
                     });
 
                 if ui
-                    .button("Show available libraries for composition")
+                    .button(t!("btn.libraries", lang))
                     .clicked()
                 {
-                    // TODO: Translate
                     self.composition_help_window =
                         Some(Box::new(CompositionHelpWindow::new(&self.get_lang())));
                 }
@@ -936,7 +935,7 @@ impl MyApp {
         };
 
         if is_mobile(ctx) {
-            egui::Window::new("Code panel")
+            egui::Window::new(t!("header.code", lang))
                 .collapsible(true)
                 .default_pos(egui::pos2(0.0, 0.0))
                 .constrain(true)
@@ -978,23 +977,23 @@ impl MyApp {
                                 egui::Slider::new(&mut self.tm.tape_rect_size, 25.0..=300.0)
                                     .suffix(" px")
                                     .text(t!("lbl.tape.size", lang))
-                            ).on_hover_text_at_pointer("The size of the squares and text of the drawing of the tape."); // TODO: Translate
+                            ).on_hover_text_at_pointer(t!("tooltip.tape.size", lang));
                             ui.add(
                                 egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
                                     .suffix(t!("lbl.seconds", lang))
                                     .text(t!("lbl.tape.speed", lang)),
-                            ).on_hover_text_at_pointer("The duration of the animation of the tape. When a step is executed, the tape will move to the next position in this amount of time."); // TODO: Translate
+                            ).on_hover_text_at_pointer(t!("tooltip.tape.duration", lang));
                             ui.add(
                                 egui::Slider::new(&mut self.tm.threshold_inf_loop, 10..=2000)
                                     .suffix(t!("lbl.iterations", lang))
                                     .text(t!("lbl.tape.inf_loop", lang)),
-                            ).on_hover_text_at_pointer("The maximum number of iterations that the Turing machine can execute before assuming that it is an infinite loop."); // TODO: Translate
+                            ).on_hover_text_at_pointer(t!("tooltip.tape.iterations", lang));
                         };
 
                         if is_mobile(ctx) {
-                            ui.collapsing("Sliders", |ui| {
+                            ui.collapsing(t!("header.sliders", lang), |ui| {
                                 egui::ScrollArea::horizontal().max_width(ctx.screen_rect().width()).show(ui, sliders);
-                            }); // TODO: Translate
+                            });
                         } else {
                             sliders(ui);
                         }
@@ -1035,7 +1034,7 @@ impl MyApp {
                                 columns[1].horizontal(|ui| {
                                     ui.add_space(width*0.175 - 95.0); // These are magic numbers (eyeballed)
 
-                                    let b = ui.button(text).on_hover_text_at_pointer("Play/pause the execution of the machine. If the execution has finished, pressing \"play\" will reset the machine.\nThe shortcut is the spacebar."); // TODO: Translate
+                                    let b = ui.button(text).on_hover_text_at_pointer(t!("tooltip.button.playpause", lang));
 
                                     if (b.clicked()
                                         || ui.input_mut(|i| {

@@ -299,7 +299,7 @@ impl Widget for &mut TuringWidget {
                         ui.painter().text(
                             center + Vec2::new(0.0, self.tri_size + 100.0),
                             Align2::CENTER_CENTER,
-                            "Infinite loop", //t!("err.infinite.loop", self.lang), // TODO: Translation
+                            t!("err.infinite_loop", self.lang),
                             font_id.clone(),
                             Color32::LIGHT_RED,
                         );

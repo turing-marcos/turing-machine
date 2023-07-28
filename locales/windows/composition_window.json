@@ -1,0 +1,14 @@
+{
+    "title.composition": {
+        "en": "List of composition libraries available",
+        "es": "Lista de librerías disponibles para componer"
+    },
+    "lbl.composition.name": {
+        "en": "Library name",
+        "es": "Nombre de la librería"
+    },
+    "lbl.composition.description": {
+        "en": "Description",
+        "es": "Descripción"
+    }
+}

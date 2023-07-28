@@ -31,6 +31,10 @@
         "en": "Compile and run code",
         "es": "Compilar y ejecutar código"
     },
+    "btn.libraries": {
+        "en": "Show available libraries for composition",
+        "es": "Mostrar librerías disponibles para composición"
+    },
     "lbl.tape.size": {
         "en": "Tape rectangle size",
         "es": "Tamaño de la cinta"
@@ -44,8 +48,8 @@
         "es": "Umbral de bucle infinito"
     },
     "lbl.machine.step": {
-        "en": "Do one step",
-        "es": "Dar un paso"
+        "en": "Run a single instruction",
+        "es": "Ejecutar una instrucción"
     },
     "lbl.seconds": {
         "en": " seconds",
@@ -99,6 +103,14 @@
         "en": "Used states",
         "es": "Estados usados"
     },
+    "header.sliders": {
+        "en": "Sliders",
+        "es": "Controles"
+    },
+    "header.code": {
+        "en": "Code panel",
+        "es": "Panel de código"
+    },
     "lang.en": {
         "en": "English",
         "es": "Inglés"
@@ -110,6 +122,10 @@
     "err.undefined.state": {
         "en": "The machine is in an undefined state",
         "es": "La máquina está en un estado indefinido"
+    },
+    "err.infinite_loop": {
+        "en": "Infinite loop",
+        "es": "Bucle infinito"
     }
 }
   
