@@ -2,5 +2,25 @@
     "title.workbook": {
         "en": "Workbook",
         "es": "Cuaderno"
+    },
+    "heading.workbook.catalog": {
+        "en": "Workbook Catalog",
+        "es": "Catálogo de Cuadernos"
+    },
+    "btn.workbook.load": {
+        "en": "Load workbook",
+        "es": "Cargar cuaderno"
+    },
+    "btn.workbook.previous": {
+        "en": "Previous",
+        "es": "Anterior"
+    },
+    "btn.workbook.next": {
+        "en": "Next",
+        "es": "Siguiente"
+    },
+    "btn.workbook.use": {
+        "en": "Use this exercise",
+        "es": "Usar este ejercicio"
     }
 }

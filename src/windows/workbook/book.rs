@@ -62,7 +62,7 @@ impl BookWindow {
             .show(ctx, |ui| {
                 ui.horizontal_centered(|ui| {
                     ui.vertical(|ui| {
-                        ui.heading("Catalog"); //t!("title.exercises", self.lang));
+                        ui.heading(t!("heading.workbook.catalog", self.lang));
 
                         egui::ScrollArea::vertical().show(ui, |ui| {
                             for (section, (title, exercises)) in self.exercises.iter().enumerate() {
@@ -83,7 +83,7 @@ impl BookWindow {
                             }
                         });
 
-                        if ui.button("Load workbook").clicked() {
+                        if ui.button(t!("btn.workbook.load", self.lang)).clicked() {
                             if let Some(new_exercises) = load_workbook() {
                                 self.exercises = new_exercises;
                                 self.selected = (0, 0);
@@ -109,7 +109,7 @@ impl BookWindow {
 
                         ui.horizontal(|ui| {
                             if ui
-                                .add_enabled(self.selected.1 > 0, egui::Button::new("Previous"))
+                                .add_enabled(self.selected.1 > 0, egui::Button::new(t!("btn.workbook.previous", self.lang)))
                                 .clicked()
                             {
                                 self.selected.1 -= 1;
@@ -120,7 +120,7 @@ impl BookWindow {
                             if ui
                                 .add_enabled(
                                     self.selected.1 < self.exercises[self.selected.0].1.len() - 1,
-                                    egui::Button::new("Next"),
+                                    egui::Button::new(t!("btn.workbook.next", self.lang)),
                                 )
                                 .clicked()
                             {
@@ -128,7 +128,7 @@ impl BookWindow {
                             }
                         });
 
-                        if ui.button("Use this exercise").clicked() {
+                        if ui.button(t!("btn.workbook.use", self.lang)).clicked() {
                             code = Some(self.get_exercise(self.selected).code.clone());
                         }
                     });
