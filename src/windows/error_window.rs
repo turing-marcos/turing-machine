@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use eframe;
 use eframe::egui::{self, RichText};
 use eframe::epaint::Color32;
+use internationalization::t;
 use turing_lib::{CompilerError, ErrorPosition};
 
 pub struct ErrorWindow {
@@ -50,7 +51,6 @@ impl eframe::App for ErrorWindow {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical_centered_justified(|ui| {
-
                 let text = match self.file {
                     Some(ref file) => format!(
                         "Syntax error on file {:?}",
@@ -62,9 +62,9 @@ impl eframe::App for ErrorWindow {
 
                 ui.label(
                     RichText::new(text)
-                    .color(Color32::LIGHT_RED)
-                    .size(30.0)
-                    .underline(),
+                        .color(Color32::LIGHT_RED)
+                        .size(30.0)
+                        .underline(),
                 );
             });
 
@@ -104,8 +104,14 @@ impl eframe::App for ErrorWindow {
                                             "^",
                                             "~",
                                             width1 = position.start.1,
-                                            width2 = position.end.unwrap_or((0, position.start.1 +1)).1 - position.start.1,
-                                            width3 = self.error.code().len() - position.end.unwrap_or((0, position.start.1 +1)).1
+                                            width2 =
+                                                position.end.unwrap_or((0, position.start.1 + 1)).1
+                                                    - position.start.1,
+                                            width3 = self.error.code().len()
+                                                - position
+                                                    .end
+                                                    .unwrap_or((0, position.start.1 + 1))
+                                                    .1
                                         ))
                                         .color(Color32::RED)
                                         .size(20.0),
@@ -120,12 +126,7 @@ impl eframe::App for ErrorWindow {
                             });
                     });
                 });
-                ui.label(
-                    RichText::new(
-                        "Could not initialize the Turing Machine. Please fix the syntax error and try again."
-                    )
-                    .size(20.0)
-                );
+                ui.label(RichText::new(t!("err.initialization", self.lang)).size(20.0));
                 if ui.button("Close").clicked() {
                     std::process::exit(2);
                 }

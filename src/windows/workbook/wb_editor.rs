@@ -32,7 +32,7 @@ impl WorkbookEditorWindow {
 
         let lang = &self.lang.clone();
 
-        egui::Window::new(t!("title.workbook.editor", lang)) 
+        egui::Window::new(t!("title.workbook.editor", lang))
             .id(egui::Id::new("editor_window"))
             .resizable(true)
             .open(&mut active)
@@ -70,10 +70,13 @@ impl WorkbookEditorWindow {
 
                                             ui.separator();
 
-                                            if ui.button(t!("btn.editor.add_exercise", lang)).clicked() {
+                                            if ui
+                                                .button(t!("btn.editor.add_exercise", lang))
+                                                .clicked()
+                                            {
                                                 exercises.push(WorkbookEditorWindow::new_exercise(
                                                     exercises.len(),
-                                                    lang
+                                                    lang,
                                                 ));
                                             }
                                         });
@@ -86,7 +89,7 @@ impl WorkbookEditorWindow {
                                         self.chapters.push(WorkbookEditorWindow::new_chapter(
                                             self.chapters.len(),
                                             0,
-                                            lang
+                                            lang,
                                         ));
                                         self.selected = (self.chapters.len() - 1, 0);
                                     }
@@ -176,14 +179,22 @@ impl WorkbookEditorWindow {
 
     fn new_chapter(chapters_len: usize, exercises_len: usize, lang: &str) -> WorkbookChapter {
         (
-            format!("{} {}", t!("lbl.editor.new_chapter", lang), chapters_len + 1),
+            format!(
+                "{} {}",
+                t!("lbl.editor.new_chapter", lang),
+                chapters_len + 1
+            ),
             vec![WorkbookEditorWindow::new_exercise(exercises_len, lang)],
         )
     }
 
     fn new_exercise(exercises_len: usize, lang: &str) -> Exercise {
         Exercise::new(
-            &format!("{} {}", t!("lbl.editor.new_exercise", lang), exercises_len + 1),
+            &format!(
+                "{} {}",
+                t!("lbl.editor.new_exercise", lang),
+                exercises_len + 1
+            ),
             None,
             String::new(),
         )

@@ -109,7 +109,10 @@ impl BookWindow {
 
                         ui.horizontal(|ui| {
                             if ui
-                                .add_enabled(self.selected.1 > 0, egui::Button::new(t!("btn.workbook.previous", self.lang)))
+                                .add_enabled(
+                                    self.selected.1 > 0,
+                                    egui::Button::new(t!("btn.workbook.previous", self.lang)),
+                                )
                                 .clicked()
                             {
                                 self.selected.1 -= 1;
