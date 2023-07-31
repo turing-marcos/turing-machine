@@ -97,6 +97,10 @@ impl SecondaryWindow for CompositionHelpWindow {
                             });
                         }
                     });
+
+                ui.separator();
+
+                ui.label(RichText::new(t!("lbl.composition.help.txt", self.lang)));
             });
 
         active
