@@ -61,17 +61,18 @@ impl ErrorWindow {
 
 impl eframe::App for ErrorWindow {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let lang = String::from(self.lang());
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.menu_button(t!("menu.language", self.lang()), |ui| {
                 ui.radio_value::<Language>(
                     &mut self.lang,
                     Language::English,
-                    t!("lang.en", self.lang),
+                    t!("lang.en", lang),
                 );
                 ui.radio_value::<Language>(
                     &mut self.lang,
                     Language::Spanish,
-                    t!("lang.es", self.lang),
+                    t!("lang.es", lang),
                 );
             });
         });
@@ -88,10 +89,10 @@ impl eframe::App for ErrorWindow {
 
                         t!(
                             "err.syntax",
-                            file: filename, self.lang()
+                            file: filename, lang
                         )
                     }
-                    None => t!("err.syntax.simple", self.lang()).to_string(),
+                    None => t!("err.syntax.simple", lang).to_string(),
                 };
 
                 ui.label(
@@ -160,8 +161,8 @@ impl eframe::App for ErrorWindow {
                             });
                     });
                 });
-                ui.label(RichText::new(t!("err.initialization", self.lang())).size(20.0));
-                if ui.button(t!("btn.close", self.lang())).clicked() {
+                ui.label(RichText::new(t!("err.initialization", lang)).size(20.0));
+                if ui.button(t!("btn.close", lang)).clicked() {
                     std::process::exit(2);
                 }
             });
