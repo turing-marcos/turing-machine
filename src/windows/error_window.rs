@@ -6,17 +6,21 @@ use eframe::epaint::Color32;
 use internationalization::t;
 use turing_lib::{CompilerError, ErrorPosition};
 
+use crate::window::Language;
+
 pub struct ErrorWindow {
     error: CompilerError,
     file: Option<PathBuf>,
     line_msg: String,
     expected_msg: String,
+    lang: Language,
 }
 
 impl ErrorWindow {
     pub fn new(
         error: CompilerError,
         file: Option<PathBuf>,
+        lang: Language,
         cc: &eframe::CreationContext<'_>,
     ) -> Self {
         let mut st = (*egui::Context::default().style()).clone();
@@ -43,21 +47,51 @@ impl ErrorWindow {
             file,
             line_msg,
             expected_msg,
+            lang,
+        }
+    }
+
+    fn lang(&self) -> &str {
+        match self.lang {
+            Language::English => "en",
+            Language::Spanish => "es",
         }
     }
 }
 
 impl eframe::App for ErrorWindow {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            ui.menu_button(t!("menu.language", self.lang()), |ui| {
+                ui.radio_value::<Language>(
+                    &mut self.lang,
+                    Language::English,
+                    t!("lang.en", self.lang),
+                );
+                ui.radio_value::<Language>(
+                    &mut self.lang,
+                    Language::Spanish,
+                    t!("lang.es", self.lang),
+                );
+            });
+        });
+
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical_centered_justified(|ui| {
                 let text = match self.file {
-                    Some(ref file) => format!(
-                        "Syntax error on file {:?}",
-                        file.file_name()
+                    Some(ref file) => {
+                        let filename = file
+                            .file_name()
                             .unwrap_or(std::ffi::OsStr::new("User input"))
-                    ),
-                    None => "Syntax error".to_string(),
+                            .to_str()
+                            .unwrap();
+
+                        t!(
+                            "err.syntax",
+                            file: filename, self.lang()
+                        )
+                    }
+                    None => t!("err.syntax.simple", self.lang()).to_string(),
                 };
 
                 ui.label(
@@ -126,8 +160,8 @@ impl eframe::App for ErrorWindow {
                             });
                     });
                 });
-                ui.label(RichText::new(t!("err.initialization", self.lang)).size(20.0));
-                if ui.button("Close").clicked() {
+                ui.label(RichText::new(t!("err.initialization", self.lang())).size(20.0));
+                if ui.button(t!("btn.close", self.lang())).clicked() {
                     std::process::exit(2);
                 }
             });

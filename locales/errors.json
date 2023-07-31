@@ -10,5 +10,13 @@
     "err.infinite_loop": {
         "en": "Infinite loop",
         "es": "Bucle infinito"
+    },
+    "err.syntax.simple": {
+        "en": "Syntax error",
+        "es": "Error de sintaxis"
+    },
+    "err.syntax": {
+        "en": "Syntax error on file $file",
+        "es": "Error de sintaxis en el archivo $file"
     }
 }

@@ -119,5 +119,9 @@
         "en": "Spanish",
         "es": "Español"
     },
+    "btn.close": {
+        "en": "Close",
+        "es": "Cerrar"
+    }
 }
   

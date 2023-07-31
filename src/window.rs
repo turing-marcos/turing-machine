@@ -6,6 +6,7 @@ use std::{
 };
 
 use crate::{
+    get_lang,
     windows::{
         AboutWindow, CompositionHelpWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow,
         WorkbookEditorWindow, WorkbookWindow,
@@ -116,7 +117,7 @@ impl MyApp {
             workbook_editor_window: None,
             composition_help_window: None,
 
-            lang: Language::English,
+            lang: get_lang(),
 
             file: file.clone(),
             autosave: file.is_some(),
@@ -747,7 +748,7 @@ impl MyApp {
                                     Language::English,
                                     t!("lang.en", lang),
                                 );
-                                ui.radio_value(
+                                ui.radio_value::<Language>(
                                     &mut self.lang,
                                     Language::Spanish,
                                     t!("lang.es", lang),

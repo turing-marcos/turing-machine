@@ -179,10 +179,10 @@ impl WorkbookEditorWindow {
 
     fn new_chapter(chapters_len: usize, exercises_len: usize, lang: &str) -> WorkbookChapter {
         (
-            format!(
-                "{} {}",
-                t!("lbl.editor.new_chapter", lang),
-                chapters_len + 1
+            t!(
+                "lbl.editor.new_chapter",
+                num: (chapters_len + 1).to_string().as_str(),
+                lang
             ),
             vec![WorkbookEditorWindow::new_exercise(exercises_len, lang)],
         )
@@ -190,10 +190,10 @@ impl WorkbookEditorWindow {
 
     fn new_exercise(exercises_len: usize, lang: &str) -> Exercise {
         Exercise::new(
-            &format!(
-                "{} {}",
-                t!("lbl.editor.new_exercise", lang),
-                exercises_len + 1
+            &t!(
+                "lbl.editor.new_exercise",
+                num: (exercises_len + 1).to_string().as_str(),
+                lang
             ),
             None,
             String::new(),

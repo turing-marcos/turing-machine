@@ -48,11 +48,11 @@
         "es": "Código del ejercicio"
     },
     "lbl.editor.new_chapter": {
-        "en": "New chapter",
-        "es": "Nuevo capítulo"
+        "en": "New chapter ($num)",
+        "es": "Nuevo capítulo ($num)"
     },
     "lbl.editor.new_exercise": {
-        "en": "New exercise",
-        "es": "Nuevo ejercicio"
+        "en": "New exercise ($num)",
+        "es": "Nuevo ejercicio ($num)"
     }
 }
