@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.2.2]
+### Added
+- Help for the composition window
+- The missing translations for the application
+
+### Changed
+- Made the layout responsive
+
 ## [v1.2.1]
 ### Added
 - Composition support (#23)

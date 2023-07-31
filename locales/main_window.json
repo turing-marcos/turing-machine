@@ -1,4 +1,8 @@
 {
+    "menu.file": {
+        "en": "File",
+        "es": "Archivo"
+    },
     "menu.about": {
         "en": "About",
         "es": "Acerca de"
@@ -19,6 +23,14 @@
         "en": "Activate debugger",
         "es": "Activar depurador"
     },
+    "menu.exercises": {
+        "en": "Exercises",
+        "es": "Ejercicios"
+    },
+    "menu.exercises.editor": {
+        "en": "Workbook editor",
+        "es": "Editor de cuadernos"
+    },
     "btn.open_file": {
         "en": "Open File",
         "es": "Abrir Archivo"
@@ -30,6 +42,10 @@
     "btn.compile": {
         "en": "Compile and run code",
         "es": "Compilar y ejecutar código"
+    },
+    "btn.libraries": {
+        "en": "Show available libraries for composition",
+        "es": "Mostrar librerías disponibles para composición"
     },
     "lbl.tape.size": {
         "en": "Tape rectangle size",
@@ -44,8 +60,8 @@
         "es": "Umbral de bucle infinito"
     },
     "lbl.machine.step": {
-        "en": "Do one step",
-        "es": "Dar un paso"
+        "en": "Run a single instruction",
+        "es": "Ejecutar una instrucción"
     },
     "lbl.seconds": {
         "en": " seconds",
@@ -68,16 +84,16 @@
         "es": "Pausar"
     },
     "lbl.paused": {
-        "en":"The application is paused.\nTo unpause it, press the spacebar or this button:",
-        "es":"La aplicación está pausada.\nPara reanudarla, presione la barra espaciadora o este botón:"
+        "en":"The application is paused.",
+        "es":"La aplicación está pausada."
     },
     "lbl.resume": {
         "en": "Resume",
         "es": "Reanudar"
     },
     "lbl.resumed": {
-        "en": "The simulation is running.\nTo pause it, press the spacebar or this button:",
-        "es": "La simulación está activa.\nPara pausarla, presione la barra espaciadora o este botón:"
+        "en": "The simulation is running.",
+        "es": "La simulación está activa.:"
     },
     "lbl.restart": {
         "en": "Restart",
@@ -87,6 +103,26 @@
         "en": "The program has finished.\nTo restart it, press this button:",
         "es": "El programa ha terminado.\nPara reiniciarlo, presione este botón:"
     },
+    "lbl.state.initial": {
+        "en": "Initial state",
+        "es": "Estado inicial"
+    },
+    "lbl.state.final": {
+        "en": "Final state",
+        "es": "Estado final"
+    },
+    "lbl.state.used": {
+        "en": "Used states",
+        "es": "Estados usados"
+    },
+    "header.sliders": {
+        "en": "Sliders",
+        "es": "Controles"
+    },
+    "header.code": {
+        "en": "Code panel",
+        "es": "Panel de código"
+    },
     "lang.en": {
         "en": "English",
         "es": "Inglés"
@@ -95,9 +131,9 @@
         "en": "Spanish",
         "es": "Español"
     },
-    "err.undefined.state": {
-        "en": "The machine is in an undefined state",
-        "es": "La máquina está en un estado indefinido"
+    "btn.close": {
+        "en": "Close",
+        "es": "Cerrar"
     }
 }
   

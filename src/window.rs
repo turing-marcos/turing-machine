@@ -6,6 +6,7 @@ use std::{
 };
 
 use crate::{
+    get_lang,
     windows::{
         AboutWindow, CompositionHelpWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow,
         WorkbookEditorWindow, WorkbookWindow,
@@ -28,6 +29,11 @@ use {
 };
 
 const DEFAULT_CODE: &str = include_str!("../Examples/Example1.tm");
+const MOBILE_THRESHOLD: f32 = 500.0;
+
+pub fn is_mobile(ctx: &egui::Context) -> bool {
+    ctx.screen_rect().width() < MOBILE_THRESHOLD
+}
 
 // Import the saveFile function
 //#[cfg(target_arch = "wasm32")]
@@ -111,7 +117,7 @@ impl MyApp {
             workbook_editor_window: None,
             composition_help_window: None,
 
-            lang: Language::English,
+            lang: get_lang(),
 
             file: file.clone(),
             autosave: file.is_some(),
@@ -215,7 +221,7 @@ impl MyApp {
         ui.add_enabled_ui(!editor_focused, |ui| {
             if self.tm.offset != 0.0 {
                 ui.add_enabled(false, |ui: &mut Ui| ui.button(t!("lbl.machine.step", lang)))
-                    .on_hover_text_at_pointer("Execute one single step of the Turing machine"); // TODO: Translate
+                    .on_hover_text_at_pointer(t!("tooltip.main.step", lang));
 
                 if self.tm.offset.abs() < 0.01 {
                     self.tm.offset = 0.0;
@@ -231,8 +237,7 @@ impl MyApp {
             } else if (ui
                 .add_enabled(self.tm.paused, |ui: &mut Ui| {
                     ui.button(t!("lbl.machine.step", lang))
-                        .on_hover_text_at_pointer("Execute one single step of the Turing machine")
-                    // TODO: Translate
+                        .on_hover_text_at_pointer(t!("tooltip.main.step", lang))
                 })
                 .clicked()
                 || ui.input(|i| i.key_pressed(egui::Key::ArrowRight))
@@ -643,109 +648,132 @@ impl MyApp {
     /// * lang - A string representing the language used for displaying text in the UI
     fn draw_top_panel(&mut self, ctx: &egui::Context, lang: &str) {
         egui::TopBottomPanel::top("header")
-            .default_height(35.0)
+            .default_height(if is_mobile(ctx) { 50.0 } else { 35.0 })
             .show(ctx, |ui| {
-                ui.horizontal_centered(|ui| {
-                    ui.menu_button("File", |ui| {
-                        if ui
-                            .add(egui::Button::new("Open").shortcut_text("Ctrl + O"))
-                            .clicked()
-                        {
-                            #[cfg(target_family = "wasm")]
-                            {
-                                // Call the function load file with `&mut self` and await it on the main thread
-                                let shared_self = Arc::new(Mutex::new(self.clone_for_load_file()));
-                                let shared_self_clone = Arc::clone(&shared_self);
-                                let future = async move {
-                                    let mut shared_self = shared_self_clone.lock().unwrap();
-                                    shared_self.load_file().await;
-                                };
-                                wasm_bindgen_futures::spawn_local(future);
-                                // Wait for the result
-                                let shared_self = shared_self.lock().unwrap();
-                                self.tm = shared_self.tm.clone();
-                                self.code = shared_self.code.clone();
+                egui::ScrollArea::horizontal()
+                    .max_width(ctx.screen_rect().width())
+                    .show(ui, |ui| {
+                        ui.horizontal_centered(|ui| {
+                            ui.menu_button(t!("menu.file", lang), |ui| {
+                                if ui
+                                    .add(egui::Button::new("Open").shortcut_text("Ctrl + O"))
+                                    .clicked()
+                                {
+                                    #[cfg(target_family = "wasm")]
+                                    {
+                                        // Call the function load file with `&mut self` and await it on the main thread
+                                        let shared_self =
+                                            Arc::new(Mutex::new(self.clone_for_load_file()));
+                                        let shared_self_clone = Arc::clone(&shared_self);
+                                        let future = async move {
+                                            let mut shared_self = shared_self_clone.lock().unwrap();
+                                            shared_self.load_file().await;
+                                        };
+                                        wasm_bindgen_futures::spawn_local(future);
+                                        // Wait for the result
+                                        let shared_self = shared_self.lock().unwrap();
+                                        self.tm = shared_self.tm.clone();
+                                        self.code = shared_self.code.clone();
 
-                                console_log!("Retrieved code: {}", self.code);
+                                        console_log!("Retrieved code: {}", self.code);
 
-                                self.error = shared_self.error.clone();
-                                self.file = shared_self.file.clone();
+                                        self.error = shared_self.error.clone();
+                                        self.file = shared_self.file.clone();
+                                    }
+
+                                    #[cfg(not(target_family = "wasm"))]
+                                    self.load_file();
+                                }
+
+                                if ui
+                                    .add(egui::Button::new("Save").shortcut_text("Ctrl + S"))
+                                    .clicked()
+                                {
+                                    self.save_file();
+                                }
+
+                                if ui
+                                    .add(
+                                        egui::Button::new("Save as...")
+                                            .shortcut_text("Ctrl + Shift + S"),
+                                    )
+                                    .clicked()
+                                {
+                                    self.save_file_as();
+                                }
+
+                                ui.add_enabled_ui(self.file.is_some(), |ui| {
+                                    ui.checkbox(&mut self.autosave, "Autosave")
+                                });
+                            });
+
+                            if ui.button(t!("menu.debugger", lang)).clicked() {
+                                if self.debug_window.is_none() {
+                                    self.debug_window = Some(Box::new(DebugWindow::new(
+                                        &lang,
+                                        Some(self.tm.tape_values()),
+                                        Some(self.tm.tape_value()),
+                                        Some(egui::Pos2::new(0.0, 100.0)),
+                                    )));
+                                }
                             }
 
-                            #[cfg(not(target_family = "wasm"))]
-                            self.load_file();
-                        }
+                            if cfg!(feature = "teacher") {
+                                ui.menu_button(t!("menu.exercises", lang), |ui| {
+                                    if ui.button(t!("menu.exercises", lang)).clicked()
+                                        && self.book_window.is_none()
+                                    {
+                                        self.book_window =
+                                            Some(Box::new(WorkbookWindow::new(&self.get_lang())));
+                                    }
 
-                        if ui
-                            .add(egui::Button::new("Save").shortcut_text("Ctrl + S"))
-                            .clicked()
-                        {
-                            self.save_file();
-                        }
+                                    if ui.button(t!("menu.exercises.editor", lang)).clicked()
+                                        && self.workbook_editor_window.is_none()
+                                    {
+                                        self.workbook_editor_window = Some(Box::new(
+                                            WorkbookEditorWindow::new(&self.get_lang()),
+                                        ));
+                                    }
+                                });
+                            } else {
+                                if ui.button(t!("menu.exercises", lang)).clicked()
+                                    && self.book_window.is_none()
+                                {
+                                    self.book_window =
+                                        Some(Box::new(WorkbookWindow::new(&self.get_lang())));
+                                }
+                            }
 
-                        if ui
-                            .add(egui::Button::new("Save as...").shortcut_text("Ctrl + Shift + S"))
-                            .clicked()
-                        {
-                            self.save_file_as();
-                        }
+                            ui.menu_button(t!("menu.language", lang), |ui| {
+                                ui.radio_value(
+                                    &mut self.lang,
+                                    Language::English,
+                                    t!("lang.en", lang),
+                                );
+                                ui.radio_value::<Language>(
+                                    &mut self.lang,
+                                    Language::Spanish,
+                                    t!("lang.es", lang),
+                                );
+                            });
 
-                        ui.add_enabled_ui(self.file.is_some(), |ui| {
-                            ui.checkbox(&mut self.autosave, "Autosave")
+                            ui.menu_button(t!("menu.about", lang), |ui| {
+                                if ui.button(t!("menu.about", lang)).clicked() {
+                                    self.about_window = Some(Box::new(AboutWindow::new(
+                                        &lang,
+                                        Some(egui::Pos2::new(150.0, 100.0)),
+                                    )));
+                                }
+
+                                if ui.link(t!("menu.repository", lang)).clicked() {
+                                    webbrowser::open(
+                                        "https://github.com/margual56/turing-machine-2.0",
+                                    )
+                                    .unwrap();
+                                }
+                            });
                         });
                     });
-
-                    if ui.button(t!("menu.debugger", lang)).clicked() {
-                        if self.debug_window.is_none() {
-                            self.debug_window = Some(Box::new(DebugWindow::new(
-                                &lang,
-                                Some(self.tm.tape_values()),
-                                Some(self.tm.tape_value()),
-                                Some(egui::Pos2::new(0.0, 100.0)),
-                            )));
-                        }
-                    }
-
-                    if cfg!(feature = "teacher") {
-                        ui.menu_button("Exercises", |ui| {
-                            if ui.button("Exercises").clicked() && self.book_window.is_none() {
-                                self.book_window =
-                                    Some(Box::new(WorkbookWindow::new(&self.get_lang())));
-                            }
-
-                            if ui.button("Workbook editor").clicked()
-                                && self.workbook_editor_window.is_none()
-                            {
-                                self.workbook_editor_window =
-                                    Some(Box::new(WorkbookEditorWindow::new(&self.get_lang())));
-                            }
-                        });
-                    } else {
-                        if ui.button("Exercises").clicked() && self.book_window.is_none() {
-                            self.book_window =
-                                Some(Box::new(WorkbookWindow::new(&self.get_lang())));
-                        }
-                    }
-
-                    ui.menu_button(t!("menu.language", lang), |ui| {
-                        ui.radio_value(&mut self.lang, Language::English, t!("lang.en", lang));
-                        ui.radio_value(&mut self.lang, Language::Spanish, t!("lang.es", lang));
-                    });
-
-                    ui.menu_button(t!("menu.about", lang), |ui| {
-                        if ui.button(t!("menu.about", lang)).clicked() {
-                            self.about_window = Some(Box::new(AboutWindow::new(
-                                &lang,
-                                Some(egui::Pos2::new(150.0, 100.0)),
-                            )));
-                        }
-
-                        if ui.link(t!("menu.repository", lang)).clicked() {
-                            webbrowser::open("https://github.com/margual56/turing-machine-2.0")
-                                .unwrap();
-                        }
-                    });
-                });
             });
     }
 
@@ -767,154 +795,159 @@ impl MyApp {
         lang: &str,
         editor_focused: &mut bool,
     ) -> f32 {
-        egui::SidePanel::left("left")
-            .show(ctx, |ui| {
-                ui.vertical_centered_justified(|ui| {
-                    ui.add_space(10.0);
+        let contents = |ui: &mut egui::Ui| {
+            ui.vertical_centered_justified(|ui| {
+                ui.add_space(10.0);
 
-                    ui.horizontal(|ui| {
-                        let spacer = 10.0;
-
-                        if ui
-                            .add(egui::Button::new(t!("btn.open_file", lang)).min_size(
-                                ui.available_size() / 2.0 - egui::Vec2::new(spacer / 2.0, 0.0),
-                            ))
-                            .clicked()
-                        {
-                            #[cfg(target_family = "wasm")]
-                            {
-                                // Call the function load file with `&mut self` and await it on the main thread
-                                let shared_self = Arc::new(Mutex::new(self.clone_for_load_file()));
-                                let shared_self_clone = Arc::clone(&shared_self);
-                                let future = async move {
-                                    let mut shared_self = shared_self_clone.lock().unwrap();
-                                    shared_self.load_file().await;
-                                };
-                                wasm_bindgen_futures::spawn_local(future);
-                                // Wait for the result
-                                let shared_self = shared_self.lock().unwrap();
-                                self.tm = shared_self.tm.clone();
-                                self.code = shared_self.code.clone();
-
-                                console_log!("Retrieved code: {}", self.code);
-
-                                self.error = shared_self.error.clone();
-                                self.file = shared_self.file.clone();
-                            }
-
-                            #[cfg(not(target_family = "wasm"))]
-                            self.load_file();
-                        }
-
-                        ui.add_space(spacer);
-
-                        if ui
-                            .add(
-                                egui::Button::new(t!("btn.save_file", lang))
-                                    .min_size(ui.available_size()),
-                            )
-                            .clicked()
-                        {
-                            self.save_file();
-                        }
-                    });
+                ui.horizontal(|ui| {
+                    let spacer = 10.0;
 
                     if ui
-                        .button(egui::RichText::new(t!("btn.compile", lang)).strong())
+                        .add(egui::Button::new(t!("btn.open_file", lang)).min_size(
+                            ui.available_size() / 2.0 - egui::Vec2::new(spacer / 2.0, 0.0),
+                        ))
                         .clicked()
                     {
-                        self.tm = match self.tm.restart(&self.code) {
-                            Ok(t) => {
-                                self.error = None;
-                                t
-                            }
-                            Err(e) => {
-                                self.error = Some(e);
-                                self.tm.clone()
-                            }
-                        };
+                        #[cfg(target_family = "wasm")]
+                        {
+                            // Call the function load file with `&mut self` and await it on the main thread
+                            let shared_self = Arc::new(Mutex::new(self.clone_for_load_file()));
+                            let shared_self_clone = Arc::clone(&shared_self);
+                            let future = async move {
+                                let mut shared_self = shared_self_clone.lock().unwrap();
+                                shared_self.load_file().await;
+                            };
+                            wasm_bindgen_futures::spawn_local(future);
+                            // Wait for the result
+                            let shared_self = shared_self.lock().unwrap();
+                            self.tm = shared_self.tm.clone();
+                            self.code = shared_self.code.clone();
+
+                            console_log!("Retrieved code: {}", self.code);
+
+                            self.error = shared_self.error.clone();
+                            self.file = shared_self.file.clone();
+                        }
+
+                        #[cfg(not(target_family = "wasm"))]
+                        self.load_file();
                     }
 
-                    if self.tm.uses_libraries() {
-                        ui.separator();
+                    ui.add_space(spacer);
 
-                        egui::ScrollArea::vertical()
-                            .id_source("Library help scroll area")
-                            .max_height(ui.available_height() / 2.0)
-                            .show(ui, |ui| {
-                                for lib in self.tm.libraries() {
-                                    ui.collapsing(String::from(lib.name.clone()), |ui| {
-                                        egui::ScrollArea::horizontal().show(ui, |ui| {
-                                            ui.horizontal(|ui| {
-                                                ui.label("Initial state:"); // TODO: Translate
-                                                ui.label(
-                                                    egui::RichText::new(lib.initial_state.clone())
-                                                        .strong(),
-                                                );
-                                            });
-                                            ui.add_space(5.0);
-
-                                            ui.horizontal(|ui| {
-                                                ui.label("Final state:"); // TODO: Translate
-                                                ui.label(
-                                                    egui::RichText::new(lib.final_state.clone())
-                                                        .strong(),
-                                                );
-                                            });
-                                            ui.add_space(5.0);
-
-                                            ui.horizontal(|ui| {
-                                                ui.label("Used states:"); // TODO: Translate
-                                                ui.label(
-                                                    egui::RichText::new(
-                                                        &lib.used_states.join(", "),
-                                                    )
-                                                    .strong(),
-                                                );
-                                            });
-                                        });
-                                    })
-                                    .header_response
-                                    .on_hover_text_at_pointer(lib.description.clone());
-                                }
-                            });
+                    if ui
+                        .add(
+                            egui::Button::new(t!("btn.save_file", lang))
+                                .min_size(ui.available_size()),
+                        )
+                        .clicked()
+                    {
+                        self.save_file();
                     }
+                });
+
+                if ui
+                    .button(egui::RichText::new(t!("btn.compile", lang)).strong())
+                    .clicked()
+                {
+                    self.tm = match self.tm.restart(&self.code) {
+                        Ok(t) => {
+                            self.error = None;
+                            t
+                        }
+                        Err(e) => {
+                            self.error = Some(e);
+                            self.tm.clone()
+                        }
+                    };
+                }
+
+                if self.tm.uses_libraries() {
+                    ui.separator();
 
                     egui::ScrollArea::vertical()
-                        .max_height(ui.available_height() - 50.0)
-                        .show(ui, |my_ui: &mut Ui| {
-                            let editor = TextEdit::multiline(&mut self.code)
-                                .code_editor()
-                                .desired_width(0.0);
+                        .id_source("Library help scroll area")
+                        .max_height(ui.available_height() / 2.0)
+                        .show(ui, |ui| {
+                            for lib in self.tm.libraries() {
+                                ui.collapsing(String::from(lib.name.clone()), |ui| {
+                                    egui::ScrollArea::horizontal().show(ui, |ui| {
+                                        ui.horizontal(|ui| {
+                                            ui.label(t!("lbl.state.initial", lang) + ":");
+                                            ui.label(
+                                                egui::RichText::new(lib.initial_state.clone())
+                                                    .strong(),
+                                            );
+                                        });
+                                        ui.add_space(5.0);
 
-                            let res = my_ui.add(editor);
+                                        ui.horizontal(|ui| {
+                                            ui.label(t!("lbl.state.final", lang) + ":");
+                                            ui.label(
+                                                egui::RichText::new(lib.final_state.clone())
+                                                    .strong(),
+                                            );
+                                        });
+                                        ui.add_space(5.0);
 
-                            if self.autosave && res.lost_focus() {
-                                debug!("Saving file");
-                                self.saved_feedback = self.auto_save_file();
+                                        ui.horizontal(|ui| {
+                                            ui.label(t!("lbl.state.used", lang) + ":");
+                                            ui.label(
+                                                egui::RichText::new(&lib.used_states.join(", "))
+                                                    .strong(),
+                                            );
+                                        });
+                                    });
+                                })
+                                .header_response
+                                .on_hover_text_at_pointer(lib.description.clone());
                             }
-
-                            *editor_focused = res.has_focus().clone();
                         });
+                }
 
-                    if ui
-                        .button("Show available libraries for composition")
-                        .clicked()
-                    {
-                        // TODO: Translate
-                        self.composition_help_window =
-                            Some(Box::new(CompositionHelpWindow::new(&self.get_lang())));
-                    }
+                egui::ScrollArea::vertical()
+                    .max_height(ui.available_height() - 50.0)
+                    .show(ui, |my_ui: &mut Ui| {
+                        let editor = TextEdit::multiline(&mut self.code)
+                            .code_editor()
+                            .desired_width(0.0);
 
-                    if self.saved_feedback.is_some() {
-                        debug!("Drawing saved feedback popup");
-                        self.draw_saved_feedback_popup(ui, ctx);
-                    }
-                })
+                        let res = my_ui.add(editor);
+
+                        if self.autosave && res.lost_focus() {
+                            debug!("Saving file");
+                            self.saved_feedback = self.auto_save_file();
+                        }
+
+                        *editor_focused = res.has_focus().clone();
+                    });
+
+                if ui.button(t!("btn.libraries", lang)).clicked() {
+                    self.composition_help_window =
+                        Some(Box::new(CompositionHelpWindow::new(&self.get_lang())));
+                }
+
+                if self.saved_feedback.is_some() {
+                    debug!("Drawing saved feedback popup");
+                    self.draw_saved_feedback_popup(ui, ctx);
+                }
             })
-            .response
-            .rect
-            .right()
+        };
+
+        if is_mobile(ctx) {
+            egui::Window::new(t!("header.code", lang))
+                .collapsible(true)
+                .default_pos(egui::pos2(0.0, 0.0))
+                .constrain(true)
+                .show(ctx, contents);
+            return 0.0;
+        } else {
+            egui::SidePanel::left("left")
+                .show(ctx, contents)
+                .response
+                .rect
+                .right()
+        }
     }
 
     /// Draws the central panel containing the Turing machine description, sliders for tape size, animation speed,
@@ -939,21 +972,36 @@ impl MyApp {
                             );
                         }
 
-                        ui.add(
-                            egui::Slider::new(&mut self.tm.tape_rect_size, 25.0..=300.0)
-                                .suffix(" px")
-                                .text(t!("lbl.tape.size", lang))
-                        ).on_hover_text_at_pointer("The size of the squares and text of the drawing of the tape."); // TODO: Translate
-                        ui.add(
-                            egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
-                                .suffix(t!("lbl.seconds", lang))
-                                .text(t!("lbl.tape.speed", lang)),
-                        ).on_hover_text_at_pointer("The duration of the animation of the tape. When a step is executed, the tape will move to the next position in this amount of time."); // TODO: Translate
-                        ui.add(
-                            egui::Slider::new(&mut self.tm.threshold_inf_loop, 10..=2000)
-                                .suffix(t!("lbl.iterations", lang))
-                                .text(t!("lbl.tape.inf_loop", lang)),
-                        ).on_hover_text_at_pointer("The maximum number of iterations that the Turing machine can execute before assuming that it is an infinite loop."); // TODO: Translate
+                        let mut sliders = |ui: &mut egui::Ui| {
+                            ui.add(
+                                egui::Slider::new(&mut self.tm.tape_rect_size, 25.0..=300.0)
+                                    .suffix(" px")
+                                    .text(t!("lbl.tape.size", lang)),
+                            )
+                            .on_hover_text_at_pointer(t!("tooltip.tape.size", lang));
+                            ui.add(
+                                egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
+                                    .suffix(t!("lbl.seconds", lang))
+                                    .text(t!("lbl.tape.speed", lang)),
+                            )
+                            .on_hover_text_at_pointer(t!("tooltip.tape.duration", lang));
+                            ui.add(
+                                egui::Slider::new(&mut self.tm.threshold_inf_loop, 10..=2000)
+                                    .suffix(t!("lbl.iterations", lang))
+                                    .text(t!("lbl.tape.inf_loop", lang)),
+                            )
+                            .on_hover_text_at_pointer(t!("tooltip.tape.iterations", lang));
+                        };
+
+                        if is_mobile(ctx) {
+                            ui.collapsing(t!("header.sliders", lang), |ui| {
+                                egui::ScrollArea::horizontal()
+                                    .max_width(ctx.screen_rect().width())
+                                    .show(ui, sliders);
+                            });
+                        } else {
+                            sliders(ui);
+                        }
                     });
 
                     ui.separator();
@@ -984,30 +1032,46 @@ impl MyApp {
                         } else {
                             ui.label(t!("lbl.resumed", lang));
                         }
-                        let b = ui.button(text).on_hover_text_at_pointer("Play/pause the execution of the machine. If the execution has finished, pressing \"play\" will reset the machine.\nThe shortcut is the spacebar."); // TODO: Translate
 
-                        if (b.clicked()
-                            || ui.input_mut(|i| {
-                                i.consume_key(egui::Modifiers::NONE, egui::Key::Space)
-                            }))
-                            && !editor_focused
-                        {
-                            if self.tm.finished() {
-                                self.tm = self.tm.restart(&self.code).unwrap();
-                            } else {
-                                self.tm.paused = !self.tm.paused;
-                            }
-                        }
+                        ui.vertical_centered_justified(|ui| {
+                            let width = ui.available_width();
+                            ui.columns(3, |columns| {
+                                // Try to vertically center the horizontal layout
+                                columns[1].horizontal(|ui| {
+                                    ui.add_space(width * 0.175 - 95.0); // These are magic numbers (eyeballed)
 
-                        if self.process_turing_controls(ui, &ctx, editor_focused, &lang) {
-                            ctx.request_repaint();
-                            if self.tm.is_inf_loop() {
-                                warn!("Infinite loop detected!");
-                                self.infinite_loop_window =
-                                    Some(Box::new(InfiniteLoopWindow::new(&self.get_lang())));
-                                self.tm.paused = true;
-                            }
-                        }
+                                    let b = ui.button(text).on_hover_text_at_pointer(t!(
+                                        "tooltip.button.playpause",
+                                        lang
+                                    ));
+
+                                    if (b.clicked()
+                                        || ui.input_mut(|i| {
+                                            i.consume_key(egui::Modifiers::NONE, egui::Key::Space)
+                                        }))
+                                        && !editor_focused
+                                    {
+                                        if self.tm.finished() {
+                                            self.tm = self.tm.restart(&self.code).unwrap();
+                                        } else {
+                                            self.tm.paused = !self.tm.paused;
+                                        }
+                                    }
+
+                                    if self.process_turing_controls(ui, &ctx, editor_focused, &lang)
+                                    {
+                                        ctx.request_repaint();
+                                        if self.tm.is_inf_loop() {
+                                            warn!("Infinite loop detected!");
+                                            self.infinite_loop_window = Some(Box::new(
+                                                InfiniteLoopWindow::new(&self.get_lang()),
+                                            ));
+                                            self.tm.paused = true;
+                                        }
+                                    }
+                                });
+                            });
+                        });
                     });
 
                     self.tm.lang = self.get_lang();

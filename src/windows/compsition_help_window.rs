@@ -26,7 +26,7 @@ impl SecondaryWindow for CompositionHelpWindow {
     fn show(&self, ctx: &egui::Context) -> bool {
         let mut active = true;
 
-        egui::Window::new("List of composition libraries available")
+        egui::Window::new(t!("title.composition", self.lang))
             .id(egui::Id::new("composition_help_window"))
             .resizable(false)
             .open(&mut active)
@@ -43,27 +43,28 @@ impl SecondaryWindow for CompositionHelpWindow {
                     .header(20.0, |mut header| {
                         header.col(|ui| {
                             ui.label(
-                                RichText::new("Library name") // TODO: Translate
-                                    .heading(),
+                                RichText::new(t!("lbl.composition.name", self.lang)).heading(),
                             )
-                            .on_hover_text_at_pointer("The name to write to import it");
-                            // TODO: Translate
+                            .on_hover_text_at_pointer(t!("tooltip.composition.name", self.lang));
                         });
 
                         header.col(|ui| {
-                            ui.label(RichText::new("Description").heading()); // TODO: Translate
+                            ui.label(
+                                RichText::new(t!("lbl.composition.description", self.lang))
+                                    .heading(),
+                            );
                         });
 
                         header.col(|ui| {
-                            ui.label(RichText::new("Initial state").heading()); // TODO: Translate
+                            ui.label(RichText::new(t!("lbl.state.initial", self.lang)).heading());
                         });
 
                         header.col(|ui| {
-                            ui.label(RichText::new("Final state").heading()); // TODO: Translate
+                            ui.label(RichText::new(t!("lbl.state.final", self.lang)).heading());
                         });
 
                         header.col(|ui| {
-                            ui.label(RichText::new("Used states").heading()); // TODO: Translate
+                            ui.label(RichText::new(t!("lbl.state.used", self.lang)).heading());
                         });
                     })
                     .body(|mut body| {
@@ -96,6 +97,10 @@ impl SecondaryWindow for CompositionHelpWindow {
                             });
                         }
                     });
+
+                ui.separator();
+
+                ui.label(RichText::new(t!("lbl.composition.help.txt", self.lang)));
             });
 
         active
