@@ -1,4 +1,8 @@
 {
+    "menu.file": {
+        "en": "File",
+        "es": "Archivo"
+    },
     "menu.about": {
         "en": "About",
         "es": "Acerca de"
@@ -18,6 +22,14 @@
     "menu.debugger.activate": {
         "en": "Activate debugger",
         "es": "Activar depurador"
+    },
+    "menu.exercises": {
+        "en": "Exercises",
+        "es": "Ejercicios"
+    },
+    "menu.exercises.editor": {
+        "en": "Workbook editor",
+        "es": "Editor de cuadernos"
     },
     "btn.open_file": {
         "en": "Open File",

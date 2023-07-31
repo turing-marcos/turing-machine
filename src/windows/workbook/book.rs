@@ -57,7 +57,7 @@ impl BookWindow {
 
         egui::Window::new(t!("title.workbook", self.lang))
             .id(egui::Id::new("exercises_window"))
-            .resizable(false)
+            .resizable(true)
             .open(&mut active)
             .show(ctx, |ui| {
                 ui.horizontal_centered(|ui| {

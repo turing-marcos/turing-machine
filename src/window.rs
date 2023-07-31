@@ -654,7 +654,7 @@ impl MyApp {
                     .max_width(ctx.screen_rect().width())
                     .show(ui, |ui| {
                         ui.horizontal_centered(|ui| {
-                            ui.menu_button("File", |ui| {
+                            ui.menu_button(t!("menu.file", lang), |ui| {
                                 if ui
                                     .add(egui::Button::new("Open").shortcut_text("Ctrl + O"))
                                     .clicked()
@@ -719,15 +719,15 @@ impl MyApp {
                             }
 
                             if cfg!(feature = "teacher") {
-                                ui.menu_button("Exercises", |ui| {
-                                    if ui.button("Exercises").clicked()
+                                ui.menu_button(t!("menu.exercises", lang), |ui| {
+                                    if ui.button(t!("menu.exercises", lang)).clicked()
                                         && self.book_window.is_none()
                                     {
                                         self.book_window =
                                             Some(Box::new(WorkbookWindow::new(&self.get_lang())));
                                     }
 
-                                    if ui.button("Workbook editor").clicked()
+                                    if ui.button(t!("menu.exercises.editor", lang)).clicked()
                                         && self.workbook_editor_window.is_none()
                                     {
                                         self.workbook_editor_window = Some(Box::new(
@@ -736,7 +736,7 @@ impl MyApp {
                                     }
                                 });
                             } else {
-                                if ui.button("Exercises").clicked() && self.book_window.is_none() {
+                                if ui.button(t!("menu.exercises", lang)).clicked() && self.book_window.is_none() {
                                     self.book_window =
                                         Some(Box::new(WorkbookWindow::new(&self.get_lang())));
                                 }
