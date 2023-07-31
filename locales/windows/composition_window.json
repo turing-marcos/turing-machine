@@ -10,5 +10,9 @@
     "lbl.composition.description": {
         "en": "Description",
         "es": "Descripción"
+    },
+    "lbl.composition.help": {
+        "en": "Help (what is this?)",
+        "es": "Ayuda (¿qué es esto?)"
     }
 }
