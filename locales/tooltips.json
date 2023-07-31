@@ -1,0 +1,30 @@
+{
+    "tooltip.main.step": {
+        "en": "Execute one single step of the Turing machine",
+        "es": "Ejecuta un solo paso de la máquina de Turing"
+    },
+    "tooltip.tape.size": {
+        "en": "The size of the squares of the drawing of the tape.",
+        "es": "El tamaño de los cuadrados del dibujo de la cinta."
+    },
+    "tooltip.tape.duration": {
+        "en": "The duration of the animation of the tape. When a step is executed, the tape will move to the next position in this amount of time.",
+        "es": "La duración de la animación de la cinta. Cuando se ejecuta un paso, la cinta se moverá a la siguiente posición en esta cantidad de tiempo."
+    },
+    "tooltip.tape.iterations": {
+        "en": "The maximum number of iterations that the Turing machine can execute before assuming that it is an infinite loop.",
+        "es": "El número máximo de iteraciones que la máquina de Turing puede ejecutar antes de asumir que es un bucle infinito."
+    },
+    "tooltip.button.playpause": {
+        "en": "Play/pause the execution of the machine. If the execution has finished, pressing \"play\" will reset the machine.\nThe shortcut is the spacebar.",
+        "es": "Reproduce/pausa la ejecución de la máquina. Si la ejecución ha terminado, pulsar \"play\" reiniciará la máquina.\nEl atajo es la barra espaciadora."
+    },
+    "tooltip.composition.name": {
+        "en": "The name to write to import it",
+        "es": "El nombre a escribir para importarla"
+    },
+    "tooltip.editor.chapter_title": {
+        "en": "Chapter title",
+        "es": "Título del capítulo"
+    }
+}

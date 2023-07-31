@@ -3,7 +3,20 @@ mod window;
 pub mod windows;
 
 pub use turing_widget::TuringWidget;
-pub use window::MyApp;
+pub use window::{Language, MyApp};
+
+pub fn get_lang() -> Language {
+    match sys_locale::get_locale() {
+        Some(locale) => {
+            if String::from(&locale[..2]) == String::from("es") {
+                Language::Spanish
+            } else {
+                Language::English
+            }
+        }
+        None => Language::English,
+    }
+}
 
 pub struct CompositionLibrary {
     pub name: String,

@@ -6,6 +6,7 @@ use std::{
 };
 
 use crate::{
+    get_lang,
     windows::{
         AboutWindow, CompositionHelpWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow,
         WorkbookEditorWindow, WorkbookWindow,
@@ -116,7 +117,7 @@ impl MyApp {
             workbook_editor_window: None,
             composition_help_window: None,
 
-            lang: Language::English,
+            lang: get_lang(),
 
             file: file.clone(),
             autosave: file.is_some(),
@@ -220,7 +221,7 @@ impl MyApp {
         ui.add_enabled_ui(!editor_focused, |ui| {
             if self.tm.offset != 0.0 {
                 ui.add_enabled(false, |ui: &mut Ui| ui.button(t!("lbl.machine.step", lang)))
-                    .on_hover_text_at_pointer("Execute one single step of the Turing machine"); // TODO: Translate
+                    .on_hover_text_at_pointer(t!("tooltip.main.step", lang));
 
                 if self.tm.offset.abs() < 0.01 {
                     self.tm.offset = 0.0;
@@ -236,8 +237,7 @@ impl MyApp {
             } else if (ui
                 .add_enabled(self.tm.paused, |ui: &mut Ui| {
                     ui.button(t!("lbl.machine.step", lang))
-                        .on_hover_text_at_pointer("Execute one single step of the Turing machine")
-                    // TODO: Translate
+                        .on_hover_text_at_pointer(t!("tooltip.main.step", lang))
                 })
                 .clicked()
                 || ui.input(|i| i.key_pressed(egui::Key::ArrowRight))
@@ -654,7 +654,7 @@ impl MyApp {
                     .max_width(ctx.screen_rect().width())
                     .show(ui, |ui| {
                         ui.horizontal_centered(|ui| {
-                            ui.menu_button("File", |ui| {
+                            ui.menu_button(t!("menu.file", lang), |ui| {
                                 if ui
                                     .add(egui::Button::new("Open").shortcut_text("Ctrl + O"))
                                     .clicked()
@@ -719,15 +719,15 @@ impl MyApp {
                             }
 
                             if cfg!(feature = "teacher") {
-                                ui.menu_button("Exercises", |ui| {
-                                    if ui.button("Exercises").clicked()
+                                ui.menu_button(t!("menu.exercises", lang), |ui| {
+                                    if ui.button(t!("menu.exercises", lang)).clicked()
                                         && self.book_window.is_none()
                                     {
                                         self.book_window =
                                             Some(Box::new(WorkbookWindow::new(&self.get_lang())));
                                     }
 
-                                    if ui.button("Workbook editor").clicked()
+                                    if ui.button(t!("menu.exercises.editor", lang)).clicked()
                                         && self.workbook_editor_window.is_none()
                                     {
                                         self.workbook_editor_window = Some(Box::new(
@@ -736,7 +736,7 @@ impl MyApp {
                                     }
                                 });
                             } else {
-                                if ui.button("Exercises").clicked() && self.book_window.is_none() {
+                                if ui.button(t!("menu.exercises", lang)).clicked() && self.book_window.is_none() {
                                     self.book_window =
                                         Some(Box::new(WorkbookWindow::new(&self.get_lang())));
                                 }
@@ -748,7 +748,7 @@ impl MyApp {
                                     Language::English,
                                     t!("lang.en", lang),
                                 );
-                                ui.radio_value(
+                                ui.radio_value::<Language>(
                                     &mut self.lang,
                                     Language::Spanish,
                                     t!("lang.es", lang),
@@ -871,7 +871,7 @@ impl MyApp {
                                 ui.collapsing(String::from(lib.name.clone()), |ui| {
                                     egui::ScrollArea::horizontal().show(ui, |ui| {
                                         ui.horizontal(|ui| {
-                                            ui.label("Initial state:"); // TODO: Translate
+                                            ui.label(t!("lbl.state.initial", lang) + ":");
                                             ui.label(
                                                 egui::RichText::new(lib.initial_state.clone())
                                                     .strong(),
@@ -880,7 +880,7 @@ impl MyApp {
                                         ui.add_space(5.0);
 
                                         ui.horizontal(|ui| {
-                                            ui.label("Final state:"); // TODO: Translate
+                                            ui.label(t!("lbl.state.final", lang) + ":");
                                             ui.label(
                                                 egui::RichText::new(lib.final_state.clone())
                                                     .strong(),
@@ -889,7 +889,7 @@ impl MyApp {
                                         ui.add_space(5.0);
 
                                         ui.horizontal(|ui| {
-                                            ui.label("Used states:"); // TODO: Translate
+                                            ui.label(t!("lbl.state.used", lang) + ":");
                                             ui.label(
                                                 egui::RichText::new(&lib.used_states.join(", "))
                                                     .strong(),
@@ -920,11 +920,7 @@ impl MyApp {
                         *editor_focused = res.has_focus().clone();
                     });
 
-                if ui
-                    .button("Show available libraries for composition")
-                    .clicked()
-                {
-                    // TODO: Translate
+                if ui.button(t!("btn.libraries", lang)).clicked() {
                     self.composition_help_window =
                         Some(Box::new(CompositionHelpWindow::new(&self.get_lang())));
                 }
@@ -937,7 +933,7 @@ impl MyApp {
         };
 
         if is_mobile(ctx) {
-            egui::Window::new("Code panel")
+            egui::Window::new(t!("header.code", lang))
                 .collapsible(true)
                 .default_pos(egui::pos2(0.0, 0.0))
                 .constrain(true)
@@ -978,24 +974,29 @@ impl MyApp {
                             ui.add(
                                 egui::Slider::new(&mut self.tm.tape_rect_size, 25.0..=300.0)
                                     .suffix(" px")
-                                    .text(t!("lbl.tape.size", lang))
-                            ).on_hover_text_at_pointer("The size of the squares and text of the drawing of the tape."); // TODO: Translate
+                                    .text(t!("lbl.tape.size", lang)),
+                            )
+                            .on_hover_text_at_pointer(t!("tooltip.tape.size", lang));
                             ui.add(
                                 egui::Slider::new(&mut self.tm.tape_anim_speed, 0.2..=2.0)
                                     .suffix(t!("lbl.seconds", lang))
                                     .text(t!("lbl.tape.speed", lang)),
-                            ).on_hover_text_at_pointer("The duration of the animation of the tape. When a step is executed, the tape will move to the next position in this amount of time."); // TODO: Translate
+                            )
+                            .on_hover_text_at_pointer(t!("tooltip.tape.duration", lang));
                             ui.add(
                                 egui::Slider::new(&mut self.tm.threshold_inf_loop, 10..=2000)
                                     .suffix(t!("lbl.iterations", lang))
                                     .text(t!("lbl.tape.inf_loop", lang)),
-                            ).on_hover_text_at_pointer("The maximum number of iterations that the Turing machine can execute before assuming that it is an infinite loop."); // TODO: Translate
+                            )
+                            .on_hover_text_at_pointer(t!("tooltip.tape.iterations", lang));
                         };
 
                         if is_mobile(ctx) {
-                            ui.collapsing("Sliders", |ui| {
-                                egui::ScrollArea::horizontal().max_width(ctx.screen_rect().width()).show(ui, sliders);
-                            }); // TODO: Translate
+                            ui.collapsing(t!("header.sliders", lang), |ui| {
+                                egui::ScrollArea::horizontal()
+                                    .max_width(ctx.screen_rect().width())
+                                    .show(ui, sliders);
+                            });
                         } else {
                             sliders(ui);
                         }
@@ -1032,11 +1033,15 @@ impl MyApp {
 
                         ui.vertical_centered_justified(|ui| {
                             let width = ui.available_width();
-                            ui.columns(3, |columns| { // Try to vertically center the horizontal layout
+                            ui.columns(3, |columns| {
+                                // Try to vertically center the horizontal layout
                                 columns[1].horizontal(|ui| {
-                                    ui.add_space(width*0.175 - 95.0); // These are magic numbers (eyeballed)
+                                    ui.add_space(width * 0.175 - 95.0); // These are magic numbers (eyeballed)
 
-                                    let b = ui.button(text).on_hover_text_at_pointer("Play/pause the execution of the machine. If the execution has finished, pressing \"play\" will reset the machine.\nThe shortcut is the spacebar."); // TODO: Translate
+                                    let b = ui.button(text).on_hover_text_at_pointer(t!(
+                                        "tooltip.button.playpause",
+                                        lang
+                                    ));
 
                                     if (b.clicked()
                                         || ui.input_mut(|i| {
@@ -1051,12 +1056,14 @@ impl MyApp {
                                         }
                                     }
 
-                                    if self.process_turing_controls(ui, &ctx, editor_focused, &lang) {
+                                    if self.process_turing_controls(ui, &ctx, editor_focused, &lang)
+                                    {
                                         ctx.request_repaint();
                                         if self.tm.is_inf_loop() {
                                             warn!("Infinite loop detected!");
-                                            self.infinite_loop_window =
-                                                Some(Box::new(InfiniteLoopWindow::new(&self.get_lang())));
+                                            self.infinite_loop_window = Some(Box::new(
+                                                InfiniteLoopWindow::new(&self.get_lang()),
+                                            ));
                                             self.tm.paused = true;
                                         }
                                     }

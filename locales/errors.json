@@ -1,0 +1,22 @@
+{
+    "err.initialization": {
+        "en": "Could not initialize the Turing Machine. Please fix the syntax error and try again.",
+        "es": "No se pudo inicializar la Máquina de Turing. Por favor, corrija el error de sintaxis e inténtelo de nuevo."
+    },
+    "err.undefined.state": {
+        "en": "The machine is in an undefined state",
+        "es": "La máquina está en un estado indefinido"
+    },
+    "err.infinite_loop": {
+        "en": "Infinite loop",
+        "es": "Bucle infinito"
+    },
+    "err.syntax.simple": {
+        "en": "Syntax error",
+        "es": "Error de sintaxis"
+    },
+    "err.syntax": {
+        "en": "Syntax error on file $file",
+        "es": "Error de sintaxis en el archivo $file"
+    }
+}

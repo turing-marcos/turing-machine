@@ -113,6 +113,7 @@ fn load_icon(path: &str) -> Option<eframe::IconData> {
 #[cfg(not(target_arch = "wasm32"))]
 fn run_machine_gui(file: Option<PathBuf>) {
     use eframe::egui;
+    use turing_machine::get_lang;
 
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
@@ -134,7 +135,7 @@ fn run_machine_gui(file: Option<PathBuf>) {
         options,
         Box::new(move |cc| match MyApp::new(&file, cc) {
             Ok(w) => Box::new(w),
-            Err(e) => Box::new(ErrorWindow::new(e, file, cc)),
+            Err(e) => Box::new(ErrorWindow::new(e, file, get_lang(), cc)),
         }),
     ) {
         Ok(_) => (),

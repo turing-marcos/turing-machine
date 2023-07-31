@@ -1,4 +1,5 @@
 use eframe::egui;
+use internationalization::t;
 
 use super::{
     exercise::Exercise, load_image, save_workbook, Workbook, WorkbookChapter, MAX_IMG_SIZE,
@@ -22,14 +23,16 @@ impl WorkbookEditorWindow {
     }
 
     pub fn set_lang(&mut self, lang: &str) {
-        self.lang = lang.to_string();
+        self.lang = String::from(lang);
     }
 
     pub fn show(&mut self, ctx: &egui::Context) -> bool {
         // ctx.set_debug_on_hover(true);
         let mut active = true;
 
-        egui::Window::new("Workbook editor") //TODO: t!("title.debug", self.lang))
+        let lang = &self.lang.clone();
+
+        egui::Window::new(t!("title.workbook.editor", lang))
             .id(egui::Id::new("editor_window"))
             .resizable(true)
             .open(&mut active)
@@ -38,7 +41,7 @@ impl WorkbookEditorWindow {
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {
                         ui.vertical(|ui| {
-                            ui.heading("Catalog"); //t!("title.exercises", self.lang));
+                            ui.heading(t!("heading.workbook.catalog", lang));
 
                             egui::ScrollArea::vertical()
                                 .id_source(egui::Id::new("scroll_list"))
@@ -67,9 +70,13 @@ impl WorkbookEditorWindow {
 
                                             ui.separator();
 
-                                            if ui.button("Add Exercise").clicked() {
+                                            if ui
+                                                .button(t!("btn.editor.add_exercise", lang))
+                                                .clicked()
+                                            {
                                                 exercises.push(WorkbookEditorWindow::new_exercise(
                                                     exercises.len(),
+                                                    lang,
                                                 ));
                                             }
                                         });
@@ -78,10 +85,11 @@ impl WorkbookEditorWindow {
 
                                     ui.separator();
 
-                                    if ui.button("Add Chapter").clicked() {
+                                    if ui.button(t!("btn.editor.add_chapter", lang)).clicked() {
                                         self.chapters.push(WorkbookEditorWindow::new_chapter(
                                             self.chapters.len(),
                                             0,
+                                            lang,
                                         ));
                                         self.selected = (self.chapters.len() - 1, 0);
                                     }
@@ -94,7 +102,7 @@ impl WorkbookEditorWindow {
                             if let Some(ch) = self.chapters.get_mut(self.selected.0) {
                                 ui.add(
                                     egui::TextEdit::singleline(&mut ch.0)
-                                        .hint_text("Chapter title")
+                                        .hint_text(t!("tooltip.editor.chapter_title", lang))
                                         .desired_width(0.0)
                                         .font(egui::TextStyle::Heading),
                                 );
@@ -105,7 +113,7 @@ impl WorkbookEditorWindow {
                             if let Some(ex) = self.get_exercise(self.selected) {
                                 ui.add(
                                     egui::TextEdit::singleline(&mut ex.title)
-                                        .hint_text("Exercise title")
+                                        .hint_text(t!("tooltip.editor.chapter_title", lang))
                                         .desired_width(0.0)
                                         .font(egui::TextStyle::Heading),
                                 );
@@ -128,7 +136,7 @@ impl WorkbookEditorWindow {
                                     );
                                     ui.horizontal(|ui| {
                                         ui.add_space(15.0);
-                                        if ui.button("Add image").clicked() {
+                                        if ui.button(t!("btn.editor.add_image", lang)).clicked() {
                                             match load_image() {
                                                 Some(img) => ex.set_cover(img),
                                                 None => {}
@@ -139,7 +147,7 @@ impl WorkbookEditorWindow {
 
                                 ui.add_space(50.0);
 
-                                ui.label("Exercise code:"); //t!("editor.code.header", self.lang));
+                                ui.label(t!("lbl.editor.exercise_code", lang) + ":"); //t!("editor.code.header", self.lang));
 
                                 let mut code = ex.code.clone();
                                 egui::ScrollArea::vertical()
@@ -159,7 +167,7 @@ impl WorkbookEditorWindow {
                     });
 
                     ui.horizontal(|ui| {
-                        if ui.button("Save workbook").clicked() {
+                        if ui.button(t!("btn.editor.save_workbook", lang)).clicked() {
                             save_workbook(&self.chapters);
                         }
                     });
@@ -169,16 +177,24 @@ impl WorkbookEditorWindow {
         active
     }
 
-    fn new_chapter(chapters_len: usize, exercises_len: usize) -> WorkbookChapter {
+    fn new_chapter(chapters_len: usize, exercises_len: usize, lang: &str) -> WorkbookChapter {
         (
-            format!("New Chapter {}", chapters_len + 1),
-            vec![WorkbookEditorWindow::new_exercise(exercises_len)],
+            t!(
+                "lbl.editor.new_chapter",
+                num: (chapters_len + 1).to_string().as_str(),
+                lang
+            ),
+            vec![WorkbookEditorWindow::new_exercise(exercises_len, lang)],
         )
     }
 
-    fn new_exercise(exercises_len: usize) -> Exercise {
+    fn new_exercise(exercises_len: usize, lang: &str) -> Exercise {
         Exercise::new(
-            &format!("New Exercise {}", exercises_len + 1),
+            &t!(
+                "lbl.editor.new_exercise",
+                num: (exercises_len + 1).to_string().as_str(),
+                lang
+            ),
             None,
             String::new(),
         )
