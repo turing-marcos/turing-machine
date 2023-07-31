@@ -736,7 +736,9 @@ impl MyApp {
                                     }
                                 });
                             } else {
-                                if ui.button(t!("menu.exercises", lang)).clicked() && self.book_window.is_none() {
+                                if ui.button(t!("menu.exercises", lang)).clicked()
+                                    && self.book_window.is_none()
+                                {
                                     self.book_window =
                                         Some(Box::new(WorkbookWindow::new(&self.get_lang())));
                                 }

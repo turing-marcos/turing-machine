@@ -64,16 +64,8 @@ impl eframe::App for ErrorWindow {
         let lang = String::from(self.lang());
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.menu_button(t!("menu.language", self.lang()), |ui| {
-                ui.radio_value::<Language>(
-                    &mut self.lang,
-                    Language::English,
-                    t!("lang.en", lang),
-                );
-                ui.radio_value::<Language>(
-                    &mut self.lang,
-                    Language::Spanish,
-                    t!("lang.es", lang),
-                );
+                ui.radio_value::<Language>(&mut self.lang, Language::English, t!("lang.en", lang));
+                ui.radio_value::<Language>(&mut self.lang, Language::Spanish, t!("lang.es", lang));
             });
         });
 
