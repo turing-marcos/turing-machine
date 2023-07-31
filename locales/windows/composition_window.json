@@ -14,5 +14,9 @@
     "lbl.composition.help": {
         "en": "Help (what is this?)",
         "es": "Ayuda (¿qué es esto?)"
+    },
+    "lbl.composition.help.txt": {
+        "en": "Type `compose = { <library name> };` before the state definitions to use a library",
+        "es": "Escribe `compose = { <nombre de la librería> };` antes de definir los estados para usar una librería"
     }
 }

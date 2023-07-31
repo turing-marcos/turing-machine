@@ -100,11 +100,7 @@ impl SecondaryWindow for CompositionHelpWindow {
 
                 ui.separator();
 
-                if ui.button(RichText::new(t!("lbl.composition.help", self.lang))).clicked() {
-                    egui::popup::show_tooltip(ctx, egui::Id::new("composition_help"), |ui| {
-                        ui.label(RichText::new(t!("lbl.composition.help.txt", self.lang)));
-                    });
-                }
+                ui.label(RichText::new(t!("lbl.composition.help.txt", self.lang)));
             });
 
         active
