@@ -69,7 +69,7 @@ impl SecondaryWindow for CompositionHelpWindow {
                     })
                     .body(|mut body| {
                         for lib in &LIBRARIES {
-                            body.row(20.0, |mut row| {
+                            body.row(30.0, |mut row| {
                                 row.col(|ui| {
                                     ui.label(lib.name.clone());
                                 });
