@@ -910,7 +910,8 @@ impl MyApp {
                     .show(ui, |my_ui: &mut Ui| {
                         let editor = TextEdit::multiline(&mut self.code)
                             .code_editor()
-                            .desired_width(0.0).show(my_ui);
+                            .desired_width(0.0)
+                            .show(my_ui);
 
                         let res = editor.response;
 
@@ -918,7 +919,7 @@ impl MyApp {
                             debug!("Saving file");
                             self.saved_feedback = self.auto_save_file();
                         }
-                        
+
                         *editor_focused = (&res).has_focus().clone();
 
                         // FIXME: Does not work because TextEdit is lacking the Sense(click)
