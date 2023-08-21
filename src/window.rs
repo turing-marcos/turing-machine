@@ -910,16 +910,29 @@ impl MyApp {
                     .show(ui, |my_ui: &mut Ui| {
                         let editor = TextEdit::multiline(&mut self.code)
                             .code_editor()
-                            .desired_width(0.0);
+                            .desired_width(0.0).show(my_ui);
 
-                        let res = my_ui.add(editor);
+                        let res = editor.response;
 
                         if self.autosave && res.lost_focus() {
                             debug!("Saving file");
                             self.saved_feedback = self.auto_save_file();
                         }
+                        
+                        *editor_focused = (&res).has_focus().clone();
 
-                        *editor_focused = res.has_focus().clone();
+                        // FIXME: Does not work because TextEdit is lacking the Sense(click)
+                        // res.context_menu(|ui| {
+                        //     if ui.button("Copy").clicked() {
+                        //         if let Some(cursor_range) = editor.cursor_range {
+                        //             let start = cursor_range.primary.ccursor.index;
+                        //             let end = cursor_range.secondary.ccursor.index;
+
+                        //             let text = &self.code[start..end];
+                        //             ui.output_mut(|o| o.copied_text = String::from(text));
+                        //         }
+                        //     }
+                        // });
                     });
 
                 if ui.button(t!("btn.libraries", lang)).clicked() {
