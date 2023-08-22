@@ -26,6 +26,8 @@ bincode = "1.3"
 log = "^0.4"
 env_logger = "^0.10"
 sys-locale = "^0.3"
+poll-promise = { version = "0.2.0", features = ["web"] }
+pollster = "0.3.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tracing-subscriber = "0.3"

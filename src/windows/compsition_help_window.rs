@@ -114,8 +114,7 @@ compose = {sum};
 
 (q2, 1, 1, R, q3);
 (q3, 1, 1, R, q3);
-(q3, 0, 1, H, q3);",
-                        );
+(q3, 0, 1, H, q3);");
 
                         ui.add_enabled(false, TextEdit::multiline(&mut sample_code).code_editor());
                     });

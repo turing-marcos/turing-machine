@@ -25,6 +25,7 @@ use turing_lib::{CompilerError, TuringMachine};
 use {
     //wasm_bindgen::prelude::wasm_bindgen,
     crate::{console_err, console_log},
+    poll_promise::Promise,
     std::sync::{Arc, Mutex},
 };
 
@@ -66,6 +67,9 @@ pub struct MyApp {
     file: Option<PathBuf>,
     autosave: bool,
     saved_feedback: Option<Instant>,
+
+    #[cfg(target_family = "wasm")]
+    file_request_future: Option<Promise<Option<String>>>,
 }
 
 impl MyApp {
@@ -122,6 +126,9 @@ impl MyApp {
             file: file.clone(),
             autosave: file.is_some(),
             saved_feedback: None,
+
+            #[cfg(target_family = "wasm")]
+            file_request_future: None,
         })
     }
 
@@ -460,50 +467,6 @@ impl MyApp {
         }
     }
 
-    #[cfg(target_family = "wasm")]
-    fn clone_for_load_file(&self) -> Self {
-        MyApp {
-            tm: self.tm.clone(),
-            code: self.code.clone(),
-            error: self.error.clone(),
-            about_window: None,
-            debug_window: None,
-            infinite_loop_window: None,
-            book_window: None,
-            workbook_editor_window: None,
-            composition_help_window: None,
-            lang: self.lang.clone(),
-
-            file: self.file.clone(),
-            autosave: self.autosave.clone(),
-            saved_feedback: None,
-        }
-    }
-
-    #[cfg(target_family = "wasm")]
-    async fn load_file_async() -> Option<String> {
-        let file = rfd::AsyncFileDialog::new().pick_file().await;
-
-        if let Some(f) = file {
-            // If you care about wasm support you just read() the file
-            let buffer = f.read().await;
-            console_log!("Read file: {:?}", buffer);
-            match String::from_utf8(buffer) {
-                Ok(s) => {
-                    console_log!("Correctly parsed to utf-8: {}", s);
-
-                    Some(s)
-                }
-                Err(e) => {
-                    console_err!("Invalid UTF-8 sequence: {}", e);
-
-                    None
-                }
-            }
-        } else {
-            None
-        }
-    }
 
     /// This method loads the code from an associated file, or spawns a dialog to select a file and then
     /// loads the code from it. The method handles both WebAssembly and non-WebAssembly targets.
@@ -522,28 +485,22 @@ impl MyApp {
     /// the Turing machine state remains unchanged. If no file is selected or the file dialog operation
     /// fails, the method does nothing.
     #[cfg(target_family = "wasm")]
-    async fn load_file(&mut self) {
-        // Spawn future without boxing it
-        let code = Self::load_file_async().await;
+    async fn load_file() -> Option<String> {
+        let res = rfd::AsyncFileDialog::new()
+            .add_filter("TuringMachine", &["tm"])
+            .pick_file()
+            .await;
 
-        let new_tm = match self.tm.restart(code.as_ref().unwrap()) {
-            Ok(t) => {
-                console_log!("Correctly created the new turing machine with the given code");
-                self.error = None;
-                t
+        match res {
+            Some(file) => {
+                let data: Vec<u8> = file.read().await;
+                match String::from_utf8(data) {
+                    Ok(s) => Some(s),
+                    Err(_e) => None,
+                }
             }
-            Err(e) => {
-                console_err!(
-                    "Error creating the new turing machine with the given code: {:?}",
-                    e
-                );
-                self.error = Some(e);
-                self.tm.clone()
-            }
-        };
-        console_log!("Gathering results...");
-        self.code = String::from(code.as_ref().unwrap());
-        self.tm = new_tm;
+            None => None,
+        }
     }
 
     #[cfg(not(target_family = "wasm"))]
@@ -552,7 +509,7 @@ impl MyApp {
 
         let res = rfd::FileDialog::new()
             .add_filter("TuringMachine", &["tm"])
-            .set_directory(&path)
+            .set_path(&path)
             .pick_file();
 
         match res {
@@ -661,24 +618,9 @@ impl MyApp {
                                 {
                                     #[cfg(target_family = "wasm")]
                                     {
-                                        // Call the function load file with `&mut self` and await it on the main thread
-                                        let shared_self =
-                                            Arc::new(Mutex::new(self.clone_for_load_file()));
-                                        let shared_self_clone = Arc::clone(&shared_self);
-                                        let future = async move {
-                                            let mut shared_self = shared_self_clone.lock().unwrap();
-                                            shared_self.load_file().await;
-                                        };
-                                        wasm_bindgen_futures::spawn_local(future);
-                                        // Wait for the result
-                                        let shared_self = shared_self.lock().unwrap();
-                                        self.tm = shared_self.tm.clone();
-                                        self.code = shared_self.code.clone();
-
-                                        console_log!("Retrieved code: {}", self.code);
-
-                                        self.error = shared_self.error.clone();
-                                        self.file = shared_self.file.clone();
+                                        self.file_request_future = Some(
+                                            poll_promise::Promise::spawn_async(Self::load_file())
+                                        );
                                     }
 
                                     #[cfg(not(target_family = "wasm"))]
@@ -810,23 +752,8 @@ impl MyApp {
                     {
                         #[cfg(target_family = "wasm")]
                         {
-                            // Call the function load file with `&mut self` and await it on the main thread
-                            let shared_self = Arc::new(Mutex::new(self.clone_for_load_file()));
-                            let shared_self_clone = Arc::clone(&shared_self);
-                            let future = async move {
-                                let mut shared_self = shared_self_clone.lock().unwrap();
-                                shared_self.load_file().await;
-                            };
-                            wasm_bindgen_futures::spawn_local(future);
-                            // Wait for the result
-                            let shared_self = shared_self.lock().unwrap();
-                            self.tm = shared_self.tm.clone();
-                            self.code = shared_self.code.clone();
-
-                            console_log!("Retrieved code: {}", self.code);
-
-                            self.error = shared_self.error.clone();
-                            self.file = shared_self.file.clone();
+                            self.file_request_future =
+                                Some(poll_promise::Promise::spawn_async(Self::load_file()));
                         }
 
                         #[cfg(not(target_family = "wasm"))]
@@ -1105,6 +1032,27 @@ impl eframe::App for MyApp {
         let lang = self.get_lang();
         let mut editor_focused = false;
 
+        #[cfg(target_family = "wasm")]
+        if let Some(file_async) = &self.file_request_future {
+            if let Some(file_result) = file_async.ready() {
+                if let Some(new_code) = file_result {
+                    self.tm = match self.tm.restart(new_code) {
+                        Ok(t) => {
+                            self.error = None;
+                            t
+                        }
+                        Err(e) => {
+                            self.error = Some(e);
+                            self.tm.clone()
+                        }
+                    };
+                    self.code = String::from(new_code);
+                }
+
+                self.file_request_future = None;
+            }
+        }
+
         ctx.input_mut(|i| {
             // Check for keyboard shortcuts
             if i.consume_shortcut(&egui::KeyboardShortcut::new(
@@ -1121,25 +1069,7 @@ impl eframe::App for MyApp {
                 // Ctrl+O
                 debug!("Opening...");
                 #[cfg(target_family = "wasm")]
-                {
-                    // Call the function load file with `&mut self` and await it on the main thread
-                    let shared_self = Arc::new(Mutex::new(self.clone_for_load_file()));
-                    let shared_self_clone = Arc::clone(&shared_self);
-                    let future = async move {
-                        let mut shared_self = shared_self_clone.lock().unwrap();
-                        shared_self.load_file().await;
-                    };
-                    wasm_bindgen_futures::spawn_local(future);
-                    // Wait for the result
-                    let shared_self = shared_self.lock().unwrap();
-                    self.tm = shared_self.tm.clone();
-                    self.code = shared_self.code.clone();
-
-                    console_log!("Retrieved code: {}", self.code);
-
-                    self.error = shared_self.error.clone();
-                    self.file = shared_self.file.clone();
-                }
+                {}
 
                 #[cfg(not(target_family = "wasm"))]
                 self.load_file();
