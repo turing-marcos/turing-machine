@@ -1,4 +1,4 @@
-use eframe::egui::{self, RichText};
+use eframe::egui::{self, RichText, TextEdit};
 use egui_extras::{Column, TableBuilder};
 use turing_lib::LIBRARIES;
 
@@ -100,7 +100,25 @@ impl SecondaryWindow for CompositionHelpWindow {
 
                 ui.separator();
 
-                ui.label(RichText::new(t!("lbl.composition.help.txt", self.lang)));
+                ui.label(RichText::new(t!("lbl.composition.help.txt", self.lang)))
+                    .on_hover_ui_at_pointer(|ui| {
+                        let mut sample_code = String::from(
+                            "
+/// a + b + 1
+
+{11111011};
+
+I = {q0}; F = {q3};
+
+compose = {sum};
+
+(q2, 1, 1, R, q3);
+(q3, 1, 1, R, q3);
+(q3, 0, 1, H, q3);",
+                        );
+
+                        ui.add_enabled(false, TextEdit::multiline(&mut sample_code).code_editor());
+                    });
             });
 
         active
