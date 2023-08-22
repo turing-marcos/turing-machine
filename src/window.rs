@@ -467,7 +467,6 @@ impl MyApp {
         }
     }
 
-
     /// This method loads the code from an associated file, or spawns a dialog to select a file and then
     /// loads the code from it. The method handles both WebAssembly and non-WebAssembly targets.
     ///
@@ -619,7 +618,7 @@ impl MyApp {
                                     #[cfg(target_family = "wasm")]
                                     {
                                         self.file_request_future = Some(
-                                            poll_promise::Promise::spawn_async(Self::load_file())
+                                            poll_promise::Promise::spawn_async(Self::load_file()),
                                         );
                                     }
 
