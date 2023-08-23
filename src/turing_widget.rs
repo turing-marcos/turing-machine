@@ -65,6 +65,18 @@ impl TuringWidget {
         }
     }
 
+    #[cfg(not(target_family = "wasm"))]
+    pub fn set_config(&self, config: &crate::config::Config) -> Self{
+        let mut new_tm = self.clone();
+
+        new_tm.lang = config.language().to_string();
+        new_tm.threshold_inf_loop = config.threshold_inf_loop();
+        new_tm.tape_rect_size = config.tape_size();
+        new_tm.tape_anim_speed = config.tape_speed();
+
+        new_tm
+    }
+
     /// Restarts the turing machine with the given code
     pub fn restart(&mut self, code: &str) -> Result<Self, CompilerError> {
         let (tm, warnings) = match TuringMachine::new(code) {

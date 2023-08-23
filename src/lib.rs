@@ -1,9 +1,14 @@
 mod turing_widget;
 mod window;
+#[cfg(not(target_family = "wasm"))]
+mod config;
 pub mod windows;
 
 pub use turing_widget::TuringWidget;
 pub use window::{Language, MyApp};
+
+#[cfg(not(target_family = "wasm"))]
+pub use config::Config;
 
 pub fn get_lang() -> Language {
     match sys_locale::get_locale() {

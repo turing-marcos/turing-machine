@@ -1,15 +1,15 @@
 use std::{
+    fmt::Display,
     path::PathBuf,
     time::{Duration, Instant},
 };
 
 use crate::{
-    get_lang,
     windows::{
         AboutWindow, CompositionHelpWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow,
         WorkbookEditorWindow, WorkbookWindow,
     },
-    TuringWidget,
+     TuringWidget,
 };
 use eframe;
 use eframe::egui::{self, Id, RichText, TextEdit, Ui};
@@ -21,15 +21,17 @@ use turing_lib::{CompilerError, TuringMachine};
 #[cfg(not(target_family = "wasm"))]
 use {
     log::{debug, error, info, trace, warn},
+    serde::{Deserialize, Serialize},
     std::{
         fs::{self, File},
         io::Write,
     },
+    crate::Config,
 };
 
 #[cfg(target_family = "wasm")]
 use {
-    crate::{console_err, console_log, console_warn},
+    crate::{get_lang, console_err, console_log, console_warn},
     poll_promise::Promise,
     wasm_bindgen::prelude::wasm_bindgen,
 };
@@ -47,10 +49,31 @@ extern "C" {
     fn downloadToFile(content: &str, filename: &str);
 }
 
+#[cfg(not(target_family = "wasm"))]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum Language {
+    English,
+    Spanish,
+}
+
+#[cfg(target_family = "wasm")]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Language {
     English,
     Spanish,
+}
+
+impl Display for Language {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Language::English => "en",
+                Language::Spanish => "es",
+            }
+        )
+    }
 }
 
 pub struct MyApp {
@@ -69,6 +92,7 @@ pub struct MyApp {
     lang: Language,
 
     file: Option<PathBuf>,
+    #[cfg(not(target_family = "wasm"))]
     autosave: bool,
     saved_feedback: Option<Instant>,
 
@@ -136,33 +160,65 @@ impl MyApp {
         st.spacing.item_spacing = egui::Vec2::new(10.0, 10.0);
         cc.egui_ctx.set_style(st);
 
-        Ok(Self {
-            code: String::from(&tm.code),
-            error: None,
-            tm: TuringWidget::new(tm, warnings),
-            about_window: None,
-            debug_window: None,
-            infinite_loop_window: None,
-            book_window: None,
-            workbook_editor_window: None,
-            composition_help_window: None,
+        #[cfg(not(target_family = "wasm"))]
+        {
+            let config = match Config::load() {
+                Some(c) => c,
+                None => {
+                    debug!("The config file did not exist, creating a default one");
 
-            lang: get_lang(),
+                    let c = Config::default();
 
-            file: file.clone(),
-            autosave: file.is_some(),
-            saved_feedback: None,
+                    c.save();
 
-            #[cfg(target_family = "wasm")]
-            file_request_future: None,
-        })
+                    c
+                }
+            };
+
+            Ok(Self {
+                code: String::from(&tm.code),
+                error: None,
+                tm: TuringWidget::new(tm, warnings).set_config(&config),
+                about_window: None,
+                debug_window: None,
+                infinite_loop_window: None,
+                book_window: None,
+                workbook_editor_window: None,
+                composition_help_window: None,
+
+                lang: config.language(),
+
+                file: file.clone(),
+                autosave: file.is_some() && config.autosave_disabled(),
+                saved_feedback: None,
+            })
+        }
+
+        #[cfg(target_family = "wasm")]
+        {
+            Ok(Self {
+                code: String::from(&tm.code),
+                error: None,
+                tm: TuringWidget::new(tm, warnings),
+                about_window: None,
+                debug_window: None,
+                infinite_loop_window: None,
+                book_window: None,
+                workbook_editor_window: None,
+                composition_help_window: None,
+
+                lang: get_lang(),
+
+                file: file.clone(),
+                saved_feedback: None,
+
+                file_request_future: None,
+            })
+        }
     }
 
     pub fn get_lang(&self) -> String {
-        match self.lang {
-            Language::English => String::from("en"),
-            Language::Spanish => String::from("es"),
-        }
+        self.lang.to_string()
     }
 
     /// This function handles parsing errors in the Turing machine's input and displays an error message
@@ -671,6 +727,7 @@ impl MyApp {
                                     downloadToFile(&self.code, "my-turing-program.tm");
                                 }
 
+                                #[cfg(not(target_family = "wasm"))]
                                 ui.add_enabled_ui(self.file.is_some(), |ui| {
                                     ui.checkbox(&mut self.autosave, "Autosave")
                                 });
