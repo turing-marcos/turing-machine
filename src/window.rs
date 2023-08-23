@@ -87,10 +87,12 @@ impl MyApp {
             match file {
                 Some(ref f) => {
                     #[cfg(not(target_family = "wasm"))]
-                    trace!("File provided: {:?}", file);
+                    {
+                        trace!("File provided: {:?}", file);
 
-                    let unparsed_file = fs::read_to_string(&f).expect("cannot read file");
-                    unparsed_file
+                        let unparsed_file = fs::read_to_string(&f).expect("cannot read file");
+                        unparsed_file
+                    }
                 }
                 None => {
                     #[cfg(not(target_family = "wasm"))]
