@@ -9,7 +9,7 @@ use crate::{
         AboutWindow, CompositionHelpWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow,
         WorkbookEditorWindow, WorkbookWindow,
     },
-     TuringWidget,
+    TuringWidget,
 };
 use eframe;
 use eframe::egui::{self, Id, RichText, TextEdit, Ui};
@@ -20,18 +20,18 @@ use turing_lib::{CompilerError, TuringMachine};
 
 #[cfg(not(target_family = "wasm"))]
 use {
+    crate::Config,
     log::{debug, error, info, trace, warn},
     serde::{Deserialize, Serialize},
     std::{
         fs::{self, File},
         io::Write,
     },
-    crate::Config,
 };
 
 #[cfg(target_family = "wasm")]
 use {
-    crate::{get_lang, console_err, console_log, console_warn},
+    crate::{console_err, console_log, console_warn, get_lang},
     poll_promise::Promise,
     wasm_bindgen::prelude::wasm_bindgen,
 };
@@ -89,12 +89,17 @@ pub struct MyApp {
     workbook_editor_window: Option<Box<WorkbookEditorWindow>>,
     composition_help_window: Option<Box<CompositionHelpWindow>>,
 
-    lang: Language,
-
-    file: Option<PathBuf>,
+    #[cfg(not(target_family = "wasm"))]
+    config: Config,
     #[cfg(not(target_family = "wasm"))]
     autosave: bool,
+
     saved_feedback: Option<Instant>,
+
+    file: Option<PathBuf>,
+
+    #[cfg(target_family = "wasm")]
+    lang: Language,
 
     #[cfg(target_family = "wasm")]
     file_request_future: Option<Promise<Option<String>>>,
@@ -186,10 +191,10 @@ impl MyApp {
                 workbook_editor_window: None,
                 composition_help_window: None,
 
-                lang: config.language(),
+                config,
+                autosave: file.is_some() && config.autosave_disabled(),
 
                 file: file.clone(),
-                autosave: file.is_some() && config.autosave_disabled(),
                 saved_feedback: None,
             })
         }
@@ -218,7 +223,15 @@ impl MyApp {
     }
 
     pub fn get_lang(&self) -> String {
-        self.lang.to_string()
+        #[cfg(not(target_family = "wasm"))]
+        {
+            self.config.language().to_string()
+        }
+
+        #[cfg(target_family = "wasm")]
+        {
+            self.lang.to_string()
+        }
     }
 
     /// This function handles parsing errors in the Turing machine's input and displays an error message
@@ -729,7 +742,12 @@ impl MyApp {
 
                                 #[cfg(not(target_family = "wasm"))]
                                 ui.add_enabled_ui(self.file.is_some(), |ui| {
-                                    ui.checkbox(&mut self.autosave, "Autosave")
+                                    let prev = self.autosave.clone();
+                                    ui.checkbox(&mut self.autosave, "Autosave");
+
+                                    if prev != self.autosave {
+                                        self.config.set_autosave_disabled(self.autosave);
+                                    }
                                 });
                             });
 
@@ -771,16 +789,36 @@ impl MyApp {
                             }
 
                             ui.menu_button(t!("menu.language", lang), |ui| {
-                                ui.radio_value(
-                                    &mut self.lang,
-                                    Language::English,
-                                    t!("lang.en", lang),
-                                );
-                                ui.radio_value::<Language>(
-                                    &mut self.lang,
-                                    Language::Spanish,
-                                    t!("lang.es", lang),
-                                );
+                                #[cfg(target_family = "wasm")]
+                                {
+                                    ui.radio_value(
+                                        &mut self.lang,
+                                        Language::English,
+                                        t!("lang.en", lang),
+                                    );
+                                    ui.radio_value::<Language>(
+                                        &mut self.lang,
+                                        Language::Spanish,
+                                        t!("lang.es", lang),
+                                    );
+                                }
+                                #[cfg(not(target_family = "wasm"))]
+                                {
+                                    ui.radio_value(
+                                        &mut self.config.language,
+                                        Language::English,
+                                        t!("lang.en", lang),
+                                    );
+                                    ui.radio_value::<Language>(
+                                        &mut self.config.language,
+                                        Language::Spanish,
+                                        t!("lang.es", lang),
+                                    );
+
+                                    if self.config.language.to_string() != lang {
+                                        self.config.save();
+                                    }
+                                }
                             });
 
                             ui.menu_button(t!("menu.about", lang), |ui| {
@@ -1007,6 +1045,10 @@ impl MyApp {
                         }
 
                         let mut sliders = |ui: &mut egui::Ui| {
+                            let _prev_tape_size = self.tm.tape_rect_size;
+                            let _prev_tape_speed = self.tm.tape_anim_speed;
+                            let _prev_threshold_inf_loop = self.tm.threshold_inf_loop;
+
                             ui.add(
                                 egui::Slider::new(&mut self.tm.tape_rect_size, 25.0..=300.0)
                                     .suffix(" px")
@@ -1025,6 +1067,22 @@ impl MyApp {
                                     .text(t!("lbl.tape.inf_loop", lang)),
                             )
                             .on_hover_text_at_pointer(t!("tooltip.tape.iterations", lang));
+
+                            #[cfg(not(target_family = "wasm"))]
+                            {
+                                if _prev_tape_size != self.tm.tape_rect_size {
+                                    self.config.set_tape_size(self.tm.tape_rect_size);
+                                }
+
+                                if _prev_tape_speed != self.tm.tape_anim_speed {
+                                    self.config.set_tape_speed(self.tm.tape_anim_speed);
+                                }
+
+                                if _prev_threshold_inf_loop != self.tm.threshold_inf_loop {
+                                    self.config
+                                        .set_threshold_inf_loop(self.tm.threshold_inf_loop);
+                                }
+                            }
                         };
 
                         if is_mobile(ctx) {

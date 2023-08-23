@@ -13,22 +13,22 @@ const QUALIFIER: &str = "org";
 const ORGANIZATION: &str = "margual56";
 const APPLICATION: &str = "Turing Machine";
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug)]
 pub struct Config {
     version: Version,
 
     times_opened: u32,
 
-    language: Language,
+    pub language: Language,
 
     /// Autosave is enabled by default. Has the user manually disabled it?
     autosave_disabled: bool,
 
-    tape_size: f32,
+    pub tape_size: f32,
 
-    tape_speed: f32,
+    pub tape_speed: f32,
 
-    threshold_inf_loop: usize,
+    pub threshold_inf_loop: usize,
 }
 
 impl Config {
@@ -116,7 +116,7 @@ impl Config {
                 };
 
                 log::info!(
-                    "Creating configuration file: {}",
+                    "Writing to configuration file: {}",
                     &file_path.to_string_lossy()
                 );
 
@@ -135,19 +135,44 @@ impl Config {
         self.language
     }
 
+    pub fn set_language(&mut self, l: Language) {
+        self.language = l;
+        self.save();
+    }
+
     pub fn autosave_disabled(&self) -> bool {
         self.autosave_disabled
+    }
+
+    pub fn set_autosave_disabled(&mut self, b: bool) {
+        self.autosave_disabled = b;
+        self.save();
     }
 
     pub fn threshold_inf_loop(&self) -> usize {
         self.threshold_inf_loop
     }
 
+    pub fn set_threshold_inf_loop(&mut self, t: usize) {
+        self.threshold_inf_loop = t;
+        self.save();
+    }
+
     pub fn tape_size(&self) -> f32 {
         self.tape_size
     }
 
+    pub fn set_tape_size(&mut self, s: f32) {
+        self.tape_size = s;
+        self.save();
+    }
+
     pub fn tape_speed(&self) -> f32 {
         self.tape_speed
+    }
+
+    pub fn set_tape_speed(&mut self, s: f32) {
+        self.tape_speed = s;
+        self.save();
     }
 }
