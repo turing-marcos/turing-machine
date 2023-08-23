@@ -46,6 +46,11 @@ extern "C" {
     #[wasm_bindgen(js_namespace = console, js_name = log)]
     fn log_many(a: &str, b: &str);
 
+    // Use `js_namespace` here to bind `console.warn(..)` instead of just
+    // `warn(..)`
+    #[wasm_bindgen(js_namespace = console)]
+    fn warn(s: &str);
+
     // Use `js_namespace` here to bind `console.err(..)` instead of just
     // `log(..)`
     #[wasm_bindgen(js_namespace = console)]
@@ -76,4 +81,12 @@ macro_rules! console_err {
     // Note that this is using the `err` function imported above during
     // `bare_bones`
     ($($t:tt)*) => (crate::err(&format_args!($($t)*).to_string()))
+}
+
+#[cfg(target_family = "wasm")]
+#[macro_export]
+macro_rules! console_warn {
+    // Note that this is using the `err` function imported above during
+    // `bare_bones`
+    ($($t:tt)*) => (crate::warn(&format_args!($($t)*).to_string()))
 }

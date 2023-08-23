@@ -1,6 +1,4 @@
 use std::{
-    fs::{self, File},
-    io::Write,
     path::PathBuf,
     time::{Duration, Instant},
 };
@@ -17,16 +15,21 @@ use eframe;
 use eframe::egui::{self, Id, RichText, TextEdit, Ui};
 use eframe::epaint::Color32;
 use internationalization::t;
-use log::{debug, error, info, trace, warn};
 use turing_lib::TuringOutput;
 use turing_lib::{CompilerError, TuringMachine};
+use wasm_bindgen::prelude::wasm_bindgen;
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(not(target_family = "wasm"))]
 use {
-    //wasm_bindgen::prelude::wasm_bindgen,
-    crate::{console_err, console_log},
+    fs::{self, File},
+    io::Write,
+    log::{debug, error, info, trace, warn},
+};
+
+#[cfg(target_family = "wasm")]
+use {
+    crate::{console_err, console_log, console_warn},
     poll_promise::Promise,
-    std::sync::{Arc, Mutex},
 };
 
 const DEFAULT_CODE: &str = include_str!("../Examples/Example1.tm");
@@ -36,12 +39,11 @@ pub fn is_mobile(ctx: &egui::Context) -> bool {
     ctx.screen_rect().width() < MOBILE_THRESHOLD
 }
 
-// Import the saveFile function
-//#[cfg(target_arch = "wasm32")]
-//#[wasm_bindgen(module = "/dist/.stage/save_file.js")]
-//extern "C" {
-//    fn saveFile(filename: &str, content: &str);
-//}
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen(module = "/assets/utils.js")]
+extern "C" {
+    fn downloadToFile(content: &str, filename: &str);
+}
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Language {
@@ -77,25 +79,40 @@ impl MyApp {
         file: &Option<PathBuf>,
         cc: &eframe::CreationContext<'_>,
     ) -> Result<Self, CompilerError> {
-        let code = match file {
-            Some(ref f) => {
-                trace!("File provided: {:?}", file);
-                let unparsed_file = fs::read_to_string(&f).expect("cannot read file");
-                unparsed_file
-            }
-            None => {
-                trace!("No file provided, opening an example");
-                DEFAULT_CODE.to_string()
-            }
-        };
+        let code = DEFAULT_CODE.to_string();
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            code = match file {
+                Some(ref f) => {
+                    trace!("File provided: {:?}", file);
+
+                    let unparsed_file = fs::read_to_string(&f).expect("cannot read file");
+                    unparsed_file
+                }
+                None => {
+                    trace!("No file provided, opening an example");
+                    DEFAULT_CODE.to_string()
+                }
+            };
+        }
 
         let (tm, warnings) = match TuringMachine::new(&code) {
             Ok((t, warnings)) => {
                 for w in &warnings {
+                    #[cfg(not(target_family = "wasm"))]
                     warn!("\tCompiler warning: {:?}", w);
+
+                    #[cfg(target_family = "wasm")]
+                    console_warn!("\tCompiler warning: {:?}", w)
                 }
 
+                #[cfg(not(target_family = "wasm"))]
                 trace!("Turing machine created successfully");
+
+                #[cfg(target_family = "wasm")]
+                console_log!("Turing machine created successfully");
+
                 (t, warnings)
             }
             Err(e) => {
@@ -297,6 +314,7 @@ impl MyApp {
     /// # Returns
     /// An Option<Instant> representing the time the file was saved if the save operation is successful,
     /// or None if the save operation fails or if there is no associated file.
+    #[cfg(not(target_family = "wasm"))]
     fn auto_save_file(&self) -> Option<Instant> {
         if let Some(file) = &self.file {
             if let Ok(mut file) = File::create(file) {
@@ -391,38 +409,29 @@ impl MyApp {
     ///
     /// After a successful save operation, the file is set as the new auto-save file. If the save operation
     /// fails, an error message is logged.
+    #[cfg(not(target_family = "wasm"))]
     fn save_file(&mut self) {
-        #[cfg(target_family = "wasm")]
-        {
-            let filename = "exercise.tm"; // Replace with your desired file name
-            let content = &self.code;
-            //saveFile(filename, content);
-        }
+        let file: Option<PathBuf> = match &self.file {
+            Some(f) => Some(f.clone()),
+            None => {
+                let path = std::env::current_dir().unwrap();
 
-        #[cfg(not(target_family = "wasm"))]
-        {
-            let file: Option<PathBuf> = match &self.file {
-                Some(f) => Some(f.clone()),
-                None => {
-                    let path = std::env::current_dir().unwrap();
-
-                    rfd::FileDialog::new()
-                        .add_filter("TuringMachine", &["tm"])
-                        .set_directory(&path)
-                        .save_file()
-                }
-            };
-
-            if let Some(f) = file {
-                std::fs::write(&f, self.code.as_bytes()).expect("cannot write file");
-                self.file = Some(f);
-
-                debug!("Set auto-save file to {:?}", self.file);
-
-                self.saved_feedback = Some(Instant::now());
-            } else {
-                error!("Cannot save file");
+                rfd::FileDialog::new()
+                    .add_filter("TuringMachine", &["tm"])
+                    .set_directory(&path)
+                    .save_file()
             }
+        };
+
+        if let Some(f) = file {
+            std::fs::write(&f, self.code.as_bytes()).expect("cannot write file");
+            self.file = Some(f);
+
+            debug!("Set auto-save file to {:?}", self.file);
+
+            self.saved_feedback = Some(Instant::now());
+        } else {
+            error!("Cannot save file");
         }
     }
 
@@ -437,15 +446,8 @@ impl MyApp {
     ///
     /// After a successful save operation, the file is set as the new auto-save file. If the save operation
     /// fails, an error message is logged.
+    #[cfg(not(target_family = "wasm"))]
     fn save_file_as(&mut self) {
-        #[cfg(target_family = "wasm")]
-        {
-            let filename = "exercise.tm"; // Replace with your desired file name
-            let content = &self.code;
-            //saveFile(filename, content);
-        }
-
-        #[cfg(not(target_family = "wasm"))]
         {
             let path = std::env::current_dir().unwrap();
 
@@ -492,13 +494,22 @@ impl MyApp {
 
         match res {
             Some(file) => {
+                console_log!("The file {:?} has been loaded, reading...", file);
+
                 let data: Vec<u8> = file.read().await;
+
                 match String::from_utf8(data) {
                     Ok(s) => Some(s),
-                    Err(_e) => None,
+                    Err(e) => {
+                        console_err!("Error reading file: {:?}", e);
+                        None
+                    }
                 }
             }
-            None => None,
+            None => {
+                console_err!("Error selecting file");
+                None
+            }
         }
     }
 
@@ -630,7 +641,11 @@ impl MyApp {
                                     .add(egui::Button::new("Save").shortcut_text("Ctrl + S"))
                                     .clicked()
                                 {
+                                    #[cfg(not(target_family = "wasm"))]
                                     self.save_file();
+
+                                    #[cfg(target_family = "wasm")]
+                                    downloadToFile(&self.code, "my-turing-program.tm");
                                 }
 
                                 if ui
@@ -640,7 +655,11 @@ impl MyApp {
                                     )
                                     .clicked()
                                 {
+                                    #[cfg(not(target_family = "wasm"))]
                                     self.save_file_as();
+
+                                    #[cfg(target_family = "wasm")]
+                                    downloadToFile(&self.code, "my-turing-program.tm");
                                 }
 
                                 ui.add_enabled_ui(self.file.is_some(), |ui| {
@@ -768,7 +787,11 @@ impl MyApp {
                         )
                         .clicked()
                     {
+                        #[cfg(not(target_family = "wasm"))]
                         self.save_file();
+
+                        #[cfg(target_family = "wasm")]
+                        downloadToFile(&self.code, "my-turing-program.tm");
                     }
                 });
 
@@ -841,8 +864,11 @@ impl MyApp {
 
                         let res = editor.response;
 
+                        // Autosave only works on desktop
+                        #[cfg(not(target_family = "wasm"))]
                         if self.autosave && res.lost_focus() {
                             debug!("Saving file");
+
                             self.saved_feedback = self.auto_save_file();
                         }
 
@@ -868,7 +894,9 @@ impl MyApp {
                 }
 
                 if self.saved_feedback.is_some() {
+                    #[cfg(not(target_family = "wasm"))]
                     debug!("Drawing saved feedback popup");
+
                     self.draw_saved_feedback_popup(ui, ctx);
                 }
             })
@@ -1002,7 +1030,12 @@ impl MyApp {
                                     {
                                         ctx.request_repaint();
                                         if self.tm.is_inf_loop() {
+                                            #[cfg(not(target_family = "wasm"))]
                                             warn!("Infinite loop detected!");
+
+                                            #[cfg(target_family = "wasm")]
+                                            console_warn!("Infinite loop detected!");
+
                                             self.infinite_loop_window = Some(Box::new(
                                                 InfiniteLoopWindow::new(&self.get_lang()),
                                             ));
@@ -1059,19 +1092,34 @@ impl eframe::App for MyApp {
                 egui::Key::S,
             )) {
                 // Ctrl+S
-                debug!("Saving...");
-                self.save_file();
+                #[cfg(not(target_family = "wasm"))]
+                {
+                    debug!("Saving...");
+                    self.save_file();
+                }
+                #[cfg(target_family = "wasm")]
+                {
+                    console_log!("Saving...");
+                    downloadToFile(&self.code, "my-turing-program.tm");
+                }
             } else if i.consume_shortcut(&egui::KeyboardShortcut::new(
                 egui::Modifiers::COMMAND,
                 egui::Key::O,
             )) {
                 // Ctrl+O
-                debug!("Opening...");
                 #[cfg(target_family = "wasm")]
-                {}
+                {
+                    console_log!("Opening...");
+
+                    self.file_request_future =
+                        Some(poll_promise::Promise::spawn_async(Self::load_file()));
+                }
 
                 #[cfg(not(target_family = "wasm"))]
-                self.load_file();
+                {
+                    debug!("Opening...");
+                    self.load_file();
+                }
             } else if i.modifiers.shift
                 && i.consume_shortcut(&egui::KeyboardShortcut::new(
                     egui::Modifiers::CTRL,
@@ -1079,14 +1127,30 @@ impl eframe::App for MyApp {
                 ))
             {
                 // Ctrl+Shift+S
-                debug!("Saving as...");
-                self.save_file_as();
+                #[cfg(target_family = "wasm")]
+                {
+                    console_log!("Opening...");
+
+                    self.file_request_future =
+                        Some(poll_promise::Promise::spawn_async(Self::load_file()));
+                }
+
+                #[cfg(not(target_family = "wasm"))]
+                {
+                    debug!("Saving as...");
+                    self.save_file_as();
+                }
             } else if i.consume_shortcut(&egui::KeyboardShortcut::new(
                 egui::Modifiers::COMMAND,
                 egui::Key::R,
             )) {
                 // Ctrl+R
+                #[cfg(not(target_family = "wasm"))]
                 debug!("Restarting...");
+
+                #[cfg(target_family = "wasm")]
+                console_log!("Restarting TM...");
+
                 self.tm = self.tm.restart(&self.code).unwrap();
             }
         });

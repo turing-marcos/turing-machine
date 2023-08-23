@@ -2,8 +2,6 @@ mod book;
 mod exercise;
 mod wb_editor;
 
-use std::io::Read;
-
 pub use book::BookWindow as WorkbookWindow;
 pub use wb_editor::WorkbookEditorWindow;
 
@@ -19,13 +17,8 @@ type Workbook = Vec<WorkbookChapter>;
 use {
     log::{debug, error},
     rfd,
+    std::io::Read,
     std::{fs::File, io::Write, path::PathBuf},
-};
-
-#[cfg(target_arch = "wasm32")]
-use {
-    base64::engine::general_purpose::STANDARD_NO_PAD as base64, js_sys, wasm_bindgen::prelude::*,
-    wasm_bindgen::JsCast, web_sys,
 };
 
 const MAX_IMG_SIZE: egui::Vec2 = egui::Vec2::new(600.0, 250.0);
