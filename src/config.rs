@@ -59,7 +59,7 @@ impl Config {
                 log::info!("Loading configuration file: {:?}", file);
 
                 match toml::from_str::<Config>(
-                    &(match std::fs::read_to_string(file) {
+                    &(match std::fs::read_to_string(&file) {
                         Ok(s) => s,
                         Err(e) => {
                             error!("Cannot read configuration file: {}", e);
@@ -71,6 +71,16 @@ impl Config {
                         let mut c = c;
                         c.increment_launches();
                         log::info!("Incremented launches: {}", c.times_opened);
+
+                        if !Version::get().unwrap().is_compatible_with(&c.version) {
+                            log::error!("A new version of the program is being used! Resetting configuration (it may be incompatible)...");
+
+                            std::fs::remove_file(&file).unwrap();
+                            let new_c = Config::default();
+                            new_c.save();
+                            return Some(new_c);
+                        }
+
                         Some(c)
                     }
                     Err(e) => {
