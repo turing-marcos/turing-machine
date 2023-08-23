@@ -66,7 +66,7 @@ impl TuringWidget {
     }
 
     #[cfg(not(target_family = "wasm"))]
-    pub fn set_config(&self, config: &crate::config::Config) -> Self{
+    pub fn set_config(&self, config: &crate::config::Config) -> Self {
         let mut new_tm = self.clone();
 
         new_tm.lang = config.language().to_string();

@@ -1,7 +1,7 @@
-mod turing_widget;
-mod window;
 #[cfg(not(target_family = "wasm"))]
 mod config;
+mod turing_widget;
+mod window;
 pub mod windows;
 
 pub use turing_widget::TuringWidget;

@@ -72,7 +72,7 @@ impl Config {
                         c.increment_launches();
                         log::info!("Incremented launches: {}", c.times_opened);
                         Some(c)
-                    },
+                    }
                     Err(e) => {
                         error!("Cannot parse configuration file: {}", e);
                         None
