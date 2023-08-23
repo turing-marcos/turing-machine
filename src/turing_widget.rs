@@ -8,7 +8,9 @@ use log::warn;
 
 use turing_lib::{CompilerError, CompilerWarning, Library, TuringMachine, TuringOutput};
 
+#[cfg(target_family = "wasm")]
 use crate::console_warn;
+
 use crate::window::is_mobile;
 
 const STROKE_WIDTH: f32 = 3f32;

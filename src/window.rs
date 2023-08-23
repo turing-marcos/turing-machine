@@ -17,19 +17,21 @@ use eframe::epaint::Color32;
 use internationalization::t;
 use turing_lib::TuringOutput;
 use turing_lib::{CompilerError, TuringMachine};
-use wasm_bindgen::prelude::wasm_bindgen;
 
 #[cfg(not(target_family = "wasm"))]
 use {
-    fs::{self, File},
-    io::Write,
     log::{debug, error, info, trace, warn},
+    std::{
+        fs::{self, File},
+        io::Write,
+    },
 };
 
 #[cfg(target_family = "wasm")]
 use {
     crate::{console_err, console_log, console_warn},
     poll_promise::Promise,
+    wasm_bindgen::prelude::wasm_bindgen,
 };
 
 const DEFAULT_CODE: &str = include_str!("../Examples/Example1.tm");
@@ -79,23 +81,25 @@ impl MyApp {
         file: &Option<PathBuf>,
         cc: &eframe::CreationContext<'_>,
     ) -> Result<Self, CompilerError> {
-        let code = DEFAULT_CODE.to_string();
-
-        #[cfg(not(target_family = "wasm"))]
-        {
-            code = match file {
+        let code = if cfg!(target_family = "wasm") {
+            DEFAULT_CODE.to_string()
+        } else {
+            match file {
                 Some(ref f) => {
+                    #[cfg(not(target_family = "wasm"))]
                     trace!("File provided: {:?}", file);
 
                     let unparsed_file = fs::read_to_string(&f).expect("cannot read file");
                     unparsed_file
                 }
                 None => {
+                    #[cfg(not(target_family = "wasm"))]
                     trace!("No file provided, opening an example");
+
                     DEFAULT_CODE.to_string()
                 }
-            };
-        }
+            }
+        };
 
         let (tm, warnings) = match TuringMachine::new(&code) {
             Ok((t, warnings)) => {
@@ -519,7 +523,7 @@ impl MyApp {
 
         let res = rfd::FileDialog::new()
             .add_filter("TuringMachine", &["tm"])
-            .set_path(&path)
+            .set_directory(&path)
             .pick_file();
 
         match res {
