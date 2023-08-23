@@ -1,6 +1,6 @@
 [package]
 name = "turing-machine"
-version = "1.2.2"
+version = "1.3.0"
 edition = "2021"
 authors = ["Marcos Gutiérrez Alonso <margual56@gmail.com>"]
 description = "Turing Machine Simulator"
