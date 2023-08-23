@@ -17,7 +17,7 @@ const APPLICATION: &str = "Turing Machine";
 pub struct Config {
     version: Version,
 
-    times_opened: u32,
+    pub times_opened: u32,
 
     pub language: Language,
 
@@ -29,6 +29,8 @@ pub struct Config {
     pub tape_speed: f32,
 
     pub threshold_inf_loop: usize,
+
+    pub served_survey: bool,
 }
 
 impl Config {
@@ -41,6 +43,7 @@ impl Config {
             tape_size: 100.0,
             tape_speed: 1.0,
             threshold_inf_loop: 100,
+            served_survey: false,
         }
     }
 
@@ -55,7 +58,7 @@ impl Config {
 
                 log::info!("Loading configuration file: {:?}", file);
 
-                match toml::from_str(
+                match toml::from_str::<Config>(
                     &(match std::fs::read_to_string(file) {
                         Ok(s) => s,
                         Err(e) => {
@@ -64,7 +67,12 @@ impl Config {
                         }
                     }),
                 ) {
-                    Ok(c) => Some(c),
+                    Ok(c) => {
+                        let mut c = c;
+                        c.increment_launches();
+                        log::info!("Incremented launches: {}", c.times_opened);
+                        Some(c)
+                    },
                     Err(e) => {
                         error!("Cannot parse configuration file: {}", e);
                         None
@@ -173,6 +181,16 @@ impl Config {
 
     pub fn set_tape_speed(&mut self, s: f32) {
         self.tape_speed = s;
+        self.save();
+    }
+
+    pub fn increment_launches(&mut self) {
+        self.times_opened += 1;
+        self.save();
+    }
+
+    pub fn survey_served(&mut self) {
+        self.served_survey = true;
         self.save();
     }
 }

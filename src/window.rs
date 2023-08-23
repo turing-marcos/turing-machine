@@ -626,6 +626,29 @@ impl MyApp {
     /// * ctx - An egui::Context object required for creating and displaying UI components.
     /// * lang - A string representing the language used for displaying text in the UI.
     fn handle_windows(&mut self, ctx: &egui::Context, lang: &str) {
+        #[cfg(not(target_family = "wasm"))]
+        if self.config.times_opened >= 2 && !self.config.served_survey {
+            egui::Window::new(t!("window.title.survey", lang))
+                .collapsible(false)
+                .default_pos([
+                    ctx.screen_rect().width() / 2.0 - 400.0,
+                    ctx.screen_rect().height() / 2.0 - 200.0,
+                ])
+                .show(ctx, |ui| {
+                    ui.label(t!("lbl.window.survey", lang));
+
+                    if ui.link(t!("window.link.survey", lang)).clicked() {
+                        webbrowser::open(
+                            "https://next.coldboard.net/apps/forms/s/5HYog9PptWdx458y6F2LJNGL",
+                        )
+                        .unwrap();
+                        self.config.survey_served();
+                    }
+
+                    ui.label(t!("lbl.window.survey2", lang));
+                });
+        }
+
         if let Some(about) = &self.about_window {
             if !about.show(ctx) {
                 self.about_window = None;
@@ -834,6 +857,16 @@ impl MyApp {
                                         "https://github.com/margual56/turing-machine-2.0",
                                     )
                                     .unwrap();
+                                }
+
+                                if ui.link(t!("window.title.survey", lang)).clicked() {
+                                    webbrowser::open(
+                                        "https://next.coldboard.net/apps/forms/s/5HYog9PptWdx458y6F2LJNGL",
+                                        )
+                                        .unwrap();
+
+                                    #[cfg(not(target_family = "wasm"))]
+                                    self.config.survey_served();
                                 }
                             });
                         });
