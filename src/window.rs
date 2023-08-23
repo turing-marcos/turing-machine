@@ -93,6 +93,9 @@ impl MyApp {
                         let unparsed_file = fs::read_to_string(&f).expect("cannot read file");
                         unparsed_file
                     }
+
+                    #[cfg(target_family = "wasm")]
+                    DEFAULT_CODE.to_string()
                 }
                 None => {
                     #[cfg(not(target_family = "wasm"))]
