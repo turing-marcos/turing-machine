@@ -3,8 +3,13 @@ use eframe::emath::Align2;
 use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, Vec2};
 use internationalization::t;
 
+#[cfg(not(target_family = "wasm"))]
 use log::warn;
+
 use turing_lib::{CompilerError, CompilerWarning, Library, TuringMachine, TuringOutput};
+
+#[cfg(target_family = "wasm")]
+use crate::console_warn;
 
 use crate::window::is_mobile;
 
@@ -65,7 +70,11 @@ impl TuringWidget {
         let (tm, warnings) = match TuringMachine::new(code) {
             Ok((t, warnings)) => {
                 for w in &warnings {
+                    #[cfg(not(target_family = "wasm"))]
                     warn!("Compiler warning: {:?}", w);
+
+                    #[cfg(target_family = "wasm")]
+                    console_warn!("Compiler warning: {:?}", w);
                 }
 
                 self.errors = None;

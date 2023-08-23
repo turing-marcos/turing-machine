@@ -18,5 +18,9 @@
     "lbl.composition.help.txt": {
         "en": "Type `compose = { <library name> };` before the state definitions to use a library",
         "es": "Escribe `compose = { <nombre de la librería> };` antes de definir los estados para usar una librería"
+    },
+    "lbl.composition.warning": {
+        "en": "WARNING: Composing more than one library will break all compositions.",
+        "es": "ATENCIÓN: Componer más de una librería romperá todas las composiciones."
     }
 }
