@@ -1,11 +1,11 @@
-use std::{fs::File, io::Write};
+use std::{fs::File, io::Write, str::FromStr};
 
 use directories::ProjectDirs;
 use log::{error, info};
 
 use serde::{Deserialize, Serialize};
 use toml;
-use version::Version;
+use version::{Version, version};
 
 use crate::{get_lang, Language};
 
@@ -36,7 +36,7 @@ pub struct Config {
 impl Config {
     pub fn default() -> Self {
         Config {
-            version: Version::get().unwrap(),
+            version: Version::from_str(version!()).unwrap(),
             times_opened: 0,
             language: get_lang(),
             autosave_disabled: false,
@@ -72,7 +72,7 @@ impl Config {
                         c.increment_launches();
                         log::info!("Incremented launches: {}", c.times_opened);
 
-                        if !Version::get().unwrap().is_compatible_with(&c.version) {
+                        if !Version::from_str(version!()).unwrap().is_compatible_with(&c.version) {
                             log::error!("A new version of the program is being used! Resetting configuration (it may be incompatible)...");
 
                             std::fs::remove_file(&file).unwrap();

@@ -3169,7 +3169,7 @@ dependencies = [
 
 [[package]]
 name = "turing-machine"
-version = "1.3.0"
+version = "1.3.1"
 dependencies = [
  "base64",
  "bincode",
@@ -3291,8 +3291,8 @@ checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
 
 [[package]]
 name = "version"
-version = "0.1.2"
-source = "git+https://github.com/turing-marcos/rs-version.git?tag=v0.1.2#8c8b266acfab3081d558af5e33a3c051e760eff4"
+version = "0.2.0"
+source = "git+https://github.com/turing-marcos/rs-version.git?tag=v0.2.0#ab626e7dc46fa30bf389ffe19dad05e612b45f6d"
 dependencies = [
  "serde",
 ]
