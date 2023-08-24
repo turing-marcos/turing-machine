@@ -1,12 +1,10 @@
 use std::{
-    fs::{self, File},
-    io::Write,
+    fmt::Display,
     path::PathBuf,
     time::{Duration, Instant},
 };
 
 use crate::{
-    get_lang,
     windows::{
         AboutWindow, CompositionHelpWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow,
         WorkbookEditorWindow, WorkbookWindow,
@@ -17,15 +15,25 @@ use eframe;
 use eframe::egui::{self, Id, RichText, TextEdit, Ui};
 use eframe::epaint::Color32;
 use internationalization::t;
-use log::{debug, error, info, trace, warn};
 use turing_lib::TuringOutput;
 use turing_lib::{CompilerError, TuringMachine};
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(not(target_family = "wasm"))]
 use {
-    //wasm_bindgen::prelude::wasm_bindgen,
-    crate::{console_err, console_log},
-    std::sync::{Arc, Mutex},
+    crate::Config,
+    log::{debug, error, info, trace, warn},
+    serde::{Deserialize, Serialize},
+    std::{
+        fs::{self, File},
+        io::Write,
+    },
+};
+
+#[cfg(target_family = "wasm")]
+use {
+    crate::{console_err, console_log, console_warn, get_lang},
+    poll_promise::Promise,
+    wasm_bindgen::prelude::wasm_bindgen,
 };
 
 const DEFAULT_CODE: &str = include_str!("../Examples/Example1.tm");
@@ -35,17 +43,37 @@ pub fn is_mobile(ctx: &egui::Context) -> bool {
     ctx.screen_rect().width() < MOBILE_THRESHOLD
 }
 
-// Import the saveFile function
-//#[cfg(target_arch = "wasm32")]
-//#[wasm_bindgen(module = "/dist/.stage/save_file.js")]
-//extern "C" {
-//    fn saveFile(filename: &str, content: &str);
-//}
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen(module = "/assets/utils.js")]
+extern "C" {
+    fn downloadToFile(content: &str, filename: &str);
+}
 
+#[cfg(not(target_family = "wasm"))]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum Language {
+    English,
+    Spanish,
+}
+
+#[cfg(target_family = "wasm")]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Language {
     English,
     Spanish,
+}
+
+impl Display for Language {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Language::English => "en",
+                Language::Spanish => "es",
+            }
+        )
+    }
 }
 
 pub struct MyApp {
@@ -61,11 +89,20 @@ pub struct MyApp {
     workbook_editor_window: Option<Box<WorkbookEditorWindow>>,
     composition_help_window: Option<Box<CompositionHelpWindow>>,
 
-    lang: Language,
+    #[cfg(not(target_family = "wasm"))]
+    config: Config,
+    #[cfg(not(target_family = "wasm"))]
+    autosave: bool,
+
+    saved_feedback: Option<Instant>,
 
     file: Option<PathBuf>,
-    autosave: bool,
-    saved_feedback: Option<Instant>,
+
+    #[cfg(target_family = "wasm")]
+    lang: Language,
+
+    #[cfg(target_family = "wasm")]
+    file_request_future: Option<Promise<Option<String>>>,
 }
 
 impl MyApp {
@@ -73,25 +110,47 @@ impl MyApp {
         file: &Option<PathBuf>,
         cc: &eframe::CreationContext<'_>,
     ) -> Result<Self, CompilerError> {
-        let code = match file {
-            Some(ref f) => {
-                trace!("File provided: {:?}", file);
-                let unparsed_file = fs::read_to_string(&f).expect("cannot read file");
-                unparsed_file
-            }
-            None => {
-                trace!("No file provided, opening an example");
-                DEFAULT_CODE.to_string()
+        let code = if cfg!(target_family = "wasm") {
+            DEFAULT_CODE.to_string()
+        } else {
+            match file {
+                Some(ref f) => {
+                    #[cfg(not(target_family = "wasm"))]
+                    {
+                        trace!("File provided: {:?}", file);
+
+                        let unparsed_file = fs::read_to_string(&f).expect("cannot read file");
+                        unparsed_file
+                    }
+
+                    #[cfg(target_family = "wasm")]
+                    DEFAULT_CODE.to_string()
+                }
+                None => {
+                    #[cfg(not(target_family = "wasm"))]
+                    trace!("No file provided, opening an example");
+
+                    DEFAULT_CODE.to_string()
+                }
             }
         };
 
         let (tm, warnings) = match TuringMachine::new(&code) {
             Ok((t, warnings)) => {
                 for w in &warnings {
+                    #[cfg(not(target_family = "wasm"))]
                     warn!("\tCompiler warning: {:?}", w);
+
+                    #[cfg(target_family = "wasm")]
+                    console_warn!("\tCompiler warning: {:?}", w)
                 }
 
+                #[cfg(not(target_family = "wasm"))]
                 trace!("Turing machine created successfully");
+
+                #[cfg(target_family = "wasm")]
+                console_log!("Turing machine created successfully");
+
                 (t, warnings)
             }
             Err(e) => {
@@ -106,29 +165,72 @@ impl MyApp {
         st.spacing.item_spacing = egui::Vec2::new(10.0, 10.0);
         cc.egui_ctx.set_style(st);
 
-        Ok(Self {
-            code: String::from(&tm.code),
-            error: None,
-            tm: TuringWidget::new(tm, warnings),
-            about_window: None,
-            debug_window: None,
-            infinite_loop_window: None,
-            book_window: None,
-            workbook_editor_window: None,
-            composition_help_window: None,
+        #[cfg(not(target_family = "wasm"))]
+        {
+            let config = match Config::load() {
+                Some(c) => c,
+                None => {
+                    debug!("The config file did not exist, creating a default one");
 
-            lang: get_lang(),
+                    let c = Config::default();
 
-            file: file.clone(),
-            autosave: file.is_some(),
-            saved_feedback: None,
-        })
+                    c.save();
+
+                    c
+                }
+            };
+
+            Ok(Self {
+                code: String::from(&tm.code),
+                error: None,
+                tm: TuringWidget::new(tm, warnings).set_config(&config),
+                about_window: None,
+                debug_window: None,
+                infinite_loop_window: None,
+                book_window: None,
+                workbook_editor_window: None,
+                composition_help_window: None,
+
+                config,
+                autosave: file.is_some() && config.autosave_disabled(),
+
+                file: file.clone(),
+                saved_feedback: None,
+            })
+        }
+
+        #[cfg(target_family = "wasm")]
+        {
+            Ok(Self {
+                code: String::from(&tm.code),
+                error: None,
+                tm: TuringWidget::new(tm, warnings),
+                about_window: None,
+                debug_window: None,
+                infinite_loop_window: None,
+                book_window: None,
+                workbook_editor_window: None,
+                composition_help_window: None,
+
+                lang: get_lang(),
+
+                file: file.clone(),
+                saved_feedback: None,
+
+                file_request_future: None,
+            })
+        }
     }
 
     pub fn get_lang(&self) -> String {
-        match self.lang {
-            Language::English => String::from("en"),
-            Language::Spanish => String::from("es"),
+        #[cfg(not(target_family = "wasm"))]
+        {
+            self.config.language().to_string()
+        }
+
+        #[cfg(target_family = "wasm")]
+        {
+            self.lang.to_string()
         }
     }
 
@@ -290,6 +392,7 @@ impl MyApp {
     /// # Returns
     /// An Option<Instant> representing the time the file was saved if the save operation is successful,
     /// or None if the save operation fails or if there is no associated file.
+    #[cfg(not(target_family = "wasm"))]
     fn auto_save_file(&self) -> Option<Instant> {
         if let Some(file) = &self.file {
             if let Ok(mut file) = File::create(file) {
@@ -384,38 +487,29 @@ impl MyApp {
     ///
     /// After a successful save operation, the file is set as the new auto-save file. If the save operation
     /// fails, an error message is logged.
+    #[cfg(not(target_family = "wasm"))]
     fn save_file(&mut self) {
-        #[cfg(target_family = "wasm")]
-        {
-            let filename = "exercise.tm"; // Replace with your desired file name
-            let content = &self.code;
-            //saveFile(filename, content);
-        }
+        let file: Option<PathBuf> = match &self.file {
+            Some(f) => Some(f.clone()),
+            None => {
+                let path = std::env::current_dir().unwrap();
 
-        #[cfg(not(target_family = "wasm"))]
-        {
-            let file: Option<PathBuf> = match &self.file {
-                Some(f) => Some(f.clone()),
-                None => {
-                    let path = std::env::current_dir().unwrap();
-
-                    rfd::FileDialog::new()
-                        .add_filter("TuringMachine", &["tm"])
-                        .set_directory(&path)
-                        .save_file()
-                }
-            };
-
-            if let Some(f) = file {
-                std::fs::write(&f, self.code.as_bytes()).expect("cannot write file");
-                self.file = Some(f);
-
-                debug!("Set auto-save file to {:?}", self.file);
-
-                self.saved_feedback = Some(Instant::now());
-            } else {
-                error!("Cannot save file");
+                rfd::FileDialog::new()
+                    .add_filter("TuringMachine", &["tm"])
+                    .set_directory(&path)
+                    .save_file()
             }
+        };
+
+        if let Some(f) = file {
+            std::fs::write(&f, self.code.as_bytes()).expect("cannot write file");
+            self.file = Some(f);
+
+            debug!("Set auto-save file to {:?}", self.file);
+
+            self.saved_feedback = Some(Instant::now());
+        } else {
+            error!("Cannot save file");
         }
     }
 
@@ -430,15 +524,8 @@ impl MyApp {
     ///
     /// After a successful save operation, the file is set as the new auto-save file. If the save operation
     /// fails, an error message is logged.
+    #[cfg(not(target_family = "wasm"))]
     fn save_file_as(&mut self) {
-        #[cfg(target_family = "wasm")]
-        {
-            let filename = "exercise.tm"; // Replace with your desired file name
-            let content = &self.code;
-            //saveFile(filename, content);
-        }
-
-        #[cfg(not(target_family = "wasm"))]
         {
             let path = std::env::current_dir().unwrap();
 
@@ -460,51 +547,6 @@ impl MyApp {
         }
     }
 
-    #[cfg(target_family = "wasm")]
-    fn clone_for_load_file(&self) -> Self {
-        MyApp {
-            tm: self.tm.clone(),
-            code: self.code.clone(),
-            error: self.error.clone(),
-            about_window: None,
-            debug_window: None,
-            infinite_loop_window: None,
-            book_window: None,
-            workbook_editor_window: None,
-            composition_help_window: None,
-            lang: self.lang.clone(),
-
-            file: self.file.clone(),
-            autosave: self.autosave.clone(),
-            saved_feedback: None,
-        }
-    }
-
-    #[cfg(target_family = "wasm")]
-    async fn load_file_async() -> Option<String> {
-        let file = rfd::AsyncFileDialog::new().pick_file().await;
-
-        if let Some(f) = file {
-            // If you care about wasm support you just read() the file
-            let buffer = f.read().await;
-            console_log!("Read file: {:?}", buffer);
-            match String::from_utf8(buffer) {
-                Ok(s) => {
-                    console_log!("Correctly parsed to utf-8: {}", s);
-
-                    Some(s)
-                }
-                Err(e) => {
-                    console_err!("Invalid UTF-8 sequence: {}", e);
-
-                    None
-                }
-            }
-        } else {
-            None
-        }
-    }
-
     /// This method loads the code from an associated file, or spawns a dialog to select a file and then
     /// loads the code from it. The method handles both WebAssembly and non-WebAssembly targets.
     ///
@@ -522,28 +564,31 @@ impl MyApp {
     /// the Turing machine state remains unchanged. If no file is selected or the file dialog operation
     /// fails, the method does nothing.
     #[cfg(target_family = "wasm")]
-    async fn load_file(&mut self) {
-        // Spawn future without boxing it
-        let code = Self::load_file_async().await;
+    async fn load_file() -> Option<String> {
+        let res = rfd::AsyncFileDialog::new()
+            .add_filter("TuringMachine", &["tm"])
+            .pick_file()
+            .await;
 
-        let new_tm = match self.tm.restart(code.as_ref().unwrap()) {
-            Ok(t) => {
-                console_log!("Correctly created the new turing machine with the given code");
-                self.error = None;
-                t
+        match res {
+            Some(file) => {
+                console_log!("The file {:?} has been loaded, reading...", file);
+
+                let data: Vec<u8> = file.read().await;
+
+                match String::from_utf8(data) {
+                    Ok(s) => Some(s),
+                    Err(e) => {
+                        console_err!("Error reading file: {:?}", e);
+                        None
+                    }
+                }
             }
-            Err(e) => {
-                console_err!(
-                    "Error creating the new turing machine with the given code: {:?}",
-                    e
-                );
-                self.error = Some(e);
-                self.tm.clone()
+            None => {
+                console_err!("Error selecting file");
+                None
             }
-        };
-        console_log!("Gathering results...");
-        self.code = String::from(code.as_ref().unwrap());
-        self.tm = new_tm;
+        }
     }
 
     #[cfg(not(target_family = "wasm"))]
@@ -581,6 +626,29 @@ impl MyApp {
     /// * ctx - An egui::Context object required for creating and displaying UI components.
     /// * lang - A string representing the language used for displaying text in the UI.
     fn handle_windows(&mut self, ctx: &egui::Context, lang: &str) {
+        #[cfg(not(target_family = "wasm"))]
+        if self.config.times_opened >= 2 && !self.config.served_survey {
+            egui::Window::new(t!("window.title.survey", lang))
+                .collapsible(false)
+                .default_pos([
+                    ctx.screen_rect().width() / 2.0 - 400.0,
+                    ctx.screen_rect().height() / 2.0 - 200.0,
+                ])
+                .show(ctx, |ui| {
+                    ui.label(t!("lbl.window.survey", lang));
+
+                    if ui.link(t!("window.link.survey", lang)).clicked() {
+                        webbrowser::open(
+                            "https://next.coldboard.net/apps/forms/s/5HYog9PptWdx458y6F2LJNGL",
+                        )
+                        .unwrap();
+                        self.config.survey_served();
+                    }
+
+                    ui.label(t!("lbl.window.survey2", lang));
+                });
+        }
+
         if let Some(about) = &self.about_window {
             if !about.show(ctx) {
                 self.about_window = None;
@@ -661,24 +729,9 @@ impl MyApp {
                                 {
                                     #[cfg(target_family = "wasm")]
                                     {
-                                        // Call the function load file with `&mut self` and await it on the main thread
-                                        let shared_self =
-                                            Arc::new(Mutex::new(self.clone_for_load_file()));
-                                        let shared_self_clone = Arc::clone(&shared_self);
-                                        let future = async move {
-                                            let mut shared_self = shared_self_clone.lock().unwrap();
-                                            shared_self.load_file().await;
-                                        };
-                                        wasm_bindgen_futures::spawn_local(future);
-                                        // Wait for the result
-                                        let shared_self = shared_self.lock().unwrap();
-                                        self.tm = shared_self.tm.clone();
-                                        self.code = shared_self.code.clone();
-
-                                        console_log!("Retrieved code: {}", self.code);
-
-                                        self.error = shared_self.error.clone();
-                                        self.file = shared_self.file.clone();
+                                        self.file_request_future = Some(
+                                            poll_promise::Promise::spawn_async(Self::load_file()),
+                                        );
                                     }
 
                                     #[cfg(not(target_family = "wasm"))]
@@ -689,7 +742,11 @@ impl MyApp {
                                     .add(egui::Button::new("Save").shortcut_text("Ctrl + S"))
                                     .clicked()
                                 {
+                                    #[cfg(not(target_family = "wasm"))]
                                     self.save_file();
+
+                                    #[cfg(target_family = "wasm")]
+                                    downloadToFile(&self.code, "my-turing-program.tm");
                                 }
 
                                 if ui
@@ -699,11 +756,21 @@ impl MyApp {
                                     )
                                     .clicked()
                                 {
+                                    #[cfg(not(target_family = "wasm"))]
                                     self.save_file_as();
+
+                                    #[cfg(target_family = "wasm")]
+                                    downloadToFile(&self.code, "my-turing-program.tm");
                                 }
 
+                                #[cfg(not(target_family = "wasm"))]
                                 ui.add_enabled_ui(self.file.is_some(), |ui| {
-                                    ui.checkbox(&mut self.autosave, "Autosave")
+                                    let prev = self.autosave.clone();
+                                    ui.checkbox(&mut self.autosave, "Autosave");
+
+                                    if prev != self.autosave {
+                                        self.config.set_autosave_disabled(self.autosave);
+                                    }
                                 });
                             });
 
@@ -745,16 +812,36 @@ impl MyApp {
                             }
 
                             ui.menu_button(t!("menu.language", lang), |ui| {
-                                ui.radio_value(
-                                    &mut self.lang,
-                                    Language::English,
-                                    t!("lang.en", lang),
-                                );
-                                ui.radio_value::<Language>(
-                                    &mut self.lang,
-                                    Language::Spanish,
-                                    t!("lang.es", lang),
-                                );
+                                #[cfg(target_family = "wasm")]
+                                {
+                                    ui.radio_value(
+                                        &mut self.lang,
+                                        Language::English,
+                                        t!("lang.en", lang),
+                                    );
+                                    ui.radio_value::<Language>(
+                                        &mut self.lang,
+                                        Language::Spanish,
+                                        t!("lang.es", lang),
+                                    );
+                                }
+                                #[cfg(not(target_family = "wasm"))]
+                                {
+                                    ui.radio_value(
+                                        &mut self.config.language,
+                                        Language::English,
+                                        t!("lang.en", lang),
+                                    );
+                                    ui.radio_value::<Language>(
+                                        &mut self.config.language,
+                                        Language::Spanish,
+                                        t!("lang.es", lang),
+                                    );
+
+                                    if self.config.language.to_string() != lang {
+                                        self.config.save();
+                                    }
+                                }
                             });
 
                             ui.menu_button(t!("menu.about", lang), |ui| {
@@ -770,6 +857,16 @@ impl MyApp {
                                         "https://github.com/margual56/turing-machine-2.0",
                                     )
                                     .unwrap();
+                                }
+
+                                if ui.link(t!("window.title.survey", lang)).clicked() {
+                                    webbrowser::open(
+                                        "https://next.coldboard.net/apps/forms/s/5HYog9PptWdx458y6F2LJNGL",
+                                        )
+                                        .unwrap();
+
+                                    #[cfg(not(target_family = "wasm"))]
+                                    self.config.survey_served();
                                 }
                             });
                         });
@@ -810,23 +907,8 @@ impl MyApp {
                     {
                         #[cfg(target_family = "wasm")]
                         {
-                            // Call the function load file with `&mut self` and await it on the main thread
-                            let shared_self = Arc::new(Mutex::new(self.clone_for_load_file()));
-                            let shared_self_clone = Arc::clone(&shared_self);
-                            let future = async move {
-                                let mut shared_self = shared_self_clone.lock().unwrap();
-                                shared_self.load_file().await;
-                            };
-                            wasm_bindgen_futures::spawn_local(future);
-                            // Wait for the result
-                            let shared_self = shared_self.lock().unwrap();
-                            self.tm = shared_self.tm.clone();
-                            self.code = shared_self.code.clone();
-
-                            console_log!("Retrieved code: {}", self.code);
-
-                            self.error = shared_self.error.clone();
-                            self.file = shared_self.file.clone();
+                            self.file_request_future =
+                                Some(poll_promise::Promise::spawn_async(Self::load_file()));
                         }
 
                         #[cfg(not(target_family = "wasm"))]
@@ -842,7 +924,11 @@ impl MyApp {
                         )
                         .clicked()
                     {
+                        #[cfg(not(target_family = "wasm"))]
                         self.save_file();
+
+                        #[cfg(target_family = "wasm")]
+                        downloadToFile(&self.code, "my-turing-program.tm");
                     }
                 });
 
@@ -910,16 +996,33 @@ impl MyApp {
                     .show(ui, |my_ui: &mut Ui| {
                         let editor = TextEdit::multiline(&mut self.code)
                             .code_editor()
-                            .desired_width(0.0);
+                            .desired_width(0.0)
+                            .show(my_ui);
 
-                        let res = my_ui.add(editor);
+                        let res = editor.response;
 
+                        // Autosave only works on desktop
+                        #[cfg(not(target_family = "wasm"))]
                         if self.autosave && res.lost_focus() {
                             debug!("Saving file");
+
                             self.saved_feedback = self.auto_save_file();
                         }
 
-                        *editor_focused = res.has_focus().clone();
+                        *editor_focused = (&res).has_focus().clone();
+
+                        // FIXME: Does not work because TextEdit is lacking the Sense(click)
+                        // res.context_menu(|ui| {
+                        //     if ui.button("Copy").clicked() {
+                        //         if let Some(cursor_range) = editor.cursor_range {
+                        //             let start = cursor_range.primary.ccursor.index;
+                        //             let end = cursor_range.secondary.ccursor.index;
+
+                        //             let text = &self.code[start..end];
+                        //             ui.output_mut(|o| o.copied_text = String::from(text));
+                        //         }
+                        //     }
+                        // });
                     });
 
                 if ui.button(t!("btn.libraries", lang)).clicked() {
@@ -928,7 +1031,9 @@ impl MyApp {
                 }
 
                 if self.saved_feedback.is_some() {
+                    #[cfg(not(target_family = "wasm"))]
                     debug!("Drawing saved feedback popup");
+
                     self.draw_saved_feedback_popup(ui, ctx);
                 }
             })
@@ -973,6 +1078,10 @@ impl MyApp {
                         }
 
                         let mut sliders = |ui: &mut egui::Ui| {
+                            let _prev_tape_size = self.tm.tape_rect_size;
+                            let _prev_tape_speed = self.tm.tape_anim_speed;
+                            let _prev_threshold_inf_loop = self.tm.threshold_inf_loop;
+
                             ui.add(
                                 egui::Slider::new(&mut self.tm.tape_rect_size, 25.0..=300.0)
                                     .suffix(" px")
@@ -991,6 +1100,22 @@ impl MyApp {
                                     .text(t!("lbl.tape.inf_loop", lang)),
                             )
                             .on_hover_text_at_pointer(t!("tooltip.tape.iterations", lang));
+
+                            #[cfg(not(target_family = "wasm"))]
+                            {
+                                if _prev_tape_size != self.tm.tape_rect_size {
+                                    self.config.set_tape_size(self.tm.tape_rect_size);
+                                }
+
+                                if _prev_tape_speed != self.tm.tape_anim_speed {
+                                    self.config.set_tape_speed(self.tm.tape_anim_speed);
+                                }
+
+                                if _prev_threshold_inf_loop != self.tm.threshold_inf_loop {
+                                    self.config
+                                        .set_threshold_inf_loop(self.tm.threshold_inf_loop);
+                                }
+                            }
                         };
 
                         if is_mobile(ctx) {
@@ -1062,7 +1187,12 @@ impl MyApp {
                                     {
                                         ctx.request_repaint();
                                         if self.tm.is_inf_loop() {
+                                            #[cfg(not(target_family = "wasm"))]
                                             warn!("Infinite loop detected!");
+
+                                            #[cfg(target_family = "wasm")]
+                                            console_warn!("Infinite loop detected!");
+
                                             self.infinite_loop_window = Some(Box::new(
                                                 InfiniteLoopWindow::new(&self.get_lang()),
                                             ));
@@ -1091,6 +1221,27 @@ impl eframe::App for MyApp {
         let lang = self.get_lang();
         let mut editor_focused = false;
 
+        #[cfg(target_family = "wasm")]
+        if let Some(file_async) = &self.file_request_future {
+            if let Some(file_result) = file_async.ready() {
+                if let Some(new_code) = file_result {
+                    self.tm = match self.tm.restart(new_code) {
+                        Ok(t) => {
+                            self.error = None;
+                            t
+                        }
+                        Err(e) => {
+                            self.error = Some(e);
+                            self.tm.clone()
+                        }
+                    };
+                    self.code = String::from(new_code);
+                }
+
+                self.file_request_future = None;
+            }
+        }
+
         ctx.input_mut(|i| {
             // Check for keyboard shortcuts
             if i.consume_shortcut(&egui::KeyboardShortcut::new(
@@ -1098,37 +1249,34 @@ impl eframe::App for MyApp {
                 egui::Key::S,
             )) {
                 // Ctrl+S
-                debug!("Saving...");
-                self.save_file();
+                #[cfg(not(target_family = "wasm"))]
+                {
+                    debug!("Saving...");
+                    self.save_file();
+                }
+                #[cfg(target_family = "wasm")]
+                {
+                    console_log!("Saving...");
+                    downloadToFile(&self.code, "my-turing-program.tm");
+                }
             } else if i.consume_shortcut(&egui::KeyboardShortcut::new(
                 egui::Modifiers::COMMAND,
                 egui::Key::O,
             )) {
                 // Ctrl+O
-                debug!("Opening...");
                 #[cfg(target_family = "wasm")]
                 {
-                    // Call the function load file with `&mut self` and await it on the main thread
-                    let shared_self = Arc::new(Mutex::new(self.clone_for_load_file()));
-                    let shared_self_clone = Arc::clone(&shared_self);
-                    let future = async move {
-                        let mut shared_self = shared_self_clone.lock().unwrap();
-                        shared_self.load_file().await;
-                    };
-                    wasm_bindgen_futures::spawn_local(future);
-                    // Wait for the result
-                    let shared_self = shared_self.lock().unwrap();
-                    self.tm = shared_self.tm.clone();
-                    self.code = shared_self.code.clone();
+                    console_log!("Opening...");
 
-                    console_log!("Retrieved code: {}", self.code);
-
-                    self.error = shared_self.error.clone();
-                    self.file = shared_self.file.clone();
+                    self.file_request_future =
+                        Some(poll_promise::Promise::spawn_async(Self::load_file()));
                 }
 
                 #[cfg(not(target_family = "wasm"))]
-                self.load_file();
+                {
+                    debug!("Opening...");
+                    self.load_file();
+                }
             } else if i.modifiers.shift
                 && i.consume_shortcut(&egui::KeyboardShortcut::new(
                     egui::Modifiers::CTRL,
@@ -1136,14 +1284,30 @@ impl eframe::App for MyApp {
                 ))
             {
                 // Ctrl+Shift+S
-                debug!("Saving as...");
-                self.save_file_as();
+                #[cfg(target_family = "wasm")]
+                {
+                    console_log!("Opening...");
+
+                    self.file_request_future =
+                        Some(poll_promise::Promise::spawn_async(Self::load_file()));
+                }
+
+                #[cfg(not(target_family = "wasm"))]
+                {
+                    debug!("Saving as...");
+                    self.save_file_as();
+                }
             } else if i.consume_shortcut(&egui::KeyboardShortcut::new(
                 egui::Modifiers::COMMAND,
                 egui::Key::R,
             )) {
                 // Ctrl+R
+                #[cfg(not(target_family = "wasm"))]
                 debug!("Restarting...");
+
+                #[cfg(target_family = "wasm")]
+                console_log!("Restarting TM...");
+
                 self.tm = self.tm.restart(&self.code).unwrap();
             }
         });

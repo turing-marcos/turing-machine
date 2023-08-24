@@ -3,3 +3,4 @@
 **/dist/*
 .vscode/
 **/*.wb
+.cargo/config.toml

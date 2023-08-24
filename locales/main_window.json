@@ -134,6 +134,22 @@
     "btn.close": {
         "en": "Close",
         "es": "Cerrar"
+    },
+    "window.title.survey": {
+        "en": "Survey",
+        "es": "Encuesta"
+    },
+    "window.link.survey": {
+        "en": "Click here to open the survey",
+        "es": "Haz clic aquí para abrir la encuesta"
+    },
+    "lbl.window.survey":{
+        "en": "Please take a moment to fill out this survey to help us improve the app.",
+        "es": "Por favor, tómate un momento para completar esta encuesta y ayudarnos a mejorar la aplicación."
+    },
+    "lbl.window.survey2": {
+        "en": "It will only take a few minutes, I promise!",
+        "es": "¡Sólo te llevará unos minutos, lo prometo!"
     }
 }
   

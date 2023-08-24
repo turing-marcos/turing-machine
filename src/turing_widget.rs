@@ -3,8 +3,13 @@ use eframe::emath::Align2;
 use eframe::epaint::{Color32, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, Vec2};
 use internationalization::t;
 
+#[cfg(not(target_family = "wasm"))]
 use log::warn;
+
 use turing_lib::{CompilerError, CompilerWarning, Library, TuringMachine, TuringOutput};
+
+#[cfg(target_family = "wasm")]
+use crate::console_warn;
 
 use crate::window::is_mobile;
 
@@ -60,12 +65,28 @@ impl TuringWidget {
         }
     }
 
+    #[cfg(not(target_family = "wasm"))]
+    pub fn set_config(&self, config: &crate::config::Config) -> Self {
+        let mut new_tm = self.clone();
+
+        new_tm.lang = config.language().to_string();
+        new_tm.threshold_inf_loop = config.threshold_inf_loop();
+        new_tm.tape_rect_size = config.tape_size();
+        new_tm.tape_anim_speed = config.tape_speed();
+
+        new_tm
+    }
+
     /// Restarts the turing machine with the given code
     pub fn restart(&mut self, code: &str) -> Result<Self, CompilerError> {
         let (tm, warnings) = match TuringMachine::new(code) {
             Ok((t, warnings)) => {
                 for w in &warnings {
+                    #[cfg(not(target_family = "wasm"))]
                     warn!("Compiler warning: {:?}", w);
+
+                    #[cfg(target_family = "wasm")]
+                    console_warn!("Compiler warning: {:?}", w);
                 }
 
                 self.errors = None;

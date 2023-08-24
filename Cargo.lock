@@ -907,6 +907,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "directories"
+version = "5.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a49173b84e034382284f27f1af4dcbbd231ffa358c0fe316541a7337f376a35"
+dependencies = [
+ "dirs-sys",
+]
+
+[[package]]
+name = "dirs-sys"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "520f05a5cbd335fae5a99ff7a6ab8627577660ee5cfd6a94a6a929b52ff0321c"
+dependencies = [
+ "libc",
+ "option-ext",
+ "redox_users",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
 name = "dispatch"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2218,12 +2239,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
 
 [[package]]
+name = "option-ext"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
+
+[[package]]
 name = "orbclient"
 version = "0.3.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "221d488cd70617f1bd599ed8ceb659df2147d9393717954d82a0f5e8032a6ab1"
 dependencies = [
- "redox_syscall",
+ "redox_syscall 0.3.5",
 ]
 
 [[package]]
@@ -2287,7 +2314,7 @@ checksum = "93f00c865fe7cabf650081affecd3871070f26767e7b2070a3ffae14c654b447"
 dependencies = [
  "cfg-if",
  "libc",
- "redox_syscall",
+ "redox_syscall 0.3.5",
  "smallvec",
  "windows-targets 0.48.1",
 ]
@@ -2380,6 +2407,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "poll-promise"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcf2a02372dfae23c9c01267fb296b8a3413bb4e45fbd589c3ac73c6dcfbb305"
+dependencies = [
+ "static_assertions",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+]
+
+[[package]]
 name = "polling"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2394,6 +2432,12 @@ dependencies = [
  "pin-project-lite",
  "windows-sys 0.48.0",
 ]
+
+[[package]]
+name = "pollster"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22686f4785f02a4fcc856d3b3bb19bf6c8160d103f7a99cc258bddd0251dc7f2"
 
 [[package]]
 name = "ppv-lite86"
@@ -2479,11 +2523,31 @@ checksum = "f2ff9a1f06a88b01621b7ae906ef0211290d1c8a168a15542486a8f61c0833b9"
 
 [[package]]
 name = "redox_syscall"
+version = "0.2.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb5a58c1855b4b6819d59012155603f0b22ad30cad752600aadfcb695265519a"
+dependencies = [
+ "bitflags 1.3.2",
+]
+
+[[package]]
+name = "redox_syscall"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "567664f262709473930a4bf9e51bf2ebf3348f2e748ccc50dea20646858f8f29"
 dependencies = [
  "bitflags 1.3.2",
+]
+
+[[package]]
+name = "redox_users"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b033d837a7cf162d7993aded9304e30a83213c648b6e389db233191f891e5c2b"
+dependencies = [
+ "getrandom",
+ "redox_syscall 0.2.16",
+ "thiserror",
 ]
 
 [[package]]
@@ -2897,7 +2961,7 @@ checksum = "5486094ee78b2e5038a6382ed7645bc084dc2ec433426ca4c3cb61e2007b8998"
 dependencies = [
  "cfg-if",
  "fastrand 2.0.0",
- "redox_syscall",
+ "redox_syscall 0.3.5",
  "rustix 0.38.4",
  "windows-sys 0.48.0",
 ]
@@ -3105,13 +3169,14 @@ dependencies = [
 
 [[package]]
 name = "turing-machine"
-version = "1.2.2"
+version = "1.3.0"
 dependencies = [
  "base64",
  "bincode",
  "clap",
  "clap-verbosity-flag",
  "console_error_panic_hook",
+ "directories",
  "eframe",
  "egui_extras",
  "env_logger",
@@ -3122,13 +3187,17 @@ dependencies = [
  "log",
  "pest",
  "pest_derive",
+ "poll-promise",
+ "pollster",
  "rfd",
  "serde",
  "serde_bytes",
  "sys-locale",
+ "toml",
  "tracing-subscriber",
  "tracing-wasm",
  "turing-lib",
+ "version",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
@@ -3219,6 +3288,14 @@ name = "vec_map"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
+
+[[package]]
+name = "version"
+version = "0.1.2"
+source = "git+https://github.com/turing-marcos/rs-version.git?tag=v0.1.2#8c8b266acfab3081d558af5e33a3c051e760eff4"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "version-compare"
@@ -3764,7 +3841,7 @@ dependencies = [
  "orbclient",
  "percent-encoding",
  "raw-window-handle",
- "redox_syscall",
+ "redox_syscall 0.3.5",
  "sctk-adwaita",
  "smithay-client-toolkit",
  "wasm-bindgen",
