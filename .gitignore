@@ -4,3 +4,12 @@
 .vscode/
 **/*.wb
 .cargo/config.toml
+
+lin-student/
+lin-teacher/
+turing-machine_student-linux
+turing-machine_student-windows.exe
+turing-machine_teacher-linux
+turing-machine_teacher-windows.exe
+win-student/
+win-teacher/
