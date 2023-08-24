@@ -5,7 +5,7 @@ use log::{error, info};
 
 use serde::{Deserialize, Serialize};
 use toml;
-use version::{Version, version};
+use version::{version, Version};
 
 use crate::{get_lang, Language};
 
@@ -72,7 +72,10 @@ impl Config {
                         c.increment_launches();
                         log::info!("Incremented launches: {}", c.times_opened);
 
-                        if !Version::from_str(version!()).unwrap().is_compatible_with(&c.version) {
+                        if !Version::from_str(version!())
+                            .unwrap()
+                            .is_compatible_with(&c.version)
+                        {
                             log::error!("A new version of the program is being used! Resetting configuration (it may be incompatible)...");
 
                             std::fs::remove_file(&file).unwrap();
