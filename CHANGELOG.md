@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.3.0]
+
+### Added
+- Feature Request #34: Save preferences
+- Feature Request #35: Add a survey pop-up
+
+### Fixed
+- Issue #6: Uploading and downloading files in WASM
+- Issue #30: Letters cut-off by scrollbar
+- Issue #31: Composition help unclear
+- Issue #33: Explain that you cannot compose more than one library at a time
+
 ## [v1.2.2]
 ### Added
 - Help for the composition window
