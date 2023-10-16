@@ -119,7 +119,6 @@ impl MyApp {
                     {
                         trace!("File provided: {:?}", file);
 
-                        
                         fs::read_to_string(f).expect("cannot read file")
                     }
 
@@ -277,9 +276,9 @@ impl MyApp {
                                     width2 = position.end.unwrap_or((0, position.start.1 + 1)).1
                                         - position.start.1,
                                     // Length from the end of the error to the end of the line
-                                    width3 = error
-                                        .code()
-                                        .len().saturating_sub(position.end.unwrap_or((0, position.start.1 + 1)).1)
+                                    width3 = error.code().len().saturating_sub(
+                                        position.end.unwrap_or((0, position.start.1 + 1)).1
+                                    )
                                 ))
                                 .color(Color32::RED)
                                 .size(20.0),
@@ -446,10 +445,7 @@ impl MyApp {
                         cursor_pos.top() - 200.0,
                     )
                 } else {
-                    egui::Pos2::new(
-                        cursor_pos.center().x - popup_size.x / 2.0,
-                        cursor_pos.top(),
-                    )
+                    egui::Pos2::new(cursor_pos.center().x - popup_size.x / 2.0, cursor_pos.top())
                 };
 
                 let rect = egui::Rect::from_min_size(popup_pos, popup_size);
@@ -1170,8 +1166,7 @@ impl MyApp {
                                         }
                                     }
 
-                                    if self.process_turing_controls(ui, ctx, editor_focused, lang)
-                                    {
+                                    if self.process_turing_controls(ui, ctx, editor_focused, lang) {
                                         ctx.request_repaint();
                                         if self.tm.is_inf_loop() {
                                             #[cfg(not(target_family = "wasm"))]
