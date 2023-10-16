@@ -11,7 +11,7 @@ use crate::{
     },
     TuringWidget,
 };
-use eframe;
+
 use eframe::egui::{self, Id, RichText, TextEdit, Ui};
 use eframe::epaint::Color32;
 use internationalization::t;
@@ -119,8 +119,8 @@ impl MyApp {
                     {
                         trace!("File provided: {:?}", file);
 
-                        let unparsed_file = fs::read_to_string(&f).expect("cannot read file");
-                        unparsed_file
+                        
+                        fs::read_to_string(f).expect("cannot read file")
                     }
 
                     #[cfg(target_family = "wasm")]
@@ -256,7 +256,7 @@ impl MyApp {
                     ui.vertical_centered_justified(|ui| {
                         ui.horizontal(|ui| {
                             ui.label(
-                                RichText::new(format!("{}", error.code()))
+                                RichText::new(error.code().to_string())
                                     .color(Color32::WHITE)
                                     .size(20.0),
                             );
@@ -279,11 +279,7 @@ impl MyApp {
                                     // Length from the end of the error to the end of the line
                                     width3 = error
                                         .code()
-                                        .len()
-                                        .checked_sub(
-                                            position.end.unwrap_or((0, position.start.1 + 1)).1
-                                        )
-                                        .unwrap_or(0)
+                                        .len().saturating_sub(position.end.unwrap_or((0, position.start.1 + 1)).1)
                                 ))
                                 .color(Color32::RED)
                                 .size(20.0),
@@ -327,14 +323,14 @@ impl MyApp {
 
                 if self.tm.offset.abs() < 0.01 {
                     self.tm.offset = 0.0;
-                    return false;
+                    false
                 } else {
                     self.tm.offset = ctx.animate_value_with_time(
                         Id::new("offset"),
                         0.0,
                         self.tm.tape_anim_speed,
                     );
-                    return true;
+                    true
                 }
             } else if (ui
                 .add_enabled(self.tm.paused, |ui: &mut Ui| {
@@ -444,19 +440,17 @@ impl MyApp {
                 // Modify cursor position to make the popup appear above and on top
                 let cursor_pos = ui.cursor();
                 let popup_size = egui::Vec2::new(100.0, 30.0);
-                let popup_pos: egui::Pos2;
-
-                if ui.available_height() == 0.0 {
-                    popup_pos = egui::Pos2::new(
+                let popup_pos: egui::Pos2 = if ui.available_height() == 0.0 {
+                    egui::Pos2::new(
                         cursor_pos.center().x - popup_size.x / 2.0,
                         cursor_pos.top() - 200.0,
-                    );
+                    )
                 } else {
-                    popup_pos = egui::Pos2::new(
+                    egui::Pos2::new(
                         cursor_pos.center().x - popup_size.x / 2.0,
                         cursor_pos.top(),
-                    );
-                }
+                    )
+                };
 
                 let rect = egui::Rect::from_min_size(popup_pos, popup_size);
                 ui.allocate_space(rect.size());
@@ -496,7 +490,7 @@ impl MyApp {
 
                 rfd::FileDialog::new()
                     .add_filter("TuringMachine", &["tm"])
-                    .set_directory(&path)
+                    .set_directory(path)
                     .save_file()
             }
         };
@@ -531,7 +525,7 @@ impl MyApp {
 
             let file = rfd::FileDialog::new()
                 .add_filter("TuringMachine", &["tm"])
-                .set_directory(&path)
+                .set_directory(path)
                 .save_file();
 
             if let Some(f) = file {
@@ -597,25 +591,22 @@ impl MyApp {
 
         let res = rfd::FileDialog::new()
             .add_filter("TuringMachine", &["tm"])
-            .set_directory(&path)
+            .set_directory(path)
             .pick_file();
 
-        match res {
-            Some(file) => {
-                let unparsed_file = std::fs::read_to_string(&file).expect("cannot read file");
-                self.tm = match self.tm.restart(&unparsed_file) {
-                    Ok(t) => {
-                        self.error = None;
-                        t
-                    }
-                    Err(e) => {
-                        self.error = Some(e);
-                        self.tm.clone()
-                    }
-                };
-                self.code = unparsed_file;
-            }
-            None => {}
+        if let Some(file) = res {
+            let unparsed_file = std::fs::read_to_string(file).expect("cannot read file");
+            self.tm = match self.tm.restart(&unparsed_file) {
+                Ok(t) => {
+                    self.error = None;
+                    t
+                }
+                Err(e) => {
+                    self.error = Some(e);
+                    self.tm.clone()
+                }
+            };
+            self.code = unparsed_file;
         }
     }
 
@@ -653,15 +644,15 @@ impl MyApp {
             if !about.show(ctx) {
                 self.about_window = None;
             } else if let Some(about) = &mut self.about_window {
-                about.set_lang(&lang);
+                about.set_lang(lang);
             }
         }
         if let Some(debug) = &self.debug_window {
             if !debug.show(ctx) {
                 self.debug_window = None;
             } else if let Some(debug) = &mut self.debug_window {
-                debug.set_lang(&lang);
-                if !self.error.is_some() {
+                debug.set_lang(lang);
+                if self.error.is_none() {
                     debug.set_values(self.tm.tape_values(), self.tm.tape_value());
                 }
             }
@@ -672,7 +663,7 @@ impl MyApp {
                 self.infinite_loop_window = None;
                 self.tm.paused = false;
             } else if let Some(inf_loop) = &mut self.infinite_loop_window {
-                inf_loop.set_lang(&lang);
+                inf_loop.set_lang(lang);
                 self.tm.paused = true;
                 self.tm.reset_frequencies();
             }
@@ -684,7 +675,7 @@ impl MyApp {
             if let Some(c) = code {
                 self.restart(&c);
                 self.debug_window = Some(Box::new(DebugWindow::new(
-                    &lang,
+                    lang,
                     None,
                     None,
                     Some(egui::Pos2::new(0.0, 100.0)),
@@ -765,7 +756,7 @@ impl MyApp {
 
                                 #[cfg(not(target_family = "wasm"))]
                                 ui.add_enabled_ui(self.file.is_some(), |ui| {
-                                    let prev = self.autosave.clone();
+                                    let prev = self.autosave;
                                     ui.checkbox(&mut self.autosave, "Autosave");
 
                                     if prev != self.autosave {
@@ -774,15 +765,13 @@ impl MyApp {
                                 });
                             });
 
-                            if ui.button(t!("menu.debugger", lang)).clicked() {
-                                if self.debug_window.is_none() {
-                                    self.debug_window = Some(Box::new(DebugWindow::new(
-                                        &lang,
-                                        Some(self.tm.tape_values()),
-                                        Some(self.tm.tape_value()),
-                                        Some(egui::Pos2::new(0.0, 100.0)),
-                                    )));
-                                }
+                            if ui.button(t!("menu.debugger", lang)).clicked() && self.debug_window.is_none() {
+                                self.debug_window = Some(Box::new(DebugWindow::new(
+                                    lang,
+                                    Some(self.tm.tape_values()),
+                                    Some(self.tm.tape_value()),
+                                    Some(egui::Pos2::new(0.0, 100.0)),
+                                )));
                             }
 
                             if cfg!(feature = "teacher") {
@@ -802,13 +791,11 @@ impl MyApp {
                                         ));
                                     }
                                 });
-                            } else {
-                                if ui.button(t!("menu.exercises", lang)).clicked()
-                                    && self.book_window.is_none()
-                                {
-                                    self.book_window =
-                                        Some(Box::new(WorkbookWindow::new(&self.get_lang())));
-                                }
+                            } else if ui.button(t!("menu.exercises", lang)).clicked()
+                                && self.book_window.is_none()
+                            {
+                                self.book_window =
+                                    Some(Box::new(WorkbookWindow::new(&self.get_lang())));
                             }
 
                             ui.menu_button(t!("menu.language", lang), |ui| {
@@ -847,7 +834,7 @@ impl MyApp {
                             ui.menu_button(t!("menu.about", lang), |ui| {
                                 if ui.button(t!("menu.about", lang)).clicked() {
                                     self.about_window = Some(Box::new(AboutWindow::new(
-                                        &lang,
+                                        lang,
                                         Some(egui::Pos2::new(150.0, 100.0)),
                                     )));
                                 }
@@ -979,7 +966,7 @@ impl MyApp {
                                         ui.horizontal(|ui| {
                                             ui.label(t!("lbl.state.used", lang) + ":");
                                             ui.label(
-                                                egui::RichText::new(&lib.used_states.join(", "))
+                                                egui::RichText::new(lib.used_states.join(", "))
                                                     .strong(),
                                             );
                                         });
@@ -1009,7 +996,7 @@ impl MyApp {
                             self.saved_feedback = self.auto_save_file();
                         }
 
-                        *editor_focused = (&res).has_focus().clone();
+                        *editor_focused = res.has_focus();
 
                         // FIXME: Does not work because TextEdit is lacking the Sense(click)
                         // res.context_menu(|ui| {
@@ -1045,7 +1032,7 @@ impl MyApp {
                 .default_pos(egui::pos2(0.0, 0.0))
                 .constrain(true)
                 .show(ctx, contents);
-            return 0.0;
+            0.0
         } else {
             egui::SidePanel::left("left")
                 .show(ctx, contents)
@@ -1183,7 +1170,7 @@ impl MyApp {
                                         }
                                     }
 
-                                    if self.process_turing_controls(ui, &ctx, editor_focused, &lang)
+                                    if self.process_turing_controls(ui, ctx, editor_focused, lang)
                                     {
                                         ctx.request_repaint();
                                         if self.tm.is_inf_loop() {
