@@ -132,7 +132,7 @@ impl TuringWidget {
             self.paused = true;
         }
 
-        return self.offset;
+        self.offset
     }
 
     /// Returns whether the turing machine is in a final state, the current state is the same as the previous state and the current instruction is HALT
@@ -158,6 +158,10 @@ impl TuringWidget {
     /// Returns the current tape length
     pub fn len(&self) -> usize {
         self.tm.tape.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.tm.tape.is_empty()
     }
 
     /// Returns the description of the Turing machine if it exists
@@ -236,7 +240,7 @@ impl Widget for &mut TuringWidget {
                     self.tape_rect_size / 2.0 + if is_mobile(ui.ctx()) { 25.0 } else { 50.0 },
                 );
 
-            let pos = center + Vec2::new((self.offset as f32) * size.x, 0.0);
+            let pos = center + Vec2::new(self.offset * size.x, 0.0);
 
             for i in 0..(self.tm.tape.len()) {
                 let position = Pos2::new(
@@ -301,7 +305,7 @@ impl Widget for &mut TuringWidget {
                     ui.painter().text(
                         center + Vec2::new(0.0, self.tri_size + 100.0),
                         Align2::CENTER_CENTER,
-                        &ins,
+                        ins,
                         self.font_id.clone(),
                         Color32::GRAY,
                     );

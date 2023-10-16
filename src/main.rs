@@ -4,7 +4,6 @@
 #[cfg(not(target_arch = "wasm32"))]
 use {
     clap::Parser as clap_parser,
-    env_logger,
     log::{error, trace},
     std::{fs, io, path::PathBuf},
     turing_lib::TuringMachine,
@@ -169,7 +168,7 @@ fn run_machine_cli(file: PathBuf, interactive: bool) {
         let res = tm.final_result();
         match res {
             TuringOutput::Undefined(steps) => {
-                println!("After {} steps, the result is: {}", steps, "Undefined");
+                println!("After {} steps, the result is: Undefined", steps);
             }
             TuringOutput::Defined((steps, value)) => {
                 println!("After {} steps, the result is: {}", steps, value);

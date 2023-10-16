@@ -85,7 +85,7 @@ impl SecondaryWindow for DebugWindow {
                             body.row(10.0, |mut row| {
                                 tape_values.iter().for_each(|v| {
                                     row.col(|ui| {
-                                        ui.label(format!("{}", v));
+                                        ui.label(v.to_string());
                                     });
                                 });
 

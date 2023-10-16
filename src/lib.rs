@@ -13,7 +13,7 @@ pub use config::Config;
 pub fn get_lang() -> Language {
     match sys_locale::get_locale() {
         Some(locale) => {
-            if String::from(&locale[..2]) == String::from("es") {
+            if locale[..2] == *"es" {
                 Language::Spanish
             } else {
                 Language::English

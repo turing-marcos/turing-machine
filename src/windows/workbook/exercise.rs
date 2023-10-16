@@ -20,17 +20,17 @@ impl Exercise {
                 original_image: Some((
                     img.width(),
                     img.height(),
-                    img.pixels.iter().map(|p| p.to_array()).flatten().collect(),
+                    img.pixels.iter().flat_map(|p| p.to_array()).collect(),
                 )),
                 title: String::from(title),
-                code: String::from(code),
+                code,
             }
         } else {
             Self {
                 image: None,
                 original_image: None,
                 title: String::from(title),
-                code: String::from(code),
+                code,
             }
         }
     }
@@ -40,22 +40,12 @@ impl Exercise {
         self.original_image = Some((
             img.width(),
             img.height(),
-            img.pixels.iter().map(|p| p.to_array()).flatten().collect(),
+            img.pixels.iter().flat_map(|p| p.to_array()).collect(),
         ));
     }
 
     pub fn get_cover(&mut self) -> Option<&RetainedImage> {
-        match self.image {
-            Some(ref img) => Some(img),
-            None => {
-                if let Some(img) = &self.original_image {
-                    self.set_cover(ColorImage::from_rgba_premultiplied([img.0, img.1], &img.2));
-                    self.image.as_ref()
-                } else {
-                    None
-                }
-            }
-        }
+        self.image.as_ref()
     }
 }
 

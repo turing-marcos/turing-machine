@@ -116,7 +116,7 @@ impl eframe::App for ErrorWindow {
                             .show(ui, |ui: &mut egui::Ui| {
                                 ui.horizontal(|ui| {
                                     ui.label(
-                                        RichText::new(format!("{}", self.error.code()))
+                                        RichText::new(self.error.code().to_string())
                                             .color(Color32::WHITE)
                                             .size(20.0),
                                     );

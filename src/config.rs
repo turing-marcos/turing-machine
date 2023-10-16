@@ -4,7 +4,7 @@ use directories::ProjectDirs;
 use log::{error, info};
 
 use serde::{Deserialize, Serialize};
-use toml;
+
 use version::{version, Version};
 
 use crate::{get_lang, Language};
@@ -94,62 +94,61 @@ impl Config {
             }
             None => {
                 error!("Cannot find a valid directory to store the configuration file.");
-                return None;
+                None
             }
         }
     }
 
     pub fn save(&self) {
-        match ProjectDirs::from(
+        if let Some(dir) = ProjectDirs::from(
             QUALIFIER,    /*qualifier*/
             ORGANIZATION, /*organization*/
             APPLICATION,  /*application*/
         ) {
-            Some(dir) => {
-                if !dir.config_dir().try_exists().unwrap_or(true) {
-                    match std::fs::create_dir_all(dir.config_dir()) {
-                        Ok(_) => {
-                            info!("Created configuration directory: {:?}", dir.config_dir())
-                        }
-                        Err(e) => {
-                            error!(
-                                "Could not create configuration directory {:?}: {}",
-                                dir.config_dir(),
-                                e
-                            );
-                            return;
-                        }
-                    };
-                }
-
-                let file_path = dir.config_dir().join("config.toml");
-
-                let mut file: File = match File::create(&file_path) {
-                    Ok(f) => f,
+            if !dir.config_dir().try_exists().unwrap_or(true) {
+                match std::fs::create_dir_all(dir.config_dir()) {
+                    Ok(_) => {
+                        info!("Created configuration directory: {:?}", dir.config_dir())
+                    }
                     Err(e) => {
                         error!(
-                            "Could not create configuration file {}: {}",
-                            &file_path.to_string_lossy(),
+                            "Could not create configuration directory {:?}: {}",
+                            dir.config_dir(),
                             e
                         );
                         return;
                     }
                 };
-
-                log::info!(
-                    "Writing to configuration file: {}",
-                    &file_path.to_string_lossy()
-                );
-
-                let serialized_config = toml::to_string_pretty(self).unwrap();
-
-                match file.write_all(serialized_config.as_bytes()) {
-                    Ok(_) => {}
-                    Err(e) => error!("Could not write configuration file: {}", e),
-                };
             }
-            None => {}
-        };
+
+            let file_path = dir.config_dir().join("config.toml");
+
+            let mut file: File = match File::create(&file_path) {
+                Ok(f) => f,
+                Err(e) => {
+                    error!(
+                        "Could not create configuration file {}: {}",
+                        &file_path.to_string_lossy(),
+                        e
+                    );
+                    return;
+                }
+            };
+
+            log::info!(
+                "Writing to configuration file: {}",
+                &file_path.to_string_lossy()
+            );
+
+            let serialized_config = toml::to_string_pretty(self).unwrap();
+
+            match file.write_all(serialized_config.as_bytes()) {
+                Ok(_) => {}
+                Err(e) => error!("Could not write configuration file: {}", e),
+            };
+        } else {
+            error!("Could not open project directory");
+        }
     }
 
     pub fn language(&self) -> Language {

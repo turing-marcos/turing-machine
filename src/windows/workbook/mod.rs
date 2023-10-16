@@ -29,7 +29,7 @@ fn pick_image() -> Option<PathBuf> {
 
     let file_path = rfd::FileDialog::new()
         .add_filter("Image", &["png", "jpg", "jpeg"])
-        .set_directory(&path)
+        .set_directory(path)
         .pick_file();
 
     match file_path {
@@ -189,7 +189,7 @@ pub fn save_workbook(exercises: &Workbook) {
         let path = std::env::current_dir().unwrap();
         let file_path = rfd::FileDialog::new()
             .add_filter("Turing Machine Workbook", &["wb"])
-            .set_directory(&path)
+            .set_directory(path)
             .save_file();
 
         if let Some(mut f) = file_path {
@@ -246,7 +246,7 @@ pub fn load_workbook() -> Option<Workbook> {
 
         let file_path = rfd::FileDialog::new()
             .add_filter("TuringMachine Workbook", &["wb"])
-            .set_directory(&path)
+            .set_directory(path)
             .pick_file();
 
         match file_path {

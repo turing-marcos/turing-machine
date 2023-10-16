@@ -137,9 +137,8 @@ impl WorkbookEditorWindow {
                                     ui.horizontal(|ui| {
                                         ui.add_space(15.0);
                                         if ui.button(t!("btn.editor.add_image", lang)).clicked() {
-                                            match load_image() {
-                                                Some(img) => ex.set_cover(img),
-                                                None => {}
+                                            if let Some(img) = load_image() {
+                                                ex.set_cover(img);
                                             }
                                         }
                                     });
