@@ -1,16 +1,20 @@
 use eframe::egui;
 use internationalization::t;
-use serde::{self, Deserialize, Serialize};
 
 use crate::windows::workbook::raw_data_to_image;
 
 use super::{exercise::Exercise, load_workbook, Workbook, MAX_IMG_SIZE};
 
-#[derive(Serialize, Deserialize)]
+#[cfg(target_family = "wasm")]
+use poll_promise::Promise;
+
 pub struct BookWindow {
     lang: String,
     exercises: Workbook,
     selected: (usize, usize),
+
+    #[cfg(target_family = "wasm")]
+    file_request_future: Option<Promise<Option<Workbook>>>,
 }
 
 impl BookWindow {
@@ -44,6 +48,9 @@ impl BookWindow {
             lang: String::from(lang),
             exercises,
             selected: (0, 0),
+
+            #[cfg(target_family = "wasm")]
+            file_request_future: None,
         }
     }
 
@@ -54,6 +61,18 @@ impl BookWindow {
     pub fn show(&mut self, ctx: &egui::Context) -> (bool, Option<String>) {
         let mut active = true;
         let mut code = None;
+
+        #[cfg(target_family = "wasm")]
+        if let Some(file_async) = &self.file_request_future {
+            if let Some(file_result) = file_async.ready() {
+                if let Some(workbook) = file_result.clone() {
+                    self.exercises = workbook.to_vec();
+                    self.selected = (0, 0);
+                }
+
+                self.file_request_future = None;
+            }
+        }
 
         egui::Window::new(t!("title.workbook", self.lang))
             .id(egui::Id::new("exercises_window"))
@@ -84,6 +103,13 @@ impl BookWindow {
                         });
 
                         if ui.button(t!("btn.workbook.load", self.lang)).clicked() {
+                            #[cfg(target_family = "wasm")]
+                            {
+                                self.file_request_future =
+                                    Some(poll_promise::Promise::spawn_local(load_workbook()));
+                            }
+
+                            #[cfg(not(target_family = "wasm"))]
                             if let Some(new_exercises) = load_workbook() {
                                 self.exercises = new_exercises;
                                 self.selected = (0, 0);
@@ -96,29 +122,30 @@ impl BookWindow {
                         ui.separator()
                     });
 
-                    ui.vertical_centered_justified(|ui| {
-                        if let Some(img) = self.get_exercise(self.selected).get_cover() {
-                            img.show_max_size(ui, MAX_IMG_SIZE);
+                    ui.vertical(|ui| {
+                        let mut img_width = MAX_IMG_SIZE.x;
 
-                            // Add expandable empty space
-                            ui.allocate_space(egui::Vec2::new(
-                                0.0,
-                                (MAX_IMG_SIZE.y - img.height() as f32) / 3.5,
-                            ));
+                        if let Some(img) = self.get_exercise(self.selected).get_cover() {
+                            let img_size = img.show_max_size(ui, MAX_IMG_SIZE).rect;
+
+                            img_width = img_size.width();
                         }
 
                         ui.horizontal(|ui| {
-                            if ui
-                                .add_enabled(
-                                    self.selected.1 > 0,
-                                    egui::Button::new(t!("btn.workbook.previous", self.lang)),
-                                )
-                                .clicked()
-                            {
+                            let prev_button = ui.add_enabled(
+                                self.selected.1 > 0,
+                                egui::Button::new(t!("btn.workbook.previous", self.lang)),
+                            );
+
+                            if prev_button.clicked() {
                                 self.selected.1 -= 1;
                             }
 
-                            ui.add_space(ui.available_width() - 50.0);
+                            ui.add_space(
+                                img_width
+                                    - prev_button.rect.width()
+                                    - t!("btn.workbook.next", self.lang).len() as f32 * 10.0,
+                            );
 
                             if ui
                                 .add_enabled(
@@ -131,9 +158,11 @@ impl BookWindow {
                             }
                         });
 
-                        if ui.button(t!("btn.workbook.use", self.lang)).clicked() {
-                            code = Some(self.get_exercise(self.selected).code.clone());
-                        }
+                        ui.vertical_centered_justified(|ui| {
+                            if ui.button(t!("btn.workbook.use", self.lang)).clicked() {
+                                code = Some(self.get_exercise(self.selected).code.clone());
+                            }
+                        });
                     });
                 });
             });

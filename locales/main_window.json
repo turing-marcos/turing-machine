@@ -100,8 +100,8 @@
         "es": "Reiniciar"
     },
     "lbl.finished": {
-        "en": "The program has finished.\nTo restart it, press this button:",
-        "es": "El programa ha terminado.\nPara reiniciarlo, presione este botón:"
+        "en": "The program has finished.",
+        "es": "El programa ha terminado."
     },
     "lbl.state.initial": {
         "en": "Initial state",
