@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.3.3]
+### Added
+- Workbook loading in the WASM version
+
+### Changed
+- Internally the way logging is done so that it is convergent with the WASM version
+- Updated dependencies
+
 ## [v1.3.0]
 
 ### Added
