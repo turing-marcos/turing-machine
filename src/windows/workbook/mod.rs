@@ -18,7 +18,11 @@ use crate::{console_err, console_log};
 #[cfg(not(target_arch = "wasm32"))]
 use {
     log::{debug, error},
-    std::{fs::File, io::{Write, Read}, path::PathBuf},
+    std::{
+        fs::File,
+        io::{Read, Write},
+        path::PathBuf,
+    },
 };
 
 use rfd;

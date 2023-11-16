@@ -4,7 +4,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 use {
     clap::Parser as clap_parser,
-    log::{error, debug},
+    log::{debug, error},
     std::{fs, io, path::PathBuf},
     turing_lib::TuringMachine,
     turing_machine::windows::ErrorWindow,

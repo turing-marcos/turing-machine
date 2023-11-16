@@ -3,13 +3,13 @@ use std::{fs::File, io::Write, str::FromStr};
 use directories::ProjectDirs;
 
 #[cfg(not(target_family = "wasm"))]
-use log::{error, debug};
+use log::{debug, error};
 
 use serde::{Deserialize, Serialize};
 
 use version::{version, Version};
 
-use crate::{get_lang, Language, console_err, console_log};
+use crate::{console_err, console_log, get_lang, Language};
 
 const QUALIFIER: &str = "org";
 const ORGANIZATION: &str = "margual56";

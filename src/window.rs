@@ -1128,48 +1128,34 @@ impl MyApp {
                             ui.label(t!("lbl.resumed", lang));
                         }
 
-                        ui.vertical_centered_justified(|ui| {
-                            let width = ui.available_width();
-                            ui.columns(3, |columns| {
-                                // Try to vertically center the horizontal layout
-                                columns[1].horizontal(|ui| {
-                                    ui.add_space(width * 0.175 - 95.0); // These are magic numbers (eyeballed)
+                        ui.horizontal(|ui| {
+                            ui.add_space(ui.available_width() / 2.0 - 115.0);
+                            let b = ui
+                                .button(text)
+                                .on_hover_text_at_pointer(t!("tooltip.button.playpause", lang));
 
-                                    let b = ui.button(text).on_hover_text_at_pointer(t!(
-                                        "tooltip.button.playpause",
-                                        lang
-                                    ));
+                            if (b.clicked()
+                                || ui.input_mut(|i| {
+                                    i.consume_key(egui::Modifiers::NONE, egui::Key::Space)
+                                }))
+                                && !editor_focused
+                            {
+                                if self.tm.finished() {
+                                    self.tm = self.tm.restart(&self.code).unwrap();
+                                } else {
+                                    self.tm.paused = !self.tm.paused;
+                                }
+                            }
+                            if self.process_turing_controls(ui, ctx, editor_focused, lang) {
+                                ctx.request_repaint();
+                                if self.tm.is_inf_loop() {
+                                    console_warn!("Infinite loop detected!");
 
-                                    if (b.clicked()
-                                        || ui.input_mut(|i| {
-                                            i.consume_key(egui::Modifiers::NONE, egui::Key::Space)
-                                        }))
-                                        && !editor_focused
-                                    {
-                                        if self.tm.finished() {
-                                            self.tm = self.tm.restart(&self.code).unwrap();
-                                        } else {
-                                            self.tm.paused = !self.tm.paused;
-                                        }
-                                    }
-
-                                    if self.process_turing_controls(ui, ctx, editor_focused, lang) {
-                                        ctx.request_repaint();
-                                        if self.tm.is_inf_loop() {
-                                            #[cfg(not(target_family = "wasm"))]
-                                            console_warn!("Infinite loop detected!");
-
-                                            #[cfg(target_family = "wasm")]
-                                            console_warn!("Infinite loop detected!");
-
-                                            self.infinite_loop_window = Some(Box::new(
-                                                InfiniteLoopWindow::new(&self.get_lang()),
-                                            ));
-                                            self.tm.paused = true;
-                                        }
-                                    }
-                                });
-                            });
+                                    self.infinite_loop_window =
+                                        Some(Box::new(InfiniteLoopWindow::new(&self.get_lang())));
+                                    self.tm.paused = true;
+                                }
+                            }
                         });
                     });
 
