@@ -13,13 +13,15 @@ use eframe::epaint::ColorImage;
 type WorkbookChapter = (String, Vec<Exercise>);
 type Workbook = Vec<WorkbookChapter>;
 
+use crate::{console_err, console_log};
+
 #[cfg(not(target_arch = "wasm32"))]
 use {
     log::{debug, error},
-    rfd,
-    std::io::Read,
-    std::{fs::File, io::Write, path::PathBuf},
+    std::{fs::File, io::{Write, Read}, path::PathBuf},
 };
+
+use rfd;
 
 const MAX_IMG_SIZE: egui::Vec2 = egui::Vec2::new(600.0, 250.0);
 
@@ -35,7 +37,7 @@ fn pick_image() -> Option<PathBuf> {
     match file_path {
         Some(f) => Some(f),
         None => {
-            debug!("The path is not valid");
+            console_log!("The path is not valid");
             None
         }
     }
@@ -55,7 +57,7 @@ fn load_image_bytes() -> Option<(u32, u32, Vec<u8>)> {
             Some((width, height, rgba_image.into_raw()))
         }
         None => {
-            debug!("The path is not valid");
+            console_log!("The path is not valid");
             None
         }
     }
@@ -116,12 +118,12 @@ fn load_image() -> Option<ColorImage> {
                     Ok(img) => match img.decode() {
                         Ok(img_bytes) => img_bytes,
                         Err(e) => {
-                            error!("Could not decode image: {:?}", e);
+                            console_err!("Could not decode image: {:?}", e);
                             return None;
                         }
                     },
                     Err(e) => {
-                        error!("Could not open image: {:?}", e);
+                        console_err!("Could not open image: {:?}", e);
                         return None;
                     }
                 };
@@ -135,7 +137,7 @@ fn load_image() -> Option<ColorImage> {
                 ))
             }
             None => {
-                debug!("The path is not valid");
+                console_log!("The path is not valid");
                 None
             }
         }
@@ -172,6 +174,7 @@ fn image_to_raw_data(color_image: &ColorImage) -> (usize, usize, Vec<u8>) {
 pub fn save_workbook(exercises: &Workbook) {
     #[cfg(target_arch = "wasm32")]
     {
+        console_err!("Whoops! I haven't implemented saving workbooks yet");
         /*
         FIXME: Not working
 
@@ -199,79 +202,75 @@ pub fn save_workbook(exercises: &Workbook) {
             let mut file = File::create(&f).unwrap();
             file.write_all(&data).unwrap();
 
-            debug!("Workbook saved at {:?}", f);
+            console_log!("Workbook saved at {:?}", f);
 
             drop(file);
         } else {
-            error!("Cannot save workbook");
+            console_err!("Cannot save workbook");
         }
     }
 }
 
-pub fn load_workbook() -> Option<Workbook> {
-    #[cfg(target_arch = "wasm32")]
-    {
-        /*
-        FIXME: Not working
+#[cfg(target_family = "wasm")]
+pub async fn load_workbook() -> Option<Workbook> {
+    let file_path = rfd::AsyncFileDialog::new()
+        .add_filter("TuringMachine Workbook", &["wb"])
+        .pick_file()
+        .await;
 
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let input = document
-            .create_element("input")
-            .unwrap()
-            .dyn_into::<web_sys::HtmlInputElement>()
-            .unwrap();
-        input.set_attribute("type", "file").unwrap();
-        input.set_attribute("accept", ".wb").unwrap();
-        input.set_attribute("style", "display: none").unwrap();
-        input.set_attribute("id", "file-input").unwrap();
-        document.body().unwrap().append_child(&input).unwrap();
-        input.click();
-        let file = input.files().unwrap().get(0).unwrap();
-        let reader = web_sys::FileReader::new().unwrap();
-        reader.read_as_array_buffer(&file).unwrap();
-        let data = reader.result().unwrap();
-        let data = js_sys::Uint8Array::new(&data).to_vec();
-        let data = base64.decode(&data).unwrap();
-        let exercises = bincode::deserialize(&data).unwrap();
-        return Some(exercises);
-        */
+    match file_path {
+        Some(f) => {
+            let reader: Vec<u8> = f.read().await;
 
-        return None;
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        let path = std::env::current_dir().unwrap();
-
-        let file_path = rfd::FileDialog::new()
-            .add_filter("TuringMachine Workbook", &["wb"])
-            .set_directory(path)
-            .pick_file();
-
-        match file_path {
-            Some(f) => {
-                let mut file = File::open(&f).expect("File not found");
-                let mut reader: Vec<u8> = Vec::new();
-                file.read_to_end(&mut reader).expect("Could not read file");
-
-                debug!("Read {} bytes", reader.len());
-
-                match bincode::deserialize::<Workbook>(&reader) {
-                    Ok(exercises) => {
-                        debug!("Workbook loaded from {:?}", &f);
-                        Some(exercises)
-                    }
-                    Err(e) => {
-                        error!("Cannot load workbook: {}", e);
-                        None
-                    }
+            match bincode::deserialize::<Workbook>(&reader) {
+                Ok(exercises) => {
+                    console_log!("Workbook loaded from {:?}", &f);
+                    Some(exercises)
+                }
+                Err(e) => {
+                    console_err!("There was an error deserializing the workbook: {}", e);
+                    None
                 }
             }
-            None => {
-                debug!("The path is not valid");
-                None
+        }
+        None => {
+            console_err!("There was an error opening the workbook file");
+            None
+        }
+    }
+}
+
+#[cfg(not(target_family = "wasm"))]
+pub fn load_workbook() -> Option<Workbook> {
+    let path = std::env::current_dir().unwrap();
+
+    let file_path = rfd::FileDialog::new()
+        .add_filter("TuringMachine Workbook", &["wb"])
+        .set_directory(path)
+        .pick_file();
+
+    match file_path {
+        Some(f) => {
+            let mut file = File::open(&f).expect("File not found");
+            let mut reader: Vec<u8> = Vec::new();
+            file.read_to_end(&mut reader).expect("Could not read file");
+
+            console_log!("Read {} bytes", reader.len());
+
+            match bincode::deserialize::<Workbook>(&reader) {
+                Ok(exercises) => {
+                    console_log!("Workbook loaded from {:?}", &f);
+                    Some(exercises)
+                }
+                Err(e) => {
+                    console_err!("Cannot load workbook: {}", e);
+                    None
+                }
             }
+        }
+        None => {
+            console_log!("The path is not valid");
+            None
         }
     }
 }

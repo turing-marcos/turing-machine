@@ -1,16 +1,20 @@
 use eframe::egui;
 use internationalization::t;
-use serde::{self, Deserialize, Serialize};
 
 use crate::windows::workbook::raw_data_to_image;
 
 use super::{exercise::Exercise, load_workbook, Workbook, MAX_IMG_SIZE};
 
-#[derive(Serialize, Deserialize)]
+#[cfg(target_family = "wasm")]
+use poll_promise::Promise;
+
 pub struct BookWindow {
     lang: String,
     exercises: Workbook,
     selected: (usize, usize),
+
+    #[cfg(target_family = "wasm")]
+    file_request_future: Option<Promise<Option<Workbook>>>,
 }
 
 impl BookWindow {
@@ -44,6 +48,9 @@ impl BookWindow {
             lang: String::from(lang),
             exercises,
             selected: (0, 0),
+
+            #[cfg(target_family = "wasm")]
+            file_request_future: None,
         }
     }
 
@@ -54,6 +61,18 @@ impl BookWindow {
     pub fn show(&mut self, ctx: &egui::Context) -> (bool, Option<String>) {
         let mut active = true;
         let mut code = None;
+
+        #[cfg(target_family = "wasm")]
+        if let Some(file_async) = &self.file_request_future {
+            if let Some(file_result) = file_async.ready() {
+                if let Some(workbook) = file_result.clone() {
+                    self.exercises = workbook.to_vec();
+                    self.selected = (0, 0);
+                }
+
+                self.file_request_future = None;
+            }
+        }
 
         egui::Window::new(t!("title.workbook", self.lang))
             .id(egui::Id::new("exercises_window"))
@@ -84,6 +103,13 @@ impl BookWindow {
                         });
 
                         if ui.button(t!("btn.workbook.load", self.lang)).clicked() {
+                            #[cfg(target_family = "wasm")]
+                            {
+                                self.file_request_future =
+                                    Some(poll_promise::Promise::spawn_local(load_workbook()));
+                            }
+
+                            #[cfg(not(target_family = "wasm"))]
                             if let Some(new_exercises) = load_workbook() {
                                 self.exercises = new_exercises;
                                 self.selected = (0, 0);

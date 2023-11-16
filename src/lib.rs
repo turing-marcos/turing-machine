@@ -78,6 +78,12 @@ macro_rules! console_log {
     // Note that this is using the `log` function imported above during
     // `bare_bones`
     ($($t:tt)*) => (crate::log(&format_args!($($t)*).to_string()))
+    }
+
+#[cfg(not(target_family = "wasm"))]
+#[macro_export]
+macro_rules! console_log {
+    ($($t:tt)*) =>(debug!($($t)*))
 }
 
 #[cfg(target_family = "wasm")]
@@ -88,10 +94,22 @@ macro_rules! console_err {
     ($($t:tt)*) => (crate::err(&format_args!($($t)*).to_string()))
 }
 
+#[cfg(not(target_family = "wasm"))]
+#[macro_export]
+macro_rules! console_err {
+    ($($t:tt)*) =>(error!($($t)*))
+}
+
 #[cfg(target_family = "wasm")]
 #[macro_export]
 macro_rules! console_warn {
     // Note that this is using the `err` function imported above during
     // `bare_bones`
     ($($t:tt)*) => (crate::warn(&format_args!($($t)*).to_string()))
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[macro_export]
+macro_rules! console_warn {
+    ($($t:tt)*) =>(warn!($($t)*))
 }

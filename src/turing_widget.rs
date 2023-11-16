@@ -8,10 +8,7 @@ use log::warn;
 
 use turing_lib::{CompilerError, CompilerWarning, Library, TuringMachine, TuringOutput};
 
-#[cfg(target_family = "wasm")]
-use crate::console_warn;
-
-use crate::window::is_mobile;
+use crate::{console_warn, window::is_mobile};
 
 const STROKE_WIDTH: f32 = 3f32;
 const FONT_SIZE: f32 = 30f32;
@@ -83,7 +80,7 @@ impl TuringWidget {
             Ok((t, warnings)) => {
                 for w in &warnings {
                     #[cfg(not(target_family = "wasm"))]
-                    warn!("Compiler warning: {:?}", w);
+                    console_warn!("Compiler warning: {:?}", w);
 
                     #[cfg(target_family = "wasm")]
                     console_warn!("Compiler warning: {:?}", w);

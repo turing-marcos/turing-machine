@@ -5,6 +5,7 @@ use std::{
 };
 
 use crate::{
+    console_err, console_log, console_warn,
     windows::{
         AboutWindow, CompositionHelpWindow, DebugWindow, InfiniteLoopWindow, SecondaryWindow,
         WorkbookEditorWindow, WorkbookWindow,
@@ -21,7 +22,7 @@ use turing_lib::{CompilerError, TuringMachine};
 #[cfg(not(target_family = "wasm"))]
 use {
     crate::Config,
-    log::{debug, error, info, trace, warn},
+    log::{debug, error, warn},
     serde::{Deserialize, Serialize},
     std::{
         fs::{self, File},
@@ -30,11 +31,7 @@ use {
 };
 
 #[cfg(target_family = "wasm")]
-use {
-    crate::{console_err, console_log, console_warn, get_lang},
-    poll_promise::Promise,
-    wasm_bindgen::prelude::wasm_bindgen,
-};
+use {crate::get_lang, poll_promise::Promise, wasm_bindgen::prelude::wasm_bindgen};
 
 const DEFAULT_CODE: &str = include_str!("../Examples/Example1.tm");
 const MOBILE_THRESHOLD: f32 = 500.0;
@@ -96,6 +93,7 @@ pub struct MyApp {
 
     saved_feedback: Option<Instant>,
 
+    #[cfg(not(target_family = "wasm"))]
     file: Option<PathBuf>,
 
     #[cfg(target_family = "wasm")]
@@ -114,20 +112,19 @@ impl MyApp {
             DEFAULT_CODE.to_string()
         } else {
             match file {
-                Some(ref f) => {
+                Some(ref _f) => {
                     #[cfg(not(target_family = "wasm"))]
                     {
-                        trace!("File provided: {:?}", file);
+                        console_log!("File provided: {:?}", file);
 
-                        fs::read_to_string(f).expect("cannot read file")
+                        fs::read_to_string(_f).expect("cannot read file")
                     }
 
                     #[cfg(target_family = "wasm")]
                     DEFAULT_CODE.to_string()
                 }
                 None => {
-                    #[cfg(not(target_family = "wasm"))]
-                    trace!("No file provided, opening an example");
+                    console_log!("No file provided, opening an example");
 
                     DEFAULT_CODE.to_string()
                 }
@@ -137,17 +134,9 @@ impl MyApp {
         let (tm, warnings) = match TuringMachine::new(&code) {
             Ok((t, warnings)) => {
                 for w in &warnings {
-                    #[cfg(not(target_family = "wasm"))]
-                    warn!("\tCompiler warning: {:?}", w);
-
-                    #[cfg(target_family = "wasm")]
                     console_warn!("\tCompiler warning: {:?}", w)
                 }
 
-                #[cfg(not(target_family = "wasm"))]
-                trace!("Turing machine created successfully");
-
-                #[cfg(target_family = "wasm")]
                 console_log!("Turing machine created successfully");
 
                 (t, warnings)
@@ -169,7 +158,7 @@ impl MyApp {
             let config = match Config::load() {
                 Some(c) => c,
                 None => {
-                    debug!("The config file did not exist, creating a default one");
+                    console_log!("The config file did not exist, creating a default one");
 
                     let c = Config::default();
 
@@ -213,7 +202,6 @@ impl MyApp {
 
                 lang: get_lang(),
 
-                file: file.clone(),
                 saved_feedback: None,
 
                 file_request_future: None,
@@ -392,13 +380,13 @@ impl MyApp {
         if let Some(file) = &self.file {
             if let Ok(mut file) = File::create(file) {
                 if let Err(e) = file.write_all(self.code.as_bytes()) {
-                    error!("Error saving file: {}", e);
+                    console_err!("Error saving file: {}", e);
                 } else {
-                    info!("File saved");
+                    console_log!("File saved");
                     return Some(Instant::now());
                 }
             } else {
-                error!("Error opening file \"{}\" for writing", file.display());
+                console_err!("Error opening file \"{}\" for writing", file.display());
             }
         }
 
@@ -495,11 +483,11 @@ impl MyApp {
             std::fs::write(&f, self.code.as_bytes()).expect("cannot write file");
             self.file = Some(f);
 
-            debug!("Set auto-save file to {:?}", self.file);
+            console_log!("Set auto-save file to {:?}", self.file);
 
             self.saved_feedback = Some(Instant::now());
         } else {
-            error!("Cannot save file");
+            console_err!("Cannot save file");
         }
     }
 
@@ -528,11 +516,11 @@ impl MyApp {
                 std::fs::write(&f, self.code.as_bytes()).expect("cannot write file");
                 self.file = Some(f);
 
-                debug!("Set auto-save file to {:?}", self.file);
+                console_log!("Set auto-save file to {:?}", self.file);
 
                 self.saved_feedback = Some(Instant::now());
             } else {
-                error!("Cannot save file");
+                console_err!("Cannot save file");
             }
         }
     }
@@ -717,7 +705,7 @@ impl MyApp {
                                     #[cfg(target_family = "wasm")]
                                     {
                                         self.file_request_future = Some(
-                                            poll_promise::Promise::spawn_async(Self::load_file()),
+                                            poll_promise::Promise::spawn_local(Self::load_file()),
                                         );
                                     }
 
@@ -891,7 +879,7 @@ impl MyApp {
                         #[cfg(target_family = "wasm")]
                         {
                             self.file_request_future =
-                                Some(poll_promise::Promise::spawn_async(Self::load_file()));
+                                Some(poll_promise::Promise::spawn_local(Self::load_file()));
                         }
 
                         #[cfg(not(target_family = "wasm"))]
@@ -987,7 +975,7 @@ impl MyApp {
                         // Autosave only works on desktop
                         #[cfg(not(target_family = "wasm"))]
                         if self.autosave && res.lost_focus() {
-                            debug!("Saving file");
+                            console_log!("Saving file");
 
                             self.saved_feedback = self.auto_save_file();
                         }
@@ -1014,8 +1002,7 @@ impl MyApp {
                 }
 
                 if self.saved_feedback.is_some() {
-                    #[cfg(not(target_family = "wasm"))]
-                    debug!("Drawing saved feedback popup");
+                    console_log!("Drawing saved feedback popup");
 
                     self.draw_saved_feedback_popup(ui, ctx);
                 }
@@ -1170,7 +1157,7 @@ impl MyApp {
                                         ctx.request_repaint();
                                         if self.tm.is_inf_loop() {
                                             #[cfg(not(target_family = "wasm"))]
-                                            warn!("Infinite loop detected!");
+                                            console_warn!("Infinite loop detected!");
 
                                             #[cfg(target_family = "wasm")]
                                             console_warn!("Infinite loop detected!");
@@ -1231,14 +1218,14 @@ impl eframe::App for MyApp {
                 egui::Key::S,
             )) {
                 // Ctrl+S
+                console_log!("Saving...");
+
                 #[cfg(not(target_family = "wasm"))]
                 {
-                    debug!("Saving...");
                     self.save_file();
                 }
                 #[cfg(target_family = "wasm")]
                 {
-                    console_log!("Saving...");
                     downloadToFile(&self.code, "my-turing-program.tm");
                 }
             } else if i.consume_shortcut(&egui::KeyboardShortcut::new(
@@ -1246,17 +1233,16 @@ impl eframe::App for MyApp {
                 egui::Key::O,
             )) {
                 // Ctrl+O
+                console_log!("Opening...");
+
                 #[cfg(target_family = "wasm")]
                 {
-                    console_log!("Opening...");
-
                     self.file_request_future =
-                        Some(poll_promise::Promise::spawn_async(Self::load_file()));
+                        Some(poll_promise::Promise::spawn_local(Self::load_file()));
                 }
 
                 #[cfg(not(target_family = "wasm"))]
                 {
-                    debug!("Opening...");
                     self.load_file();
                 }
             } else if i.modifiers.shift
@@ -1266,17 +1252,16 @@ impl eframe::App for MyApp {
                 ))
             {
                 // Ctrl+Shift+S
+                console_log!("Opening...");
+
                 #[cfg(target_family = "wasm")]
                 {
-                    console_log!("Opening...");
-
                     self.file_request_future =
-                        Some(poll_promise::Promise::spawn_async(Self::load_file()));
+                        Some(poll_promise::Promise::spawn_local(Self::load_file()));
                 }
 
                 #[cfg(not(target_family = "wasm"))]
                 {
-                    debug!("Saving as...");
                     self.save_file_as();
                 }
             } else if i.consume_shortcut(&egui::KeyboardShortcut::new(
@@ -1284,11 +1269,7 @@ impl eframe::App for MyApp {
                 egui::Key::R,
             )) {
                 // Ctrl+R
-                #[cfg(not(target_family = "wasm"))]
-                debug!("Restarting...");
-
-                #[cfg(target_family = "wasm")]
-                console_log!("Restarting TM...");
+                console_log!("Restarting...");
 
                 self.tm = self.tm.restart(&self.code).unwrap();
             }

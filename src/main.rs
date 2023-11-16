@@ -4,7 +4,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 use {
     clap::Parser as clap_parser,
-    log::{error, trace},
+    log::{error, debug},
     std::{fs, io, path::PathBuf},
     turing_lib::TuringMachine,
     turing_machine::windows::ErrorWindow,
@@ -81,7 +81,7 @@ fn main() {
 
     if args.cli {
         if let Some(file) = args.file {
-            trace!("The machine will run in GUI mode");
+            debug!("The machine will run in GUI mode");
             run_machine_cli(file, args.interactive);
         } else {
             error!("No file provided, exiting...");

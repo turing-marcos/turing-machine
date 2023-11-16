@@ -1,13 +1,15 @@
 use std::{fs::File, io::Write, str::FromStr};
 
 use directories::ProjectDirs;
-use log::{error, info};
+
+#[cfg(not(target_family = "wasm"))]
+use log::{error, debug};
 
 use serde::{Deserialize, Serialize};
 
 use version::{version, Version};
 
-use crate::{get_lang, Language};
+use crate::{get_lang, Language, console_err, console_log};
 
 const QUALIFIER: &str = "org";
 const ORGANIZATION: &str = "margual56";
@@ -62,7 +64,7 @@ impl Config {
                     &(match std::fs::read_to_string(&file) {
                         Ok(s) => s,
                         Err(e) => {
-                            error!("Cannot read configuration file: {}", e);
+                            console_err!("Cannot read configuration file: {}", e);
                             return None;
                         }
                     }),
@@ -87,13 +89,13 @@ impl Config {
                         Some(c)
                     }
                     Err(e) => {
-                        error!("Cannot parse configuration file: {}", e);
+                        console_err!("Cannot parse configuration file: {}", e);
                         None
                     }
                 }
             }
             None => {
-                error!("Cannot find a valid directory to store the configuration file.");
+                console_err!("Cannot find a valid directory to store the configuration file.");
                 None
             }
         }
@@ -108,10 +110,10 @@ impl Config {
             if !dir.config_dir().try_exists().unwrap_or(true) {
                 match std::fs::create_dir_all(dir.config_dir()) {
                     Ok(_) => {
-                        info!("Created configuration directory: {:?}", dir.config_dir())
+                        console_log!("Created configuration directory: {:?}", dir.config_dir())
                     }
                     Err(e) => {
-                        error!(
+                        console_err!(
                             "Could not create configuration directory {:?}: {}",
                             dir.config_dir(),
                             e
@@ -126,7 +128,7 @@ impl Config {
             let mut file: File = match File::create(&file_path) {
                 Ok(f) => f,
                 Err(e) => {
-                    error!(
+                    console_err!(
                         "Could not create configuration file {}: {}",
                         &file_path.to_string_lossy(),
                         e
@@ -144,10 +146,10 @@ impl Config {
 
             match file.write_all(serialized_config.as_bytes()) {
                 Ok(_) => {}
-                Err(e) => error!("Could not write configuration file: {}", e),
+                Err(e) => console_err!("Could not write configuration file: {}", e),
             };
         } else {
-            error!("Could not open project directory");
+            console_err!("Could not open project directory");
         }
     }
 

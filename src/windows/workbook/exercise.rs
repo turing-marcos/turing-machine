@@ -57,3 +57,23 @@ impl Debug for Exercise {
             .finish()
     }
 }
+
+impl Clone for Exercise {
+    fn clone(&self) -> Self {
+        Self {
+            image: match &self.image {
+                Some(_) => match RetainedImage::from_image_bytes(
+                    &self.title,
+                    &self.original_image.clone().unwrap_or_default().2,
+                ) {
+                    Ok(img) => Some(img),
+                    Err(_) => None,
+                },
+                None => None,
+            },
+            original_image: self.original_image.clone(),
+            title: self.title.clone(),
+            code: self.code.clone(),
+        }
+    }
+}
