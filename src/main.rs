@@ -11,6 +11,7 @@ use {
 };
 
 use turing_machine::MyApp;
+use eframe::egui;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(clap_parser, Debug)]
@@ -93,32 +94,20 @@ fn main() {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn load_icon(path: &str) -> Option<eframe::IconData> {
-    let data = match std::fs::read(path) {
-        Ok(d) => d,
-        Err(e) => {
-            error!("{}", e);
-            return None;
-        }
-    };
-
-    Some(eframe::IconData {
-        rgba: data,
-        width: 32,
-        height: 32,
-    })
-}
-
-#[cfg(not(target_arch = "wasm32"))]
 fn run_machine_gui(file: Option<PathBuf>) {
-    use eframe::egui;
+    use eframe::egui::ViewportBuilder;
     use turing_machine::get_lang;
 
+    let viewport:ViewportBuilder = egui::ViewportBuilder::default()
+        .with_inner_size([900.0, 700.0])
+        .with_drag_and_drop(true)
+        .with_icon(eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon.png")).unwrap());
+    
+
     let options = eframe::NativeOptions {
-        drag_and_drop_support: true,
+        follow_system_theme: true,
+        viewport,
         hardware_acceleration: eframe::HardwareAcceleration::Preferred,
-        icon_data: load_icon("assets/icon.png"),
-        initial_window_size: Some(egui::vec2(900.0, 700.0)),
         ..Default::default()
     };
 
