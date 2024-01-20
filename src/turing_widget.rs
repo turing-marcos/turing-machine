@@ -239,7 +239,7 @@ impl Widget for &mut TuringWidget {
 
             let pos = center + Vec2::new(self.offset * size.x, 0.0);
 
-            for i in 0..(self.tm.tape.len()+5) {
+            for i in 0..(self.tm.tape.len() + 5) {
                 let position = Pos2::new(
                     pos.x + (i as f32 - self.tm.tape_position as f32) * size.x,
                     pos.y,
@@ -248,7 +248,7 @@ impl Widget for &mut TuringWidget {
                 if ui.is_rect_visible(rect) {
                     if rect.min.x < self.left {
                         rect.set_left(self.left);
-                    }else if rect.max.x > self.left + ui.ctx().screen_rect().width() - 200.0 {
+                    } else if rect.max.x > self.left + ui.ctx().screen_rect().width() - 200.0 {
                         rect.set_right(self.left + ui.ctx().screen_rect().width() - 200.0);
                     }
 
@@ -260,7 +260,11 @@ impl Widget for &mut TuringWidget {
                         ui.painter().text(
                             position,
                             Align2::CENTER_CENTER,
-                            if self.tm.get(i).unwrap_or(false) {"1"} else {"0"},
+                            if self.tm.get(i).unwrap_or(false) {
+                                "1"
+                            } else {
+                                "0"
+                            },
                             self.font_id.clone(),
                             Color32::BLACK,
                         );
