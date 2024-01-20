@@ -1175,7 +1175,7 @@ impl MyApp {
                         main_panel.cursor().center().x,
                         ctx.available_rect().center_bottom().y - 50.0,
                     ),
-                    egui::Vec2::new(ctx.available_rect().width()/2.0, 30.0),
+                    egui::Vec2::new(ctx.available_rect().width() / 2.0, 30.0),
                 );
                 let mut popup = main_panel.child_ui(child_size, egui::Layout::default());
                 ctx.set_debug_on_hover(true);
@@ -1195,7 +1195,9 @@ impl MyApp {
                                 }
                             });
                         });
-                    }).response.on_hover_text_at_pointer(t!("lbl.ad.explanation", &lang));
+                    })
+                    .response
+                    .on_hover_text_at_pointer(t!("lbl.ad.explanation", &lang));
             }
         });
     }
