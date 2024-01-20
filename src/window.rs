@@ -825,7 +825,7 @@ impl MyApp {
 
                                 if ui.link(t!("menu.repository", lang)).clicked() {
                                     webbrowser::open(
-                                        "https://github.com/margual56/turing-machine-2.0",
+                                        "https://github.com/turing-marcos/turing-machine",
                                     )
                                     .unwrap();
                                 }
@@ -1167,6 +1167,37 @@ impl MyApp {
                     }
                 });
             });
+
+            #[cfg(target_family = "wasm")]
+            {
+                let child_size = egui::Rect::from_center_size(
+                    egui::pos2(
+                        main_panel.cursor().center().x,
+                        ctx.available_rect().center_bottom().y - 50.0,
+                    ),
+                    egui::Vec2::new(ctx.available_rect().width() / 2.0, 30.0),
+                );
+                let mut popup = main_panel.child_ui(child_size, egui::Layout::default());
+                egui::Frame::popup(&ctx.style())
+                    .stroke(egui::Stroke::NONE)
+                    .fill(Color32::from_rgba_unmultiplied(0, 0, 0, 0))
+                    .show(&mut popup, |ui| {
+                        ui.vertical_centered(|ui| {
+                            ui.horizontal(|ui| {
+                                ui.label(t!("lbl.ad.native", &lang));
+
+                                if ui.link(t!("lbl.ad.exe", &lang)).clicked() {
+                                    webbrowser::open(
+                                "https://github.com/turing-marcos/turing-machine/releases/latest",
+                            )
+                            .unwrap();
+                                }
+                            });
+                        });
+                    })
+                    .response
+                    .on_hover_text_at_pointer(t!("lbl.ad.explanation", &lang));
+            }
         });
     }
 }
