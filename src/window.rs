@@ -1172,19 +1172,18 @@ impl MyApp {
             {
                 let child_size = egui::Rect::from_center_size(
                     egui::pos2(
-                        100.0
-                            + ctx.available_rect().left_bottom().x
-                            + ctx.available_rect().width() * 0.5,
+                        main_panel.cursor().center().x,
                         ctx.available_rect().center_bottom().y - 50.0,
                     ),
-                    egui::Vec2::new(ctx.available_rect().width() * 0.5, 30.0),
+                    egui::Vec2::new(ctx.available_rect().width()/2.0, 30.0),
                 );
                 let mut popup = main_panel.child_ui(child_size, egui::Layout::default());
+                ctx.set_debug_on_hover(true);
                 egui::Frame::popup(&ctx.style())
                     .stroke(egui::Stroke::NONE)
                     .fill(Color32::from_rgba_unmultiplied(0, 0, 0, 0))
                     .show(&mut popup, |ui| {
-                        ui.vertical_centered_justified(|ui| {
+                        ui.vertical_centered(|ui| {
                             ui.horizontal(|ui| {
                                 ui.label(t!("lbl.ad.native", &lang));
 
@@ -1196,7 +1195,7 @@ impl MyApp {
                                 }
                             });
                         });
-                    });
+                    }).response.on_hover_text_at_pointer(t!("lbl.ad.explanation", &lang));
             }
         });
     }

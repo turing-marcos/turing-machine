@@ -6,5 +6,9 @@
     "lbl.ad.exe": {
         "en": "Click to download.",
         "es": "Haz click aquí para descargarla."
+    },
+    "lbl.ad.explanation": {
+        "en": "The native version has code autosaving, persistent configuration, and more.",
+        "es": "La versión nativa tiene autoguardado de código, configuración persistente, y más."
     }
 }
