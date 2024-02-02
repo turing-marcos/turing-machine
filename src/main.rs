@@ -1,4 +1,5 @@
 #![warn(clippy::all, rust_2018_idioms)]
+#![allow(dead_code)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -10,8 +11,8 @@ use {
     turing_machine::windows::ErrorWindow,
 };
 
-use turing_machine::MyApp;
 use eframe::egui;
+use turing_machine::MyApp;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(clap_parser, Debug)]
@@ -98,11 +99,12 @@ fn run_machine_gui(file: Option<PathBuf>) {
     use eframe::egui::ViewportBuilder;
     use turing_machine::get_lang;
 
-    let viewport:ViewportBuilder = egui::ViewportBuilder::default()
+    let viewport: ViewportBuilder = egui::ViewportBuilder::default()
         .with_inner_size([900.0, 700.0])
         .with_drag_and_drop(true)
-        .with_icon(eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon.png")).unwrap());
-    
+        .with_icon(
+            eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon.png")).unwrap(),
+        );
 
     let options = eframe::NativeOptions {
         follow_system_theme: true,

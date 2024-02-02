@@ -5,13 +5,13 @@ use super::{
     exercise::Exercise, load_image, save_workbook, Workbook, WorkbookChapter, MAX_IMG_SIZE,
 };
 
-pub struct WorkbookEditorWindow {
+pub struct WorkbookEditorWindow<'a> {
     lang: String,
-    chapters: Workbook,
+    chapters: Workbook<'a>,
     selected: (usize, usize),
 }
 
-impl WorkbookEditorWindow {
+impl<'a> WorkbookEditorWindow<'a> {
     pub fn new(lang: &str) -> Self {
         let exercises: Workbook = vec![];
 
@@ -27,33 +27,34 @@ impl WorkbookEditorWindow {
     }
 
     pub fn show(&mut self, ctx: &egui::Context) -> bool {
-        // ctx.set_debug_on_hover(true);
         let mut active = true;
 
-        let lang = &self.lang.clone();
-
-        egui::Window::new(t!("title.workbook.editor", lang))
+        egui::Window::new(t!("title.workbook.editor", &self.lang))
             .id(egui::Id::new("editor_window"))
             .resizable(true)
             .open(&mut active)
             .auto_sized()
             .show(ctx, |ui| {
+                let lang = self.lang.clone();
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {
                         ui.vertical(|ui| {
-                            ui.heading(t!("heading.workbook.catalog", lang));
+                            let lang = self.lang.clone();
+                            ui.heading(t!("heading.workbook.catalog", &lang));
 
                             egui::ScrollArea::vertical()
                                 .id_source(egui::Id::new("scroll_list"))
                                 .max_width(150.0)
                                 .min_scrolled_height(ctx.available_rect().height() - 150.0)
                                 .show(ui, |ui| {
+                                    let lang = self.lang.clone();
                                     let mut old_selected = self.selected;
 
                                     for (section, (title, exercises)) in
                                         self.chapters.iter_mut().enumerate()
                                     {
                                         ui.collapsing(title.clone(), |ui| {
+                                            let lang = self.lang.clone();
                                             for (i, exercise) in exercises.iter().enumerate() {
                                                 if ui
                                                     .add_enabled(
@@ -71,12 +72,12 @@ impl WorkbookEditorWindow {
                                             ui.separator();
 
                                             if ui
-                                                .button(t!("btn.editor.add_exercise", lang))
+                                                .button(t!("btn.editor.add_exercise", &lang))
                                                 .clicked()
                                             {
                                                 exercises.push(WorkbookEditorWindow::new_exercise(
                                                     exercises.len(),
-                                                    lang,
+                                                    "en",
                                                 ));
                                             }
                                         });
@@ -89,7 +90,7 @@ impl WorkbookEditorWindow {
                                         self.chapters.push(WorkbookEditorWindow::new_chapter(
                                             self.chapters.len(),
                                             0,
-                                            lang,
+                                            "en",
                                         ));
                                         self.selected = (self.chapters.len() - 1, 0);
                                     }
@@ -112,14 +113,17 @@ impl WorkbookEditorWindow {
 
                             if let Some(ex) = self.get_exercise(self.selected) {
                                 ui.add(
-                                    egui::TextEdit::singleline(&mut ex.title)
-                                        .hint_text(t!("tooltip.editor.chapter_title", lang))
-                                        .desired_width(0.0)
-                                        .font(egui::TextStyle::Heading),
+                                    egui::TextEdit::singleline(
+                                        &mut self.chapters[self.selected.0].1[self.selected.1]
+                                            .title,
+                                    )
+                                    .hint_text(t!("tooltip.editor.chapter_title", lang))
+                                    .desired_width(0.0)
+                                    .font(egui::TextStyle::Heading),
                                 );
 
-                                if let Some(img) = &ex.image {
-                                    img.show_max_size(ui, MAX_IMG_SIZE);
+                                if let Some(img) = ex.get_cover() {
+                                    ui.add_sized(MAX_IMG_SIZE, img.clone().shrink_to_fit());
                                 } else {
                                     let rect = egui::Rect::from_min_size(
                                         ui.cursor().left_top(),
@@ -138,7 +142,8 @@ impl WorkbookEditorWindow {
                                         ui.add_space(15.0);
                                         if ui.button(t!("btn.editor.add_image", lang)).clicked() {
                                             if let Some(img) = load_image() {
-                                                ex.set_cover(img);
+                                                self.chapters[self.selected.0].1[self.selected.1]
+                                                    .set_cover(img);
                                             }
                                         }
                                     });
@@ -160,7 +165,8 @@ impl WorkbookEditorWindow {
                                         my_ui.add(editor);
                                     });
 
-                                ex.code = code.clone();
+                                self.chapters[self.selected.0].1[self.selected.1].code =
+                                    code.clone();
                             }
                         });
                     });
@@ -199,7 +205,8 @@ impl WorkbookEditorWindow {
         )
     }
 
-    fn get_exercise(&mut self, i: (usize, usize)) -> Option<&mut Exercise> {
+    /// Returns *a copy* of an exercise.
+    fn get_exercise(&self, i: (usize, usize)) -> Option<Exercise<'a>> {
         if i.0 >= self.chapters.len() {
             return None;
         }
@@ -207,6 +214,6 @@ impl WorkbookEditorWindow {
             return None;
         }
 
-        Some(&mut self.chapters[i.0].1[i.1])
+        Some(self.chapters[i.0].1[i.1].clone())
     }
 }

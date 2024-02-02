@@ -73,7 +73,7 @@ impl Display for Language {
     }
 }
 
-pub struct MyApp {
+pub struct MyApp<'a> {
     code: String,
     error: Option<CompilerError>,
     tm: TuringWidget,
@@ -82,8 +82,8 @@ pub struct MyApp {
     about_window: Option<Box<AboutWindow>>,
     debug_window: Option<Box<DebugWindow>>,
     infinite_loop_window: Option<Box<InfiniteLoopWindow>>,
-    book_window: Option<Box<WorkbookWindow>>,
-    workbook_editor_window: Option<Box<WorkbookEditorWindow>>,
+    book_window: Option<Box<WorkbookWindow<'a>>>,
+    workbook_editor_window: Option<Box<WorkbookEditorWindow<'a>>>,
     composition_help_window: Option<Box<CompositionHelpWindow>>,
 
     #[cfg(not(target_family = "wasm"))]
@@ -103,7 +103,7 @@ pub struct MyApp {
     file_request_future: Option<Promise<Option<String>>>,
 }
 
-impl MyApp {
+impl<'a> MyApp<'a> {
     pub fn new(
         file: &Option<PathBuf>,
         cc: &eframe::CreationContext<'_>,
@@ -1171,8 +1171,10 @@ impl MyApp {
     }
 }
 
-impl eframe::App for MyApp {
+impl<'a> eframe::App for MyApp<'a> {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui_extras::install_image_loaders(ctx);
+        
         let lang = self.get_lang();
         let mut editor_focused = false;
 

@@ -1,23 +1,20 @@
-use eframe::egui;
-use internationalization::t;
-
-use crate::windows::workbook::raw_data_to_image;
-
 use super::{exercise::Exercise, load_workbook, Workbook, MAX_IMG_SIZE};
+use eframe::egui::{self, Image};
+use internationalization::t;
 
 #[cfg(target_family = "wasm")]
 use poll_promise::Promise;
 
-pub struct BookWindow {
+pub struct BookWindow<'a> {
     lang: String,
-    exercises: Workbook,
+    exercises: Workbook<'a>,
     selected: (usize, usize),
 
     #[cfg(target_family = "wasm")]
     file_request_future: Option<Promise<Option<Workbook>>>,
 }
 
-impl BookWindow {
+impl<'a> BookWindow<'a> {
     pub fn new(lang: &str) -> Self {
         let exercises: Workbook = vec![
             (
@@ -25,18 +22,22 @@ impl BookWindow {
                 vec![
                     Exercise::new(
                         "Exercise 1",
-                        Some(raw_data_to_image(
-                            (703, 309),
-                            include_bytes!("../../../assets/ui/exercise1/cover.png"),
-                        )),
+                        Some(
+                            Image::new(egui::include_image!(
+                                "../../../assets/ui/exercise1/cover.png"
+                            ))
+                            .into(),
+                        ),
                         String::from(include_str!("../../../assets/ui/exercise1/code.tm")),
                     ),
                     Exercise::new(
                         "Exercise 2",
-                        Some(raw_data_to_image(
-                            (574, 228),
-                            include_bytes!("../../../assets/ui/exercise2/cover.png"),
-                        )),
+                        Some(
+                            Image::new(egui::include_image!(
+                                "../../../assets/ui/exercise2/cover.png"
+                            ))
+                            .into(),
+                        ),
                         String::from(include_str!("../../../assets/ui/exercise2/code.tm")),
                     ),
                 ],
@@ -123,12 +124,8 @@ impl BookWindow {
                     });
 
                     ui.vertical(|ui| {
-                        let mut img_width = MAX_IMG_SIZE.x;
-
                         if let Some(img) = self.get_exercise(self.selected).get_cover() {
-                            let img_size = img.show_max_size(ui, MAX_IMG_SIZE).rect;
-
-                            img_width = img_size.width();
+                            ui.add(img.clone());
                         }
 
                         ui.horizontal(|ui| {
@@ -142,7 +139,7 @@ impl BookWindow {
                             }
 
                             ui.add_space(
-                                img_width
+                                MAX_IMG_SIZE.x
                                     - prev_button.rect.width()
                                     - t!("btn.workbook.next", self.lang).len() as f32 * 10.0,
                             );
@@ -170,7 +167,7 @@ impl BookWindow {
         (active, code)
     }
 
-    fn get_exercise(&mut self, i: (usize, usize)) -> &mut Exercise {
-        &mut self.exercises[i.0].1[i.1]
+    fn get_exercise(&mut self, i: (usize, usize)) -> Exercise {
+        self.exercises[i.0].1[i.1].clone()
     }
 }

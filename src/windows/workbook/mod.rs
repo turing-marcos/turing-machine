@@ -7,11 +7,11 @@ pub use wb_editor::WorkbookEditorWindow;
 
 use eframe::egui;
 
-use self::exercise::Exercise;
+use self::exercise::{Cover, Exercise};
 use eframe::epaint::ColorImage;
 
-type WorkbookChapter = (String, Vec<Exercise>);
-type Workbook = Vec<WorkbookChapter>;
+type WorkbookChapter<'a> = (String, Vec<Exercise<'a>>);
+type Workbook<'a> = Vec<WorkbookChapter<'a>>;
 
 use crate::{console_err, console_log};
 
@@ -67,7 +67,7 @@ fn load_image_bytes() -> Option<(u32, u32, Vec<u8>)> {
     }
 }
 
-fn load_image() -> Option<ColorImage> {
+fn load_image<'a>() -> Option<Cover<'a>> {
     #[cfg(target_arch = "wasm32")]
     {
         /*
@@ -117,50 +117,19 @@ fn load_image() -> Option<ColorImage> {
     #[cfg(not(target_arch = "wasm32"))]
     {
         match pick_image() {
-            Some(f) => {
-                let image = match image::io::Reader::open(f) {
-                    Ok(img) => match img.decode() {
-                        Ok(img_bytes) => img_bytes,
-                        Err(e) => {
-                            console_err!("Could not decode image: {:?}", e);
-                            return None;
-                        }
-                    },
-                    Err(e) => {
-                        console_err!("Could not open image: {:?}", e);
-                        return None;
-                    }
-                };
-
-                let size = [image.width() as _, image.height() as _];
-                let image_buffer = image.to_rgba8();
-                let pixels = image_buffer.as_flat_samples();
-                Some(egui::ColorImage::from_rgba_unmultiplied(
-                    size,
-                    pixels.as_slice(),
-                ))
-            }
+            Some(f) => match Cover::new(f) {
+                Ok(img) => Some(img),
+                Err(e) => {
+                    error!("Error opening the image: {}", e);
+                    None
+                }
+            },
             None => {
                 console_log!("The path is not valid");
                 None
             }
         }
     }
-}
-
-fn raw_data_to_image(img_size: (u32, u32), data: &[u8]) -> ColorImage {
-    let image = image::load_from_memory(data).expect("Failed to load image");
-
-    // Check the image dimensions
-    assert_eq!(image.width(), img_size.0);
-    assert_eq!(image.height(), img_size.1);
-
-    // Convert the image to raw RGB data
-    let rgb_image = image.to_rgb8();
-    let raw_data = rgb_image.into_raw();
-
-    // Create the ColorImage
-    ColorImage::from_rgb([img_size.0 as usize, img_size.1 as usize], &raw_data)
 }
 
 #[allow(dead_code)]
@@ -245,7 +214,7 @@ pub async fn load_workbook() -> Option<Workbook> {
 }
 
 #[cfg(not(target_family = "wasm"))]
-pub fn load_workbook() -> Option<Workbook> {
+pub fn load_workbook() -> Option<Workbook<'static>> {
     let path = std::env::current_dir().unwrap();
 
     let file_path = rfd::FileDialog::new()

@@ -1,5 +1,5 @@
 use eframe::{
-    egui::{self, RichText, TextEdit},
+    egui::{self, RichText, TextEdit, WidgetText},
     epaint::Color32,
 };
 use egui_extras::{Column, TableBuilder};
@@ -41,16 +41,15 @@ impl SecondaryWindow for CompositionHelpWindow {
                         TableBuilder::new(ui)
                             .auto_shrink([true, true])
                             .striped(true)
-                            .cell_layout(egui::Layout::centered_and_justified(
-                                egui::Direction::LeftToRight,
-                            ))
+                            //.cell_layout(egui::Layout::centered_and_justified(
+                            //    egui::Direction::LeftToRight,
+                            //))
                             .columns(Column::auto(), 4)
                             .column(Column::auto().clip(true))
                             .header(20.0, |mut header| {
                                 header.col(|ui| {
-                                    ui.label(
-                                        RichText::new(t!("lbl.composition.name", self.lang))
-                                            .heading(),
+                                    ui.label(WidgetText::RichText(RichText::new(t!("lbl.composition.name", self.lang)))
+                                            .heading()
                                     )
                                     .on_hover_text_at_pointer(t!(
                                         "tooltip.composition.name",
