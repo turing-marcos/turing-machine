@@ -12,8 +12,13 @@ license = "GPL-2.0"
 [dependencies]
 pest = "^2.7"
 pest_derive = "^2.4"
-eframe = { version = "^0.25", features = ["wayland", "serde"] }
-egui_extras = { version = "^0", features = ["all_loaders"] }
+eframe = { git = "https://github.com/turing-marcos/egui.git", features = [
+  "wayland",
+  "serde",
+] }
+egui_extras = { git = "https://github.com/turing-marcos/egui.git", features = [
+  "all_loaders",
+] }
 rfd = "^0.13"
 image = { version = "^0", features = ["jpeg", "png"] }
 webbrowser = "^0"
