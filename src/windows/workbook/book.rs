@@ -11,10 +11,10 @@ pub struct BookWindow<'a> {
     selected: (usize, usize),
 
     #[cfg(target_family = "wasm")]
-    file_request_future: Option<Promise<Option<Workbook>>>,
+    file_request_future: Option<Promise<Option<Workbook<'static>>>>,
 }
 
-impl<'a> BookWindow<'a> {
+impl<'a> BookWindow<'static> {
     pub fn new(lang: &str) -> Self {
         let exercises: Workbook = vec![
             (

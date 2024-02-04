@@ -48,7 +48,7 @@ tracing-wasm = "^0.2"
 wasm-bindgen = "^0.2"
 wasm-bindgen-futures = "^0.4"
 futures = "0.3"
-wgpu = { version = "*", features = ["webgl"] }
+wgpu = { version = "*", default-features = false, features = ["webgl"] }
 web-sys = "^0.3"
 js-sys = "^0.3"
 base64 = "^0.21"

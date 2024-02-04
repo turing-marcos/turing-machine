@@ -103,7 +103,7 @@ pub struct MyApp<'a> {
     file_request_future: Option<Promise<Option<String>>>,
 }
 
-impl<'a> MyApp<'a> {
+impl<'a> MyApp<'static> {
     pub fn new(
         file: &Option<PathBuf>,
         cc: &eframe::CreationContext<'_>,
@@ -1171,7 +1171,7 @@ impl<'a> MyApp<'a> {
     }
 }
 
-impl<'a> eframe::App for MyApp<'a> {
+impl<'a> eframe::App for MyApp<'static> {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui_extras::install_image_loaders(ctx);
 

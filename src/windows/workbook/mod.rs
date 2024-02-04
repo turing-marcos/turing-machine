@@ -8,7 +8,6 @@ pub use wb_editor::WorkbookEditorWindow;
 use eframe::egui;
 
 use self::exercise::{Cover, Exercise};
-use eframe::epaint::ColorImage;
 
 type WorkbookChapter<'a> = (String, Vec<Exercise<'a>>);
 type Workbook<'a> = Vec<WorkbookChapter<'a>>;
@@ -132,18 +131,6 @@ fn load_image<'a>() -> Option<Cover<'a>> {
     }
 }
 
-#[allow(dead_code)]
-#[cfg(not(target_arch = "wasm32"))]
-fn image_to_raw_data(color_image: &ColorImage) -> (usize, usize, Vec<u8>) {
-    let size = color_image.size;
-    let raw_data: Vec<u8> = color_image
-        .pixels
-        .iter()
-        .flat_map(|p| p.to_array())
-        .collect();
-    (size[0], size[1], raw_data.to_vec())
-}
-
 pub fn save_workbook(exercises: &Workbook) {
     #[cfg(target_arch = "wasm32")]
     {
@@ -185,7 +172,7 @@ pub fn save_workbook(exercises: &Workbook) {
 }
 
 #[cfg(target_family = "wasm")]
-pub async fn load_workbook() -> Option<Workbook> {
+pub async fn load_workbook<'a>() -> Option<Workbook<'a>> {
     let file_path = rfd::AsyncFileDialog::new()
         .add_filter("TuringMachine Workbook", &["wb"])
         .pick_file()
@@ -195,7 +182,7 @@ pub async fn load_workbook() -> Option<Workbook> {
         Some(f) => {
             let reader: Vec<u8> = f.read().await;
 
-            match bincode::deserialize::<Workbook>(&reader) {
+            match bincode::deserialize::<Workbook<'a>>(&reader) {
                 Ok(exercises) => {
                     console_log!("Workbook loaded from {:?}", &f);
                     Some(exercises)

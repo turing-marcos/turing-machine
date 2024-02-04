@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+#[cfg(not(target_family = "wasm"))]
 use crate::windows::workbook::error;
 use eframe::{
     egui::{self, load::LoadError, Image},
