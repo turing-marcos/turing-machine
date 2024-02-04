@@ -12,14 +12,14 @@ license = "GPL-2.0"
 [dependencies]
 pest = "^2.7"
 pest_derive = "^2.4"
-eframe = {version = "^0", features = ["wayland"]}
+eframe = { version = "^0.25", features = ["wayland", "serde"] }
 egui_extras = { version = "^0", features = ["all_loaders"] }
-rfd = "^0.12"
+rfd = "^0.13"
 image = { version = "^0", features = ["jpeg", "png"] }
 webbrowser = "^0"
 internationalization = "^0"
 turing-lib = "^2.1"
-serde = {version = "^1.0", features = ["derive"]}
+serde = { version = "^1.0", features = ["derive"] }
 serde_bytes = "0.11"
 bincode = "1.3"
 sys-locale = "^0.3"
@@ -28,11 +28,11 @@ sys-locale = "^0.3"
 toml = "^0.8"
 directories = "^5.0"
 log = "^0.4"
-env_logger = "^0.10"
+env_logger = "^0.11"
 tracing-subscriber = "0.3"
 clap = { version = "^4.3", features = ["derive"] }
 clap-verbosity-flag = "2.0.0"
-version = {git = "https://github.com/turing-marcos/rs-version.git", tag = "v0.2.0"}
+version = { git = "https://github.com/turing-marcos/rs-version.git", tag = "v0.2.0" }
 
 # web:
 [target.'cfg(target_arch = "wasm32")'.dependencies]
@@ -43,16 +43,16 @@ tracing-wasm = "^0.2"
 wasm-bindgen = "^0.2"
 wasm-bindgen-futures = "^0.4"
 futures = "0.3"
-wgpu = { version = "^0.18", features = ["webgl"] }
+wgpu = { version = "*", features = ["webgl"] }
 web-sys = "^0.3"
 js-sys = "^0.3"
 base64 = "^0.21"
 
 [profile.release]
-panic = 'abort'     # Do not perform backtrace for panic on release builds.
-opt-level = 'z'     # Optimize for size
-codegen-units = 1   # Perform optimizations on all codegen units.
-lto = true          # Perform link-time optimizations (slower build time)
+panic = 'abort'   # Do not perform backtrace for panic on release builds.
+opt-level = 'z'   # Optimize for size
+codegen-units = 1 # Perform optimizations on all codegen units.
+lto = true        # Perform link-time optimizations (slower build time)
 
 [features]
 # no features by default

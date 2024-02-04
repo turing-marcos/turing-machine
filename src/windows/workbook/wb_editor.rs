@@ -33,7 +33,6 @@ impl<'a> WorkbookEditorWindow<'a> {
             .id(egui::Id::new("editor_window"))
             .resizable(true)
             .open(&mut active)
-            .auto_sized()
             .show(ctx, |ui| {
                 let lang = self.lang.clone();
                 ui.vertical(|ui| {

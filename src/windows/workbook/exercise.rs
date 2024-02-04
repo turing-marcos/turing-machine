@@ -5,9 +5,11 @@ use eframe::{
     egui::{self, load::LoadError, Image},
     epaint::Vec2,
 };
+use image::DynamicImage;
 use serde::{
     self, de::Error, ser::SerializeStruct, Deserialize, Deserializer, Serialize, Serializer,
 };
+use std::io::Cursor;
 use std::{
     fmt::{self, Debug},
     path::PathBuf,
@@ -17,10 +19,12 @@ use crate::console_err;
 
 use super::MAX_IMG_SIZE;
 
-#[derive(Clone)]
+const IMG_ROUNDING: f32 = 10.0;
+
+#[derive(Clone, Debug)]
 pub struct Cover<'a> {
     pub image: Image<'a>,
-    raw_data: Vec<u8>,
+    orig_image: DynamicImage,
     size: Vec2,
 }
 
@@ -29,8 +33,21 @@ impl<'a> Serialize for Cover<'a> {
     where
         S: Serializer,
     {
-        let mut s = serializer.serialize_struct("cover", 2)?;
-        s.serialize_field("data", &self.raw_data)?;
+        let mut s = serializer.serialize_struct("cover", 3)?;
+
+        let mut img_bytes: Vec<u8> = Vec::new();
+        self.orig_image
+            .write_to(
+                &mut Cursor::new(&mut img_bytes),
+                image::ImageOutputFormat::Png,
+            )
+            .unwrap();
+
+        s.serialize_field(
+            "uri",
+            &String::from(self.image.source().uri().unwrap_or("bytes://unknown.png")),
+        )?;
+        s.serialize_field("data", &img_bytes)?;
         s.serialize_field("size", &self.size)?;
         s.end()
     }
@@ -39,6 +56,7 @@ impl<'a> Serialize for Cover<'a> {
 /// Temporary struct for deserialization
 #[derive(Deserialize)]
 struct CoverData {
+    uri: String,
     data: Vec<u8>,
     size: Vec2,
 }
@@ -49,26 +67,17 @@ impl<'de, 'a> Deserialize<'de> for Cover<'a> {
         D: Deserializer<'de>,
     {
         // Use the temporary struct for deserialization
-        let CoverData { data, size } = CoverData::deserialize(deserializer)?;
+        let CoverData { uri, data, size } = CoverData::deserialize(deserializer)?;
 
-        // Assuming you have a way to construct an Image from raw data and size,
-        // or you can modify this part to fit your actual implementation.
-        let image = match image::load_from_memory_with_format(&data, image::ImageFormat::Png) {
-            Ok(i) => i,
-            Err(e) => {
-                error!("Error decoding image from the data in the file: {}", e);
-                return Err(Error::custom(e));
-            }
-        };
-        let image_buffer = image.to_rgba8();
-        let pixels = Vec::from(image_buffer.as_flat_samples().as_slice());
-        let uri = format!("bytes://decoded");
+        let image: DynamicImage =
+            image::load_from_memory_with_format(&data, image::ImageFormat::Png)
+                .map_err(D::Error::custom)?;
 
         Ok(Self {
-            image: egui::Image::from_bytes(uri, pixels)
+            image: egui::Image::from_bytes(uri, data)
                 .max_size(MAX_IMG_SIZE)
-                .rounding(10.0),
-            raw_data: data,
+                .rounding(IMG_ROUNDING),
+            orig_image: image,
             size,
         })
     }
@@ -76,9 +85,23 @@ impl<'de, 'a> Deserialize<'de> for Cover<'a> {
 
 impl<'a> From<Image<'a>> for Cover<'a> {
     fn from(src: Image<'a>) -> Self {
+        let image = src.clone().max_size(MAX_IMG_SIZE).rounding(IMG_ROUNDING);
+
+        let bytes = match src.source() {
+            egui::ImageSource::Bytes { uri: _, bytes } => bytes,
+            _ => {
+                console_err!("Could not get bytes from image source");
+                return Self {
+                    image,
+                    orig_image: DynamicImage::new_rgba8(1, 1),
+                    size: src.size().unwrap_or_default(),
+                };
+            }
+        };
         Self {
-            image: src.clone().max_size(MAX_IMG_SIZE).rounding(10.0),
-            raw_data: Vec::new(),
+            image,
+            orig_image: image::load_from_memory_with_format(&bytes, image::ImageFormat::Png)
+                .unwrap_or_default(),
             size: src.size().unwrap_or_default(),
         }
     }
@@ -101,16 +124,14 @@ impl<'a> Cover<'a> {
         };
 
         let size = Vec2::new(image.width() as _, image.height() as _);
-        let image_buffer = image.to_rgba8();
-        let pixels = Vec::from(image_buffer.as_flat_samples().as_slice());
 
         let uri = format!("file://{}", f.to_str().unwrap());
 
         Ok(Self {
             image: egui::Image::from_uri(uri)
                 .max_size(MAX_IMG_SIZE)
-                .rounding(10.0),
-            raw_data: pixels,
+                .rounding(IMG_ROUNDING),
+            orig_image: image,
             size,
         })
     }
@@ -138,7 +159,7 @@ impl<'a> Exercise<'a> {
 
     pub fn set_cover_img(&mut self, img: Image<'a>) {
         if let Some(cover) = self.image.as_mut() {
-            cover.image = img.max_size(MAX_IMG_SIZE).rounding(10.0);
+            cover.image = img.max_size(MAX_IMG_SIZE).rounding(IMG_ROUNDING);
         } else {
             self.image = Some(img.into())
         }
