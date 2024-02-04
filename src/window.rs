@@ -1174,7 +1174,7 @@ impl<'a> MyApp<'a> {
 impl<'a> eframe::App for MyApp<'a> {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui_extras::install_image_loaders(ctx);
-        
+
         let lang = self.get_lang();
         let mut editor_focused = false;
 

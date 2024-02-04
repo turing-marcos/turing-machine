@@ -48,8 +48,12 @@ impl SecondaryWindow for CompositionHelpWindow {
                             .column(Column::auto().clip(true))
                             .header(20.0, |mut header| {
                                 header.col(|ui| {
-                                    ui.label(WidgetText::RichText(RichText::new(t!("lbl.composition.name", self.lang)))
-                                            .heading()
+                                    ui.label(
+                                        WidgetText::RichText(RichText::new(t!(
+                                            "lbl.composition.name",
+                                            self.lang
+                                        )))
+                                        .heading(),
                                     )
                                     .on_hover_text_at_pointer(t!(
                                         "tooltip.composition.name",
